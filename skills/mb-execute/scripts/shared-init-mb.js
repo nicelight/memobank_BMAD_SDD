@@ -131,7 +131,7 @@ function seedCommandsFromTemplates() {
   const templates = resolveCommandTemplates();
   if (templates.length === 0) {
     console.error(`\nERROR: Command templates not found in: ${COMMAND_TEMPLATES_DIR} or flattened references.`);
-    console.error('Run init-mb.js from the memobank package (do not copy it standalone).');
+    console.error('Run init-mb.js from the memobank_BMAD_SDD package (do not copy it standalone).');
     process.exit(1);
   }
 
