@@ -28,11 +28,19 @@ From templates, create:
 - `CLAUDE.md` → symlink/copy to `AGENTS.md`
 - `.memory-bank/index.md`
 - `.memory-bank/mbb/index.md`
+- `.memory-bank/spec-index.md`
+- `.memory-bank/glossary.md`
+- `.memory-bank/invariants.md`
 - `.memory-bank/product.md`
 - `.memory-bank/requirements.md`
 - `.memory-bank/tasks/backlog.md`
 - `.memory-bank/testing/index.md`
 - `.memory-bank/skills/index.md`
+
+Also create optional folders that support the richer normative layer without making it mandatory:
+- `.memory-bank/contracts/`
+- `.memory-bank/states/`
+- `.memory-bank/runbooks/`
 
 ### 3) Create command stubs
 So links from `AGENTS.md` are not broken, create minimal docs under `.memory-bank/commands/`.

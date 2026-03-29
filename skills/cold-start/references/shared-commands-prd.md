@@ -64,6 +64,7 @@ status: active
 Для каждого эпика:
 - `.memory-bank/epics/EP-<NNN>-<slug>.md`
 - value, success metrics, acceptance criteria
+- optional, if grounded in evidence: `Source artifacts`, `Normative inputs`, `Constraints / invariants`
  - `status: draft` по умолчанию (переводи в active после закрытия Open questions)
 
 ## 6) Создай features/
@@ -73,6 +74,7 @@ status: active
 - acceptance criteria
 - edge cases & failure modes
 - test strategy pointers
+- optional, if grounded in evidence: `Source artifacts`, `Normative inputs`, `Constraints / invariants`, `Verification targets`
  - `status: draft` по умолчанию
 
 ## 7) Testing index

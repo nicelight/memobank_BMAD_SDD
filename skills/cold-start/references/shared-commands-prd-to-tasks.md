@@ -40,6 +40,17 @@ status: active
 - гейты качества
 - UAT steps
 
+Если в feature doc уже есть richer spec-driven inputs, **предпочитай** включить их в план:
+- `Source Artifacts`
+- `Normative Inputs`
+- `Constraints`
+- `Invariants`
+- `Verification Targets`
+
+Если этих секций нет:
+- не считай это ошибкой
+- используй классический вход: feature doc + epic + RTM + duo docs
+
 ## 4) Нарежь на tasks (waves)
 Обнови `.memory-bank/tasks/backlog.md`:
 - Wave 1: low-risk / foundation
@@ -67,6 +78,18 @@ status: active
 - `Verify: ...`
 - `Docs: ...`
 
+Опционально, когда есть достаточно evidence и это реально помогает downstream deterministic execution, добавляй:
+- `Source Artifacts: ...`
+- `Normative Inputs: ...`
+- `Constraints: ...`
+- `Invariants: ...`
+- `Verification Targets: ...`
+
+Важно:
+- эти поля **рекомендуемы, но не обязательны**
+- не выдумывай их без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
+- минимальные task cards старого формата остаются валидными
+
 Правила ready-state:
 - foundation tasks без deps могут стартовать как `ready`
 - downstream tasks по умолчанию `planned`
@@ -76,6 +99,7 @@ status: active
 Перед `execute`:
 - проверь что acceptance criteria из FT покрыты задачами
 - обнови RTM при необходимости
+- если richer fields были добавлены, проверь что они не противоречат feature doc и RTM
 
 Если используется `--all`:
 - пройдись по всем `FT-*` в порядке приоритета

@@ -19,6 +19,11 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 2. Read `.memory-bank/mbb/index.md` (rules)
 3. Follow annotated links for deeper context
 
+## Preferred context routing
+- Start with `.memory-bank/architecture/*` and `.memory-bank/guides/*` for concept priming.
+- If present, prefer explicit normative docs such as `.memory-bank/spec-index.md`, `.memory-bank/invariants.md`, `.memory-bank/glossary.md`, `.memory-bank/contracts/*`, `.memory-bank/states/*`, `.memory-bank/runbooks/*`, and `.memory-bank/testing/*`.
+- Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
+
 ## Docs First
 After finishing a meaningful unit of work:
 1) Update `.memory-bank/` (WHY/WHERE + navigation)
@@ -142,11 +147,15 @@ status: active
 - [.memory-bank/features/](features/): Фичи (C4 L3).
 - [.memory-bank/tasks/backlog.md](tasks/backlog.md): План работ (waves + tasks).
 
-- [.memory-bank/architecture/](architecture/): Duo (WHAT/WHY).
-- [.memory-bank/guides/](guides/): Duo (HOW).
+- [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
+- [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
+- [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
+- [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
+- [.memory-bank/guides/](guides/): Valid HOW docs для использования, запуска и troubleshooting.
 - [.memory-bank/adrs/](adrs/): ADR-решения.
 
-- [.memory-bank/contracts/](contracts/): Контракты API/ивенты (если применимо).
+- [.memory-bank/contracts/](contracts/): Контракты и boundary specs (prefer when present).
+- [.memory-bank/states/](states/): Lifecycle/state rules (prefer when present).
 - [.memory-bank/runbooks/](runbooks/): Runbooks (setup, dev, deploy).
 - [.memory-bank/testing/index.md](testing/index.md): Стратегия тестирования.
 
@@ -177,13 +186,14 @@ status: active
 2. If a folder has >3 docs, add an `index.md` router.
 3. Use annotated links: `[.memory-bank/path](rel-path): короткое описание`.
 4. Atomic docs: one concept per doc; keep ~≤500 lines.
-5. Duo docs: `architecture/` (WHAT/WHY) + `guides/` (HOW), cross-link both ways.
+5. Duo docs remain valid: `architecture/` (WHAT/WHY) + `guides/` (HOW), cross-link both ways for concepts that use the classic pair model.
 6. C4 layering: L1 product → L2 epics → L3 features → L4 plans/tasks.
 7. Docs First: update MB immediately after finishing a task.
 8. Refactor MB every 5–10 updates (split, merge, archive).
 9. Separate facts from interpretations: mark hypotheses explicitly ("предположительно", "требует проверки").
 10. After merge/rebase conflicts: re-check MB consistency.
 11. MB-SYNC after each wave/significant change (see `workflows/mb-sync.md`).
+12. When present, `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*`, and `testing/*` act as an explicit normative layer and should be linked from relevant docs.
 
 ## Forbidden
 - Copy-paste implementation details / pseudocode
@@ -195,6 +205,75 @@ status: active
 - Contracts at boundaries
 - Decision rationale + pointers
 - Runbooks and verification procedures
+```
+
+---
+
+## 3a) `.memory-bank/spec-index.md`
+
+```markdown
+---
+description: Реестр normative docs и маршрутизация по source-of-truth документам.
+status: active
+---
+# Spec Index
+
+## Purpose
+- Используй этот файл как роутер по явным normative docs.
+- Если раздел не нужен проекту, оставь ссылку-плейсхолдер или отметь `not used`.
+
+## Global
+- [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
+- [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
+
+## Normative domains
+- [.memory-bank/contracts/](contracts/): Контракты интерфейсов и boundary specs.
+- [.memory-bank/states/](states/): Lifecycle/state rules.
+- [.memory-bank/runbooks/](runbooks/): Operational procedures.
+- [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
+
+## Compatibility note
+- Duo docs в `architecture/` и `guides/` остаются валидными.
+- Этот слой уточняет source-of-truth, а не отменяет duo docs.
+```
+
+---
+
+## 3b) `.memory-bank/glossary.md`
+
+```markdown
+---
+description: Словарь терминов, сущностей и agreed vocabulary проекта.
+status: draft
+---
+# Glossary
+
+## Terms
+- Term: definition
+
+## Notes
+- Используй этот файл для устранения неоднозначностей в названиях и статусах.
+```
+
+---
+
+## 3c) `.memory-bank/invariants.md`
+
+```markdown
+---
+description: Глобальные инварианты и запреты проекта (MUST/NEVER).
+status: draft
+---
+# Invariants
+
+## MUST
+- TBD
+
+## NEVER
+- TBD
+
+## Notes
+- Ссылайся на этот файл из архитектурных, контрактных и execution docs, если правило является cross-cutting.
 ```
 
 ---
@@ -377,7 +456,8 @@ status: active
 ---
 # MB-SYNC Checklist
 
-- [ ] Duo docs consistent (architecture ↔ guides)
+- [ ] Duo docs consistent where the classic pair model is used (architecture ↔ guides)
+- [ ] Optional normative docs, if present, are linked and do not contradict duo docs
 - [ ] RTM up to date (requirements.md)
 - [ ] Feature statuses updated
 - [ ] Backlog tasks marked done

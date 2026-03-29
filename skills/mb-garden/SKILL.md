@@ -37,7 +37,7 @@ Fix all **ERROR** findings:
 
 ### 2) Refactor for ergonomics
 - Split docs > ~700 lines into atomic docs + router index.
-- Ensure duo docs exist for key concepts (architecture WHAT/WHY + guide HOW).
+- Ensure key concepts are covered either by classic duo docs (`architecture` WHAT/WHY + `guides` HOW) or by equivalent spec-driven support docs.
 - Replace copy-pasted code/config with links to source.
 
 ### 3) Archive stale or superseded docs
@@ -57,7 +57,7 @@ Run this checklist weekly (or every 5–10 meaningful changes):
 
 1. **Frontmatter audit**: every `.memory-bank/**/*.md` has `description` + `status`.
 2. **Stale docs**: scan for docs not updated in >2 weeks — archive or refresh.
-3. **Duo docs check**: every `architecture/<X>.md` has a matching `guides/<X>.md` (and vice versa).
+3. **Concept coverage check**: every key concept is covered either by a matching `architecture/<X>.md` + `guides/<X>.md` pair or by clearly routed equivalent spec-driven support docs.
 4. **RTM sync**: `requirements.md` RTM matches actual feature/test status.
 5. **Backlog hygiene**: completed tasks marked done, no orphaned tasks without feature link.
 6. **Changelog**: `.memory-bank/changelog.md` has entries for recent changes.

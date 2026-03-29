@@ -9,9 +9,10 @@
 
 ## Чеклист
 
-### 1) Duo docs consistency
-- [ ] Каждый `architecture/<concept>.md` имеет парный `guides/<concept>.md` (и наоборот).
-- [ ] Взаимные ссылки между duo docs актуальны.
+### 1) Concept support consistency
+- [ ] Если используется классическая duo-модель, каждый `architecture/<concept>.md` имеет парный `guides/<concept>.md` (и наоборот).
+- [ ] Взаимные ссылки между duo docs актуальны, если используется классическая пара.
+- [ ] Если используются spec-driven support docs, они явно маршрутизированы через `spec-index.md` и не противоречат `architecture/*`, `guides/*`, `contracts/*`, `states/*`, `runbooks/*`, `testing/*`.
 
 ### 2) RTM (traceability)
 - [ ] `requirements.md` RTM таблица отражает реальный `Lifecycle` (planned/implemented/verified).

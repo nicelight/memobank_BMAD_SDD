@@ -55,6 +55,7 @@ For each epic:
 - Create `.memory-bank/epics/EP-<NNN>-<slug>.md`
 - Use `references/epic-template.md`.
 - Ensure business value + success metrics.
+- Fill optional sections such as `Source artifacts`, `Normative inputs`, and `Constraints / invariants` only when they are grounded in evidence.
 - Default `status: draft` until open questions are resolved.
 
 ### 7) Create Features (L3, draft-first)
@@ -62,6 +63,7 @@ For each feature:
 - Create `.memory-bank/features/FT-<NNN>-<slug>.md`
 - Use `references/feature-template.md`.
 - Ensure autonomy and explicit acceptance criteria.
+- Fill optional sections such as `Source artifacts`, `Normative inputs`, `Constraints / invariants`, and `Verification targets` only when they are grounded in evidence.
 - Default `status: draft` until acceptance criteria + verification plan are solid.
 
 ### 8) Tasks planning (per-feature, no “everything at once”)
@@ -73,12 +75,28 @@ Instead:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `TASK-*` items grouped by waves
 
+When enough structured evidence exists, those feature-level plans and task cards may include optional richer fields such as `Source Artifacts`, `Normative Inputs`, `Constraints`, `Invariants`, and `Verification Targets`.
+Old minimal task cards remain valid.
+
 This keeps planning accurate and avoids speculative task explosions.
 
-### 9) Duo docs for key concepts
-For every concept that would otherwise require “reading many files” to understand later:
+### 9) Support docs for key concepts
+For every concept that would otherwise require “reading many files” to understand later, create support docs.
+
+Compatibility/default path:
 - `.memory-bank/architecture/<concept>.md` (WHAT/WHY)
 - `.memory-bank/guides/<concept>.md` (HOW)
+
+Optional richer support docs:
+- `.memory-bank/contracts/...`
+- `.memory-bank/states/...`
+- `.memory-bank/runbooks/...`
+- `.memory-bank/testing/...`
+
+Rules:
+- classic duo docs remain valid and useful
+- richer docs are additive and should be grounded in evidence
+- if richer docs exist, route them from `.memory-bank/spec-index.md` and relevant feature/concept docs
 
 ### 10) Update index
 Update `.memory-bank/index.md` with annotated links to everything new.

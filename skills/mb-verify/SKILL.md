@@ -21,6 +21,11 @@ Independent-ish verification so we don’t “trust without verify”.
   - `.memory-bank/requirements.md` (REQ IDs)
 - Link to protocol plan: `.protocols/<TASK_ID>/plan.md`
 
+If present, also use:
+- `Verification Targets`
+- `Normative Inputs`
+- task-card references to source artifacts
+
 ## Preconditions
 - Implementation is done and gates were run (or failures recorded).
 
@@ -38,6 +43,14 @@ Read:
 - `.protocols/<TASK_ID>/plan.md`
 - `.protocols/<TASK_ID>/progress.md`
 - acceptance criteria source docs
+
+Priority:
+1. explicit `Verification Targets`
+2. explicit `Normative Inputs`
+3. classic feature acceptance criteria and RTM
+4. evidence in `.tasks/<TASK_ID>/`
+
+Missing richer fields must not block verification of a classic task.
 
 ### 2) Verify acceptance criteria
 For each AC / REQ:

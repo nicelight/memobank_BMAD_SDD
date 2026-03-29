@@ -121,12 +121,16 @@ function isMetadataScopedDoc(rel) {
   return (
     n === '.memory-bank/product.md' ||
     n === '.memory-bank/requirements.md' ||
+    n === '.memory-bank/spec-index.md' ||
+    n === '.memory-bank/glossary.md' ||
+    n === '.memory-bank/invariants.md' ||
     n.startsWith('.memory-bank/architecture/') ||
     n.startsWith('.memory-bank/guides/') ||
     n.startsWith('.memory-bank/adrs/') ||
     n.startsWith('.memory-bank/tech-specs/') ||
     n.startsWith('.memory-bank/domains/') ||
     n.startsWith('.memory-bank/contracts/') ||
+    n.startsWith('.memory-bank/states/') ||
     n.startsWith('.memory-bank/runbooks/') ||
     n.startsWith('.memory-bank/epics/') ||
     n.startsWith('.memory-bank/features/') ||

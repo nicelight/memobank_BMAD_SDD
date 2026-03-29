@@ -14,7 +14,7 @@ if (!existsSync(sharedRoot)) {
 
 function flattenReferenceName(referenceFile) {
   const rel = relative(join(sharedRoot, 'references'), referenceFile);
-  return `shared-${rel.replaceAll('/', '-')}`;
+  return `shared-${rel.replace(/[\\/]/g, '-')}`;
 }
 
 const skillDirs = readdirSync(skillsRoot, { withFileTypes: true })

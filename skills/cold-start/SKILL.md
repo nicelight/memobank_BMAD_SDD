@@ -92,6 +92,7 @@ Create (if missing):
   - `tech-specs/`
   - `domains/` *(optional but recommended)*
   - `contracts/` *(optional but recommended)*
+  - `states/` *(optional but recommended)*
   - `runbooks/` *(optional but recommended)*
   - `workflows/` *(optional; can keep `wfs/` if you already use it)*
   - `quality/` *(optional but recommended)*
@@ -117,6 +118,9 @@ At minimum you must create:
 - `CLAUDE.md` symlink/copy
 - `.memory-bank/index.md`
 - `.memory-bank/mbb/index.md`
+- `.memory-bank/spec-index.md`
+- `.memory-bank/glossary.md`
+- `.memory-bank/invariants.md`
 - `.memory-bank/product.md`
 - `.memory-bank/requirements.md`
 - `.memory-bank/testing/index.md`
@@ -216,10 +220,21 @@ Instead:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `TASK-*` items grouped by waves in `backlog.md`
 
-### 3A.6 Identify key concepts and create duo docs
-For every non-trivial concept, create a duo:
-- `.memory-bank/architecture/<concept>.md` (WHAT/WHY)
-- `.memory-bank/guides/<concept>.md` (HOW)
+### 3A.6 Identify key concepts and create support docs
+For every non-trivial concept, create support docs that make the concept cheap to reload later:
+- default / compatibility path:
+  - `.memory-bank/architecture/<concept>.md` (WHAT/WHY)
+  - `.memory-bank/guides/<concept>.md` (HOW)
+- add spec-driven support docs when they clarify source-of-truth:
+  - `.memory-bank/contracts/...`
+  - `.memory-bank/states/...`
+  - `.memory-bank/runbooks/...`
+  - `.memory-bank/testing/...`
+
+Rules:
+- classic duo docs remain valid and useful
+- spec-driven docs are additive, not a replacement by default
+- if richer docs exist, route them from `.memory-bank/spec-index.md` and related concept docs
 
 ### 3A.7 Update index
 Update `.memory-bank/index.md` with annotated links to all created docs.
@@ -251,8 +266,10 @@ Use `./agents/shared-repo-scanner.md` as baseline prompt, but scope it.
 Using the `.tasks/TASK-MB-MAP/` reports, fill:
 - `.memory-bank/product.md` — what the system is today
 - `.memory-bank/architecture/` — C4 L1–L3 overview + key invariants
+- `.memory-bank/spec-index.md` / `.memory-bank/invariants.md` / `.memory-bank/glossary.md` — if the evidence supports explicit normative routing
 - `.memory-bank/runbooks/` — setup, dev, test, deploy
 - `.memory-bank/contracts/` — API/event contracts
+- `.memory-bank/states/` — lifecycle/state rules when they are evident from code or workflows
 - `.memory-bank/testing/index.md` — canonical gates + verification notes
 - `.memory-bank/index.md` — annotated links
 

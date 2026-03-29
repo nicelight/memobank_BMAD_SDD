@@ -20,6 +20,18 @@ req_ids: [REQ-XXX]
 ## Requirements (REQ IDs)
 - REQ-XXX
 
+## Source artifacts (optional)
+- PRD section: ...
+- Existing code / baseline doc: ...
+
+## Normative inputs (optional)
+- Spec index: `.memory-bank/spec-index.md`
+- Contracts / states / runbooks / testing docs: ...
+
+## Constraints / invariants (optional)
+- MUST: ...
+- NEVER: ...
+
 ## Use cases
 - UC-01: ...
 
@@ -34,6 +46,10 @@ req_ids: [REQ-XXX]
 | AC/REQ | Method | Where implemented | Evidence |
 |---|---|---|---|
 | AC-01 / REQ-XXX | unit/integration/e2e/manual | `path/to/test` or steps doc | `.tasks/TASK-.../` |
+
+## Verification targets (optional)
+- Contract / state / runbook assertions: ...
+- Browser / API / data invariants: ...
 
 ## Tasks
 - See `.memory-bank/tasks/backlog.md` (TASK-IDs)

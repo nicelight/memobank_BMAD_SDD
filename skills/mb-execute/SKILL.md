@@ -27,6 +27,13 @@ Orchestrator must provide:
   - `.memory-bank/requirements.md` (REQ IDs)
   - `.memory-bank/tasks/backlog.md` entry
 
+If present, also pass through richer structured inputs from the task card or IMPL plan:
+- `Source Artifacts`
+- `Normative Inputs`
+- `Constraints`
+- `Invariants`
+- `Verification Targets`
+
 ## Required artifacts
 Create:
 - `.protocols/<TASK_ID>/context.md`
@@ -53,6 +60,13 @@ Read only what you need:
 - `.memory-bank/index.md`
 - the specific `FT-*` / `REQ-*` relevant to `TASK_ID`
 
+Priority:
+1. richer task-card / IMPL-plan fields when present
+2. classic feature + requirement inputs
+3. duo docs and related normative docs as needed
+
+Missing richer fields must not block execution of a classic task.
+
 ### 2) Write the plan (before touching code)
 In `.protocols/<TASK_ID>/plan.md`:
 - goal + non-goals
@@ -60,6 +74,9 @@ In `.protocols/<TASK_ID>/plan.md`:
 - constraints/invariants
 - quality gates to run
 - **MB-SYNC step is mandatory** (link to `.memory-bank/workflows/mb-sync.md`)
+
+If richer inputs were available, record them explicitly.
+If they were absent, record the fallback basis used for execution.
 
 ### 3) Implementation (fan-out allowed)
 If work is non-trivial:

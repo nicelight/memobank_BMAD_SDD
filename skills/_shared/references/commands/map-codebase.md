@@ -25,8 +25,10 @@ status: active
 3) Синтезируй `.memory-bank/` по чеклисту:
 - product
 - architecture (C4)
+- spec-index / glossary / invariants (если есть достаточно evidence для явного normative routing)
 - runbooks
 - contracts
+- states (если lifecycle/state rules очевидны из кода, workflow или тестов)
 - testing
 - index
 

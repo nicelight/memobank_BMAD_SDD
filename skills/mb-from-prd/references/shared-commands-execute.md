@@ -22,6 +22,22 @@ status: active
 - `.memory-bank/tasks/backlog.md` (строка с `TASK-<ID>`)
 - соответствующие спеки (например `.memory-bank/features/FT-*` / `.memory-bank/requirements.md`)
 
+Приоритет чтения:
+1. explicit task-card / IMPL-plan поля, если они есть:
+   - `Source Artifacts`
+   - `Normative Inputs`
+   - `Constraints`
+   - `Invariants`
+   - `Verification Targets`
+2. feature doc
+3. epic / requirements RTM
+4. duo docs (`architecture/*`, `guides/*`)
+5. related contracts / states / runbooks / testing docs, если они упомянуты или нужны для границ
+
+Важно:
+- отсутствие richer fields не является ошибкой
+- для classic tasks используй fallback к feature + requirements + duo docs
+
 ## 2) Создай протокол выполнения
 Создай:
 - `.protocols/TASK-<ID>/context.md`
@@ -35,6 +51,10 @@ status: active
 - перед стартом: `ready -> in_progress`
 - после PASS: `in_progress -> done`
 - после FAIL: `in_progress -> failed`
+
+В `plan.md` и `context.md` явно зафиксируй:
+- какие richer inputs были найдены
+- какой fallback использован, если richer inputs отсутствуют
 
 ## 3) Реализация (fan-out опционально)
 ### 3.1 Изоляция (без конфликтов)
@@ -89,6 +109,7 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 
 ## 4) Верификация
 - передай `TASK-<ID>` в `/verify` (или `mb-verify`) для заполнения `verification.md`
+- если richer fields отсутствовали, передай verifier явное указание использовать classic AC/REQ basis
 
 ## 5) MB-SYNC (обязательный финал)
 Запусти `/mb-sync`:

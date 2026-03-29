@@ -62,8 +62,10 @@ Before writing final docs:
 Using the fan-in view, create/update:
 - product brief (`.memory-bank/product.md`)
 - architecture overview (`.memory-bank/architecture/`)
+- normative routing docs when supported by evidence (`.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`)
 - runbooks (`.memory-bank/runbooks/`)
 - contracts (`.memory-bank/contracts/`)
+- states (`.memory-bank/states/`) when lifecycle/state rules are evident from code, workflows, or tests
 - testing strategy (`.memory-bank/testing/index.md`)
 - index (`.memory-bank/index.md`)
 
