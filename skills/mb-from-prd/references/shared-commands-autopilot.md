@@ -50,11 +50,12 @@ status: active
 1) переведи `Status: ready -> in_progress`
 2) выполни `/execute TASK-<ID>`
 3) выполни `/verify TASK-<ID>`
-4) если `PASS`:
+4) если задача domain-heavy, cross-boundary, stateful, migration/runtime/API-sensitive или есть риск "формально PASS, но семантически мимо" — выполни `/red-verify TASK-<ID>`
+5) если итог = `PASS` и нет `semantic-fail`:
    - `Status: done`
    - `/mb-sync`
    - разблокируй dependents, если все их deps закрыты
-5) если `FAIL`:
+6) если `FAIL` или `semantic-fail`:
    - `Status: failed`
    - создай bug + follow-up task
    - downstream dependents → `blocked`

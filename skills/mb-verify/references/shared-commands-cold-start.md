@@ -43,7 +43,7 @@ status: active
 ## 3) После запуска флоу
 После `/prd` или `/map-codebase`:
 - запусти `/review` (fresh context)
-- interactive: выполняй задачи через `/execute` → `/verify` → `/mb-sync`
+- interactive: выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
 - backlog-only unattended: используй `/autopilot`
 - full unattended (`PRD → done`): используй `/autonomous`
 </process>

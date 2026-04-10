@@ -58,6 +58,7 @@ The important rule is simple: richer docs strengthen source-of-truth routing, bu
 - `mb-map-codebase` - map an existing repository into as-is Memory Bank docs
 - `mb-execute` - execute one `TASK-*` with a resumable protocol
 - `mb-verify` - verify one `TASK-*` against acceptance criteria and evidence
+- `mb-red-verify` - adversarial semantic verification for one `TASK-*`
 - `mb-review` - fresh-context review with specialized reviewer prompts
 - `mb-garden` - lint and maintain Memory Bank consistency
 - `mb-harness` - document deterministic gates, worktrees, and agent-safe workflows
@@ -76,6 +77,8 @@ Current command set:
 - `/mb-execute`
 - `/verify`
 - `/mb-verify`
+- `/red-verify`
+- `/mb-red-verify`
 - `/review`
 - `/mb-review`
 - `/map-codebase`
@@ -138,6 +141,7 @@ The intended planning loop is:
 - `/prd-to-tasks FT-001`
 - `/execute TASK-001`
 - `/verify TASK-001`
+- `/red-verify TASK-001` for risky semantic changes
 - `/mb-sync`
 - `/review` when needed
 
@@ -169,6 +173,48 @@ Execution and verification now follow an explicit fallback model:
 
 That means richer fields are supported, but not silently mandatory.
 Old task cards should continue to work.
+
+### 4.1. Adversarial semantic verification
+In addition to normal `/verify`, `memobank` now includes a separate semantic pass:
+- `/red-verify TASK-123`
+- `/mb-red-verify TASK-123`
+
+Its purpose is not to repeat process checks, but to catch cases where "everything passes on paper, yet the solution is still wrong in substance."
+
+This pass is especially useful when:
+- acceptance criteria can be satisfied narrowly while still missing the true intent
+- the change affects `contracts/*`, `states/*`, migrations, schemas, or data behavior
+- the task crosses feature or module boundaries
+- runtime or API behavior changes
+- the implementation may be locally correct but systemically harmful
+- there is a risk of architectural drift or hidden future maintenance cost
+
+Division of responsibility:
+- `/verify` checks task completion against AC/REQ and evidence
+- `/review` checks the Memory Bank, planning surface, and fresh-context review gate
+- `/red-verify` asks the hostile question: "is this solution actually right in substance?"
+
+`/red-verify` is intentionally designed to start not from the full spec surface, but from:
+1. task intent
+2. the real diff / code changes / behavior changes
+3. tests and runtime evidence
+4. only then reconciliation against specs
+
+This reduces the risk of shallow confirmation, where the verifier over-trusts the same assumptions as the implementer.
+
+The semantic-pass result is recorded separately, typically in:
+- `.protocols/TASK-123/red-verification.md`
+
+Recommended verdicts:
+- `semantic-pass`
+- `semantic-concern`
+- `semantic-fail`
+
+Recommended place in the loop:
+- `/execute TASK-123`
+- `/verify TASK-123`
+- `/red-verify TASK-123` for risky tasks
+- `/mb-sync`
 
 ### 5. Review and maintenance
 The current review and garden policy is concept-coverage driven, not pair-only.
@@ -218,6 +264,7 @@ Run `cold-start`, then follow the normal loop:
 /prd-to-tasks FT-001
 /execute TASK-001
 /verify TASK-001
+/red-verify TASK-001   # optional, recommended for risky/cross-boundary changes
 /mb-sync
 ```
 
@@ -311,6 +358,7 @@ skills/
   mb-map-codebase/
   mb-execute/
   mb-verify/
+  mb-red-verify/
   mb-review/
   mb-garden/
   mb-harness/

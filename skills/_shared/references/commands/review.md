@@ -11,6 +11,8 @@ status: active
 - scope/RTM (REQ → EP → FT)
 - планирование (backlog/waves/качество TASK)
 - security risks
+
+Это **не** per-task adversarial semantic verification. Для вопроса "решение по существу правильное?" используй `/red-verify TASK-<ID>`.
 </objective>
 
 <process>

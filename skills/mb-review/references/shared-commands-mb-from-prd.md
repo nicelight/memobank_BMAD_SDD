@@ -13,7 +13,7 @@ status: active
 
 Дальше (если нужно):
 - задачи (TASK-*) делай **per feature** через `/prd-to-tasks FT-<NNN>`
-- выполнение: `/execute TASK-<ID>` → `/verify` → `/mb-sync`
+- выполнение: `/execute TASK-<ID>` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
 - backlog-only автономно: `/autopilot`
 - full unattended: `/autonomous`
 </process>

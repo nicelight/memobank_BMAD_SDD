@@ -14,6 +14,9 @@ description: >
 ## Goal
 Independent-ish verification so we don’t “trust without verify”.
 
+This is **not** the adversarial semantic pass.
+If a task may satisfy AC/REQ while still being wrong in substance, follow with `mb-red-verify`.
+
 ## Inputs
 - `TASK_ID` (e.g. `TASK-123`)
 - Links to acceptance criteria:

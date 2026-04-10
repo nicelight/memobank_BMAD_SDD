@@ -136,6 +136,7 @@ If any gate is flaky, record it in `progress.md` and (if needed) file a bug doc 
 ### 5) Verification handoff
 Do not self-validate beyond sanity checks.
 - Hand off to `mb-verify` (fresh-ish context) to fill `verification.md`.
+- If the task is risky in substance (cross-boundary, domain-heavy, stateful, migration/runtime/API-affecting), also hand off to `mb-red-verify` to fill `red-verification.md`.
 
 ### 6) MB-SYNC (required, last step)
 After verification is complete:

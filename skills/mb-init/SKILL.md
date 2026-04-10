@@ -50,6 +50,7 @@ Use `./references/shared-commands-*.md`:
 - `prd-to-tasks.md`
 - `execute.md`
 - `verify.md`
+- `red-verify.md`
 - `autopilot.md`
 - `autonomous.md`
 - `map-codebase.md`

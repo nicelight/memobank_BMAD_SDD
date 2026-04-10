@@ -134,6 +134,8 @@ Naming:
 - /execute → .memory-bank/commands/execute.md
 - /verify → .memory-bank/commands/verify.md
 - /mb-verify → .memory-bank/commands/mb-verify.md (alias)
+- /red-verify → .memory-bank/commands/red-verify.md
+- /mb-red-verify → .memory-bank/commands/mb-red-verify.md (alias)
 - /autopilot → .memory-bank/commands/autopilot.md
 - /autonomous → .memory-bank/commands/autonomous.md
 - /map-codebase → .memory-bank/commands/map-codebase.md

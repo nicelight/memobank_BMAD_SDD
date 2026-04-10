@@ -10,7 +10,7 @@ description: >
 
 > **Note**: `cold-start` is the **package skill** for all-in-one bootstrap.
 > Do not confuse it with the generated project command `/cold-start`: that command is a lightweight router used **after** skeleton creation inside a target repo.
-> For modular usage, prefer individual skills: `mb-init` (skeleton), `mb-from-prd` (greenfield), `mb-map-codebase` (brownfield), `mb-review` (review), `mb-execute` (implementation), `mb-verify` (UAT).
+> For modular usage, prefer individual skills: `mb-init` (skeleton), `mb-from-prd` (greenfield), `mb-map-codebase` (brownfield), `mb-review` (review), `mb-execute` (implementation), `mb-verify` (UAT), `mb-red-verify` (semantic adversarial verification).
 
 - **What it does:** creates the Memory Bank skeleton, writes agent entry points, and routes the repo into the right workflow.
 - **Use it when:** you want one entry point for either a new project with a PRD or an existing codebase that needs mapping first.
@@ -354,13 +354,14 @@ After review gate passes (APPROVE):
 1. Pick the highest-priority task from `.memory-bank/tasks/backlog.md`.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Run `mb-verify` to check acceptance criteria and record evidence.
-4. Repeat until the wave is complete or user stops.
+4. If the task is domain-heavy, cross-boundary, or risky in substance, run `mb-red-verify`.
+5. Repeat until the wave is complete or user stops.
 
 If the intended mode is unattended end-to-end:
 - do not stay in manual loop here
 - switch to generated project command `/autonomous`
 
-> If `mb-execute` or `mb-verify` are not installed, follow their SKILL.md manually.
+> If `mb-execute`, `mb-verify`, or `mb-red-verify` are not installed, follow their SKILL.md manually.
 
 ---
 
@@ -376,7 +377,7 @@ You are done when:
 - Brownfield: repo mapped **as-is** into MB and user asked for PRD delta (no roadmap entities invented without PRD).
 - Skeleton-only: skeleton created, user asked for PRD (valid stopping point).
 - Multi-expert review passes (APPROVE) — for Greenfield/Brownfield; skip for Skeleton-only.
-- Execution loop is available (mb-execute + mb-verify reachable or documented).
+- Execution loop is available (mb-execute + mb-verify reachable or documented, plus mb-red-verify for risky tasks).
 - Autonomous loop is available (`/autonomous` + `/autopilot` documented).
 
 ---

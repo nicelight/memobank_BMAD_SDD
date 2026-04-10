@@ -6,6 +6,7 @@ status: active
 
 <objective>
 Подтвердить, что реализованный функционал работает с точки зрения пользователя.
+Это **не** adversarial semantic verification: если решение может формально пройти AC, но быть неверным по существу, после `/verify` запусти `/red-verify`.
 </objective>
 
 <process>

@@ -110,6 +110,7 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 ## 4) Верификация
 - передай `TASK-<ID>` в `/verify` (или `mb-verify`) для заполнения `verification.md`
 - если richer fields отсутствовали, передай verifier явное указание использовать classic AC/REQ basis
+- если изменение domain-heavy, cross-boundary, migration/state/API/runtime-sensitive или есть риск "технически PASS, но семантически мимо" — затем запусти `/red-verify TASK-<ID>`
 
 ## 5) MB-SYNC (обязательный финал)
 Запусти `/mb-sync`:

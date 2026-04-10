@@ -76,6 +76,8 @@ Claude (fresh session):
 - `/execute` → `.memory-bank/commands/execute.md`
 - `/verify` → `.memory-bank/commands/verify.md`
 - `/mb-verify` → `.memory-bank/commands/mb-verify.md` *(alias to `/verify`)*
+- `/red-verify` → `.memory-bank/commands/red-verify.md`
+- `/mb-red-verify` → `.memory-bank/commands/mb-red-verify.md` *(alias to `/red-verify`)*
 - `/autopilot` → `.memory-bank/commands/autopilot.md`
 - `/autonomous` → `.memory-bank/commands/autonomous.md`
 - `/map-codebase` → `.memory-bank/commands/map-codebase.md`
@@ -424,6 +426,7 @@ status: active
 - Codebase mapping: mb-map-codebase
 - Execution: mb-execute
 - Verification (UAT): mb-verify
+- Semantic adversarial verification: mb-red-verify
 - Review: mb-review
 - Maintenance: mb-garden
 - Harness: mb-harness

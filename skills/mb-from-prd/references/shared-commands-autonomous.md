@@ -108,12 +108,13 @@ status: active
 Для каждого выбранного `TASK-*`:
 1) `/execute TASK-<ID>`
 2) `/verify TASK-<ID>`
-3) `/mb-sync`
+3) `/red-verify TASK-<ID>` для рискованных по существу задач
+4) `/mb-sync`
 
 Переходы состояния:
 - `ready -> in_progress`
-- `in_progress -> done` при `VERDICT: PASS`
-- `in_progress -> failed` при `VERDICT: FAIL`
+- `in_progress -> done` при `VERDICT: PASS` и отсутствии `semantic-fail`
+- `in_progress -> failed` при `VERDICT: FAIL` или `SEMANTIC_VERDICT: semantic-fail`
 - downstream dependents → `blocked`, если upstream failed/blocking
 
 ## 8) Wave review

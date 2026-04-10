@@ -14,6 +14,9 @@ description: >
 ## Goal
 Detect gaps, contradictions, broken traceability, and non-compliance early.
 
+This is **not** the same as per-task semantic verification.
+Use `mb-red-verify` when the question is “did this task solve the right problem in substance?”
+
 ## Preconditions
 - `.memory-bank/` exists.
 

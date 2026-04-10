@@ -58,6 +58,7 @@
 - `mb-map-codebase` — маппинг существующего репозитория в as-is docs Memory Bank
 - `mb-execute` — исполнение одной `TASK-*` через возобновляемый протокол
 - `mb-verify` — проверка одной `TASK-*` по acceptance criteria и evidence
+- `mb-red-verify` — adversarial semantic verification одной `TASK-*`
 - `mb-review` — fresh-context review со специализированными reviewer prompts
 - `mb-garden` — lint и сопровождение консистентности Memory Bank
 - `mb-harness` — документация для deterministic gates, worktrees и agent-safe workflows
@@ -76,6 +77,8 @@
 - `/mb-execute`
 - `/verify`
 - `/mb-verify`
+- `/red-verify`
+- `/mb-red-verify`
 - `/review`
 - `/mb-review`
 - `/map-codebase`
@@ -138,6 +141,7 @@
 - `/prd-to-tasks FT-001`
 - `/execute TASK-001`
 - `/verify TASK-001`
+- `/red-verify TASK-001` для рискованных семантических изменений
 - `/mb-sync`
 - `/review` при необходимости
 
@@ -169,6 +173,48 @@ Execution и verification теперь следуют явной fallback-мод
 
 Это значит, что richer fields поддерживаются, но не становятся скрыто обязательными.
 Старые task cards должны продолжать работать.
+
+### 4.1. Adversarial semantic verification
+Помимо обычного `/verify`, в `memobank` теперь есть отдельный semantic-pass:
+- `/red-verify TASK-123`
+- `/mb-red-verify TASK-123`
+
+Его задача — не повторять process checks, а ловить случаи "формально всё прошло, но решение по существу неверно".
+
+Этот проход нужен, когда:
+- acceptance criteria можно закрыть узко и при этом промахнуться мимо реального intent
+- изменение задевает `contracts/*`, `states/*`, миграции, схемы, data behavior
+- задача пересекает feature/module boundaries
+- меняется runtime или API behavior
+- решение может быть локально корректным, но системно вредным
+- есть риск architectural drift или скрытой future maintenance cost
+
+Разделение ответственности:
+- `/verify` проверяет task completion по AC/REQ и evidence
+- `/review` проверяет Memory Bank, planning surface и fresh-context quality gate
+- `/red-verify` задаёт hostile вопрос: "это решение действительно правильно по существу?"
+
+`/red-verify` намеренно стартует не с полного spec surface, а с:
+1. task intent
+2. реального diff / code changes / behavior changes
+3. tests и runtime evidence
+4. только потом — reconciliation со specs
+
+Это снижает риск shallow confirmation, когда verifier слишком доверяет тем же assumptions, что и implementer.
+
+Результат semantic-pass фиксируется отдельно, обычно в:
+- `.protocols/TASK-123/red-verification.md`
+
+Рекомендуемые verdicts:
+- `semantic-pass`
+- `semantic-concern`
+- `semantic-fail`
+
+Практическое место в loop:
+- `/execute TASK-123`
+- `/verify TASK-123`
+- `/red-verify TASK-123` для рискованных задач
+- `/mb-sync`
 
 ### 5. Review и maintenance
 Текущая политика review и garden опирается на concept coverage, а не только на pair-only model.
@@ -218,6 +264,7 @@ npx skills add mrvladd-d/memobank --skill '*' --global --yes
 /prd-to-tasks FT-001
 /execute TASK-001
 /verify TASK-001
+/red-verify TASK-001   # опционально, но рекомендуется для рискованных/cross-boundary изменений
 /mb-sync
 ```
 
@@ -311,6 +358,7 @@ skills/
   mb-map-codebase/
   mb-execute/
   mb-verify/
+  mb-red-verify/
   mb-review/
   mb-garden/
   mb-harness/
