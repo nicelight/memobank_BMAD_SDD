@@ -2,22 +2,30 @@
 description: Автономный прогон backlog задач (TASK-*) в чистых сессиях Codex/Claude.
 status: active
 ---
-# /autopilot — Run backlog autonomously
+# /autopilot — Run JSON task queue autonomously
 
 ## Важно
 - Это **executor backlog-а**, а не полный `PRD → done` orchestrator.
 - Для полного unattended flow используй `/autonomous`.
-- Запуск разрешён только если backlog уже декомпозирован и последний `/review` дал `APPROVE`.
+- Запуск разрешён только если JSON task records уже декомпозированы и последний `/review` дал `APPROVE`.
 - По умолчанию выполняй **строго последовательно**. Параллель — только для независимых задач без общих файлов.
 
 ## Preconditions
-- `.memory-bank/tasks/backlog.md` использует **task cards**, а не просто список `TASK-*`.
-- Каждая задача имеет минимум:
-  - `Status: planned|ready|in_progress|blocked|done|failed`
-  - `Wave: W1|W2|W3|...`
-  - `Depends on: ...`
-  - `Touched files: ...`
+- `.memory-bank/tasks/index.json` exists and lists task record files.
+- `.memory-bank/schemas/task.schema.json` exists.
+- Each indexed `.memory-bank/tasks/*.task.json` has at minimum:
+  - `id`
+  - `status: planned|ready|in_progress|blocked|done|failed`
+  - `wave`
+  - `depends_on`
+  - `touched_files`
+  - `risk.level: low|medium|high`
 - Нет unresolved blocking questions в `.protocols/AUTONOMOUS-RUN/status.md` или equivalent run protocol.
+
+If there are no JSON task records, stop with an explicit error:
+`HALT_DEPENDENCY_DEADLOCK: no schema-backed task records found in .memory-bank/tasks/index.json`.
+
+Do not parse markdown task cards from `.memory-bank/tasks/backlog.md`; that file is only a readable summary/router.
 
 ## Протокол batch-run
 Если `.protocols/AUTONOMOUS-RUN/status.md` ещё нет:
@@ -30,33 +38,33 @@ status: active
   - terminal state
 
 Во время прогона обновляй:
-- queue state (`ready`, `in_progress`, `blocked`, `done`, `failed`)
+- queue state from JSON task records (`ready`, `in_progress`, `blocked`, `done`, `failed`)
 - latest review verdict
 - current failure budget
 - terminal state
 
 ## Selection rule
-На каждой итерации reread backlog и выбирай только задачи, у которых:
-- `Status: ready`
-- все зависимости из `Depends on` уже `done`
+На каждой итерации reread `.memory-bank/tasks/index.json` and indexed `.task.json` records. Выбирай только задачи, у которых:
+- `status: ready`
+- все `depends_on` уже `done`
 - нет blocking bug / blocked upstream
 
 Если `ready` пусто:
-- и backlog полностью закрыт → `SUCCESS`
+- и JSON task queue полностью закрыт → `SUCCESS`
 - и остались `planned` / `blocked` → `HALT_DEPENDENCY_DEADLOCK`
 
 ## TASK loop
 Для каждой выбранной задачи:
-1) переведи `Status: ready -> in_progress`
+1) переведи в task record `status: ready -> in_progress`
 2) выполни `/execute TASK-<ID>`
 3) выполни `/verify TASK-<ID>`
 4) если задача domain-heavy, cross-boundary, stateful, migration/runtime/API-sensitive или есть риск "формально PASS, но семантически мимо" — выполни `/red-verify TASK-<ID>`
 5) если итог = `PASS` и нет `semantic-fail`:
-   - `Status: done`
+   - `status: done` in the task record
    - `/mb-sync`
    - разблокируй dependents, если все их deps закрыты
 6) если `FAIL` или `semantic-fail`:
-   - `Status: failed`
+   - `status: failed` in the task record
    - создай bug + follow-up task
    - downstream dependents → `blocked`
    - проверь failure budget

@@ -10,7 +10,7 @@ status: active
 Этот проход должен ловить ситуации:
 - acceptance criteria формально выполнены, но решена не та проблема
 - локально всё выглядит корректно, но решение вредит системе целиком
-- реализация переоптимизирована под task card и игнорирует соседние ограничения
+- реализация переоптимизирована под локальную task interpretation и игнорирует соседние ограничения
 - появляются drift, state inconsistency, operational risks или скрытая стоимость сопровождения
 
 Разделение ролей:
@@ -44,7 +44,9 @@ status: active
 
 1) Не anchor слишком рано на full spec surface
 Сначала прочитай в таком порядке:
-- task intent из `.memory-bank/tasks/backlog.md`, linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
+- task intent из `.memory-bank/tasks/TASK-<ID>.task.json` через `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/backlog.md` только как readable summary/router, если он помогает навигации
+- linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
 - `.protocols/TASK-<ID>/verification.md`, если уже есть
 - реальный change surface:
@@ -61,7 +63,7 @@ status: active
 - другие spec docs, если они нужны для reconciliation
 
 Важно:
-- не начинай с предположения, что task card и verify verdict уже доказывают correctness
+- не начинай с предположения, что task record и verify verdict уже доказывают correctness
 - сначала сформируй независимую hostile модель риска
 - затем сравни её со specs и кодом
 
@@ -112,7 +114,7 @@ status: active
 - `semantic-fail`:
   - решение по существу неверно, вредно или слишком рискованно
   - заведи bug doc в `.memory-bank/bugs/BUG-<short>.md`
-  - добавь follow-up task в backlog
+  - добавь follow-up task как JSON task record, обнови `tasks/index.json`, а `backlog.md` только как summary/router
   - текущую задачу пометь `failed` или верни в `blocked` по контексту репозитория
   - downstream dependents не продвигай
 

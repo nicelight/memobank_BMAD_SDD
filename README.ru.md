@@ -121,13 +121,14 @@
 - `skills/`
 - `epics/`
 - `features/`
+- `schemas/`
 - `tasks/`
 - `commands/`
 - `agents/`
 - `archive/`
 - `bugs/`
 
-Также создаются базовые routing files, такие как `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md` и `.memory-bank/tasks/backlog.md`.
+Также создаются базовые routing files, такие как `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/schemas/task.schema.json`, `.memory-bank/tasks/index.json` и `.memory-bank/tasks/backlog.md`.
 
 ### 2. Роутинг в нужный workflow
 `cold-start` — главный entry point, который выбирает правильный путь:
@@ -151,7 +152,9 @@
 
 Планирование теперь богаче, но по-прежнему обратно совместимо:
 - если есть structured inputs, такие как source artifacts, normative inputs, constraints, invariants или verification targets, planner может их использовать
-- если их нет, классический минимальный feature и task-card flow остаётся валидным
+- если их нет, классический минимальный feature и requirements flow остаётся валидным
+- task state теперь хранится в schema-backed JSON records `.memory-bank/tasks/*.task.json`, индексированных через `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/backlog.md` является только human-readable summary/router и не должен использоваться как scheduler state
 - `/prd` по-прежнему не должен бездумно выпускать весь implementation backlog за один проход
 - `/prd-to-tasks` остаётся шагом per-feature decomposition
 
@@ -172,7 +175,7 @@ Execution и verification теперь следуют явной fallback-мод
 4. связанные normative docs, если нужно
 
 Это значит, что richer fields поддерживаются, но не становятся скрыто обязательными.
-Старые task cards должны продолжать работать.
+Markdown task cards заменены JSON task records для authoritative task state.
 
 ### 4.1. Adversarial semantic verification
 Помимо обычного `/verify`, в `memobank` теперь есть отдельный semantic-pass:

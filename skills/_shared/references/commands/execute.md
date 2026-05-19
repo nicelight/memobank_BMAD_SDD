@@ -19,16 +19,19 @@ status: active
 
 ## 1) Прочитай источники
 Открой минимум:
-- `.memory-bank/tasks/backlog.md` (строка с `TASK-<ID>`)
+- `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/TASK-<ID>.task.json`
 - соответствующие спеки (например `.memory-bank/features/FT-*` / `.memory-bank/requirements.md`)
 
+If the task record is missing from `index.json`, the indexed file is missing, or the record `id` does not match `TASK-<ID>`, stop with an explicit error. Do not reconstruct task state from `.memory-bank/tasks/backlog.md`.
+
 Приоритет чтения:
-1. explicit task-card / IMPL-plan поля, если они есть:
-   - `Source Artifacts`
-   - `Normative Inputs`
-   - `Constraints`
-   - `Invariants`
-   - `Verification Targets`
+1. explicit task record / IMPL-plan поля:
+   - `source_artifacts`
+   - `normative_inputs`
+   - `constraints`
+   - `invariants`
+   - `verification_targets`
 2. feature doc
 3. epic / requirements RTM
 4. duo docs (`architecture/*`, `guides/*`)
@@ -47,14 +50,16 @@ status: active
 - `.protocols/TASK-<ID>/handoff.md`
 Если в проекте есть шаблоны протоколов (из `mb-execute`), используй их, иначе создай минимальные файлы вручную.
 
-Если задача выполняется внутри `/autopilot` или `/autonomous`, синхронизируй task state в backlog:
-- перед стартом: `ready -> in_progress`
-- после PASS: `in_progress -> done`
-- после FAIL: `in_progress -> failed`
+Если задача выполняется внутри `/autopilot` или `/autonomous`, синхронизируй task state in the task record:
+- before start: `status: ready -> in_progress` in `.task.json`
+- after PASS: `status: in_progress -> done` in `.task.json`
+- after FAIL: `status: in_progress -> failed` in `.task.json`
+- refresh `.memory-bank/tasks/backlog.md` only as a readable summary/router
 
 В `plan.md` и `context.md` явно зафиксируй:
 - какие richer inputs были найдены
 - какой fallback использован, если richer inputs отсутствуют
+- path to the authoritative task record
 
 ## 3) Реализация (fan-out опционально)
 ### 3.1 Изоляция (без конфликтов)
@@ -115,7 +120,7 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 ## 5) MB-SYNC (обязательный финал)
 Запусти `/mb-sync`:
 - обнови `.memory-bank/` (WHY/WHERE + навигация)
-- обнови RTM/backlog статусы
+- обнови RTM и JSON task record status; refresh backlog summary only
 - добавь запись в `.memory-bank/changelog.md`
 - если задача failed и есть dependents — пометь их `blocked`
 </process>

@@ -121,13 +121,14 @@ The generated Memory Bank skeleton includes the current layered structure:
 - `skills/`
 - `epics/`
 - `features/`
+- `schemas/`
 - `tasks/`
 - `commands/`
 - `agents/`
 - `archive/`
 - `bugs/`
 
-It also seeds core routing files such as `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, and `.memory-bank/tasks/backlog.md`.
+It also seeds core routing files such as `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/schemas/task.schema.json`, `.memory-bank/tasks/index.json`, and `.memory-bank/tasks/backlog.md`.
 
 ### 2. Route into the correct workflow
 `cold-start` is the main entry point and chooses the right path:
@@ -151,7 +152,9 @@ For existing codebases, the brownfield entry is:
 
 Planning is now richer, but still backward-compatible:
 - if structured inputs such as source artifacts, normative inputs, constraints, invariants, or verification targets are present, the planner can use them
-- if they are absent, the classic minimal feature and task-card flow is still valid
+- if they are absent, the classic minimal feature and requirements flow is still valid
+- task state is now stored in schema-backed JSON records under `.memory-bank/tasks/*.task.json`, indexed by `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/backlog.md` is only a human-readable summary/router and must not be used as scheduler state
 - `/prd` still should not emit the entire implementation backlog blindly in one shot
 - `/prd-to-tasks` remains the per-feature decomposition step
 
@@ -172,7 +175,7 @@ Execution and verification now follow an explicit fallback model:
 4. related normative docs when needed
 
 That means richer fields are supported, but not silently mandatory.
-Old task cards should continue to work.
+Markdown task cards are replaced by JSON task records for authoritative task state.
 
 ### 4.1. Adversarial semantic verification
 In addition to normal `/verify`, `memobank` now includes a separate semantic pass:

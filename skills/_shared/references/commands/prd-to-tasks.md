@@ -2,12 +2,12 @@
 description: Декомпозиция фичи в implementation plan и атомарные задачи (waves).
 status: active
 ---
-# /prd-to-tasks — Feature → Implementation plan → Backlog
+# /prd-to-tasks — Feature → Implementation plan → JSON tasks
 
 <objective>
 Взять конкретную фичу (FT-XXX) и превратить её в:
 - Implementation Plan
-- атомарные задачи (waves)
+- schema-backed JSON task records (waves)
 - критерии done + тесты + verify
 </objective>
 
@@ -51,8 +51,13 @@ status: active
 - не считай это ошибкой
 - используй классический вход: feature doc + epic + RTM + duo docs
 
-## 4) Нарежь на tasks (waves)
-Обнови `.memory-bank/tasks/backlog.md`:
+## 4) Нарежь на schema-backed tasks (waves)
+JSON task records are the source of truth:
+- `.memory-bank/schemas/task.schema.json`
+- `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/TASK-<NNN>.task.json`
+
+Создай или обнови отдельные `.task.json` файлы:
 - Wave 1: low-risk / foundation
 - Wave 2: core logic
 - Wave 3: integration & polish
@@ -66,29 +71,72 @@ status: active
   - как проверить
   - какие MB документы обновить (Docs First)
 
-Формат **task card** (обязательно для `/autopilot` и `/autonomous`):
-- `TASK-ID: TASK-...`
-- `Status: planned|ready|in_progress|blocked|done|failed`
-- `Wave: W1|W2|W3|...`
-- `Feature: FT-...`
-- `REQs: REQ-...`
-- `Depends on: TASK-... | none`
-- `Touched files: ...`
-- `Tests: ...`
-- `Verify: ...`
-- `Docs: ...`
+Минимальный JSON record (обязательно для `/autopilot` и `/autonomous`):
+```json
+{
+  "id": "TASK-001",
+  "title": "Short task title",
+  "status": "planned",
+  "wave": "W1",
+  "feature": "FT-001",
+  "reqs": ["REQ-001"],
+  "depends_on": [],
+  "touched_files": [],
+  "risk": {
+    "level": "low",
+    "reasons": [],
+    "red_verify_required": false
+  },
+  "gates": [
+    {
+      "name": "unit tests",
+      "command": "npm test",
+      "required": true
+    }
+  ],
+  "verify": [],
+  "docs": [],
+  "evidence_required": [],
+  "source_artifacts": [],
+  "normative_inputs": [],
+  "constraints": [],
+  "invariants": [],
+  "verification_targets": []
+}
+```
 
-Опционально, когда есть достаточно evidence и это реально помогает downstream deterministic execution, добавляй:
-- `Source Artifacts: ...`
-- `Normative Inputs: ...`
-- `Constraints: ...`
-- `Invariants: ...`
-- `Verification Targets: ...`
+Required enums:
+- `status`: `planned|ready|in_progress|blocked|done|failed`
+- `risk.level`: `low|medium|high`
+
+Эти ключи обязательны в task records; когда есть достаточно evidence и это реально помогает downstream deterministic execution, заполняй их содержимым:
+- `source_artifacts`
+- `normative_inputs`
+- `constraints`
+- `invariants`
+- `verification_targets`
 
 Важно:
-- эти поля **рекомендуемы, но не обязательны**
-- не выдумывай их без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
-- минимальные task cards старого формата остаются валидными
+- ключи обязательны, но значения могут быть пустыми массивами, если evidence нет
+- не выдумывай содержимое без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
+- markdown task cards are no longer source-of-truth task records
+
+Обнови `.memory-bank/tasks/index.json` только ссылками:
+```json
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "file": "TASK-001.task.json"
+    }
+  ]
+}
+```
+
+Затем обнови `.memory-bank/tasks/backlog.md` только как readable summary/router:
+- таблица task id / title / status / wave / feature / record link
+- без markdown task cards и без отдельного task-state
 
 Правила ready-state:
 - foundation tasks без deps могут стартовать как `ready`
@@ -103,6 +151,6 @@ status: active
 
 Если используется `--all`:
 - пройдись по всем `FT-*` в порядке приоритета
-- после каждой фичи перечитай backlog и избегай дублирования `TASK-*`
-- не запускай execution отсюда; только готовь autonomous-ready backlog
+- после каждой фичи перечитай `tasks/index.json` и избегай дублирования `TASK-*`
+- не запускай execution отсюда; только готовь autonomous-ready JSON task queue
 </process>

@@ -25,9 +25,9 @@ If a task may satisfy AC/REQ while still being wrong in substance, follow with `
 - Link to protocol plan: `.protocols/<TASK_ID>/plan.md`
 
 If present, also use:
-- `Verification Targets`
-- `Normative Inputs`
-- task-card references to source artifacts
+- `verification_targets`
+- `normative_inputs`
+- task record references to source artifacts
 
 ## Preconditions
 - Implementation is done and gates were run (or failures recorded).
@@ -71,19 +71,21 @@ If the task changes UI or browser behavior:
 If anything fails:
 - set `VERDICT: FAIL`
 - create a bug doc in `.memory-bank/bugs/BUG-<short>.md`
-- add a follow-up TASK in backlog (if needed)
-- mark current task as `failed`
+- add a follow-up `.task.json` and update `.memory-bank/tasks/index.json` (if needed)
+- mark current task record as `failed`
 - block downstream dependents until the bug/follow-up is resolved
 
 If all pass:
 - `VERDICT: PASS`
+- mark current task record as `done` and add a verification/evidence marker
 
 ### 4) Sync statuses
 - Update RTM lifecycle in `.memory-bank/requirements.md` (if used)
 - If the feature/epic doc tracks `lifecycle`, sync it there too
-- Mark task done (or blocked) in `.memory-bank/tasks/backlog.md`
+- Update task state in the authoritative `.task.json` record
+- Refresh `.memory-bank/tasks/backlog.md` only as a readable summary/router
 
 ## Definition of done
 - `verification.md` exists and is evidence-backed.
-- PASS tasks have updated RTM/backlog.
+- PASS tasks have updated RTM/task records/backlog summary.
 - FAIL tasks have a bug doc and next steps.

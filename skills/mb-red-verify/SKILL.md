@@ -15,7 +15,7 @@ description: >
 Catch changes that are "disciplined but wrong":
 - pass acceptance criteria but solve the wrong problem
 - work locally but damage system integrity
-- overfit to the task card and ignore neighboring constraints
+- overfit to the task record and ignore neighboring constraints
 - introduce architectural drift, state inconsistency, or hidden maintenance cost
 - create false confidence because the evidence surface is too narrow
 
@@ -38,7 +38,7 @@ Store a concise report in:
 
 If concerns are material:
 - `.memory-bank/bugs/BUG-<short>.md`
-- follow-up TASK entries in `.memory-bank/tasks/backlog.md`
+- follow-up `.task.json` records indexed in `.memory-bank/tasks/index.json`
 
 Use:
 - `./references/shared-protocols-red-verification-template.md`
@@ -78,7 +78,7 @@ Read only what you need:
 - `.protocols/<TASK_ID>/plan.md`
 - `.protocols/<TASK_ID>/progress.md`
 - `.protocols/<TASK_ID>/verification.md` if it exists
-- linked task/feature/requirement docs for intent
+- linked task record, feature, and requirement docs for intent
 - the real diff / changed files / tests / runtime artifacts
 
 ### 2) Build a hostile hypothesis list
@@ -128,4 +128,3 @@ For `semantic-fail`, file a bug, add follow-up tasks, and stop downstream progre
 - `red-verification.md` exists and is substance-focused.
 - The report is concise, skeptical, and not just a rephrased `/verify`.
 - Serious concerns result in explicit bugs/tasks/escalation.
-

@@ -30,6 +30,116 @@ const FLAT_COMMAND_PREFIX = 'shared-commands-';
 const ARGS = new Set(process.argv.slice(2));
 const SYNC_MODE = ARGS.has('--sync') || ARGS.has('--force');
 
+const TASK_SCHEMA = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Memory Bank Task Record',
+  type: 'object',
+  additionalProperties: true,
+  required: [
+    'id',
+    'title',
+    'status',
+    'wave',
+    'feature',
+    'reqs',
+    'depends_on',
+    'touched_files',
+    'risk',
+    'gates',
+    'verify',
+    'docs',
+    'evidence_required',
+    'source_artifacts',
+    'normative_inputs',
+    'constraints',
+    'invariants',
+    'verification_targets',
+  ],
+  properties: {
+    id: { type: 'string', pattern: '^TASK-[0-9]{3,}$' },
+    title: { type: 'string' },
+    status: {
+      type: 'string',
+      enum: ['planned', 'ready', 'in_progress', 'blocked', 'done', 'failed'],
+    },
+    wave: { type: 'string' },
+    feature: { type: 'string' },
+    reqs: { type: 'array', items: { type: 'string' } },
+    depends_on: { type: 'array', items: { type: 'string' } },
+    touched_files: { type: 'array', items: { type: 'string' } },
+    risk: {
+      type: 'object',
+      required: ['level', 'reasons', 'red_verify_required'],
+      properties: {
+        level: { type: 'string', enum: ['low', 'medium', 'high'] },
+        reasons: { type: 'array', items: { type: 'string' } },
+        red_verify_required: { type: 'boolean' },
+      },
+    },
+    gates: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['name', 'command', 'required'],
+        properties: {
+          name: { type: 'string' },
+          command: { type: 'string' },
+          required: { type: 'boolean' },
+        },
+      },
+    },
+    verify: { type: 'array', items: { type: 'string' } },
+    docs: { type: 'array', items: { type: 'string' } },
+    evidence_required: { type: 'array', items: { type: 'string' } },
+    source_artifacts: { type: 'array', items: { type: 'string' } },
+    normative_inputs: { type: 'array', items: { type: 'string' } },
+    constraints: { type: 'array', items: { type: 'string' } },
+    invariants: { type: 'array', items: { type: 'string' } },
+    verification_targets: { type: 'array', items: { type: 'string' } },
+  },
+};
+
+const TASK_INDEX = {
+  version: 1,
+  tasks: [
+    {
+      id: 'TASK-001',
+      file: 'TASK-001.task.json',
+    },
+  ],
+};
+
+const EXAMPLE_TASK_RECORD = {
+  id: 'TASK-001',
+  title: 'Short task title',
+  status: 'planned',
+  wave: 'W1',
+  feature: 'FT-001',
+  reqs: ['REQ-001'],
+  depends_on: [],
+  touched_files: [],
+  risk: {
+    level: 'low',
+    reasons: [],
+    red_verify_required: false,
+  },
+  gates: [
+    {
+      name: 'unit tests',
+      command: 'npm test',
+      required: true,
+    },
+  ],
+  verify: [],
+  docs: [],
+  evidence_required: [],
+  source_artifacts: [],
+  normative_inputs: [],
+  constraints: [],
+  invariants: [],
+  verification_targets: [],
+};
+
 if (ARGS.has('--help') || ARGS.has('-h')) {
   console.log(`
 init-mb.js — initialize Memory Bank skeleton
@@ -186,6 +296,7 @@ console.log('\n[1/5] Creating directories...');
   `${MB}/skills`,
   `${MB}/epics`,
   `${MB}/features`,
+  `${MB}/schemas`,
   `${MB}/tasks`,
   `${MB}/tasks/plans`,
   `${MB}/commands`,
@@ -295,7 +406,9 @@ status: active
 - [.memory-bank/requirements.md](requirements.md): Требования + RTM.
 - [.memory-bank/epics/](epics/): Эпики (C4 L2).
 - [.memory-bank/features/](features/): Фичи (C4 L3).
-- [.memory-bank/tasks/backlog.md](tasks/backlog.md): Backlog / waves.
+- [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
+- [.memory-bank/tasks/backlog.md](tasks/backlog.md): Human-readable backlog summary/router.
+- [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 
 - [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
@@ -445,38 +558,36 @@ status: draft
 `);
 
 writeFile(`${MB}/tasks/backlog.md`, `---
-description: Backlog и execution plan (waves) для реализации.
+description: Human-readable backlog summary/router; task state lives in JSON records.
 status: draft
 ---
 # Backlog
 
-> PRD-less rule: an empty backlog skeleton is OK, but do NOT create waves/TASK-IDs until you have PRD (or explicit human instruction).
+> PRD-less rule: do not treat the seeded example as execution-ready product work until you have PRD (or explicit human instruction).
+> Source of truth: task state lives in \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records.
+> This file is only a readable summary/router for humans and must not contain markdown task cards.
 
-## Conventions
-Each task should include:
-- goal
-- expected touched files
-- tests
-- verification steps
-- docs-first update
+## Task records
+- Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
+- Index: [.memory-bank/tasks/index.json](index.json)
 
-## Task state model
-- \`Status: planned|ready|in_progress|blocked|done|failed\`
-- \`Wave: W1|W2|W3|...\`
-- \`Depends on: TASK-... | none\`
+## Summary
 
-## Task card template
-### TASK-001 — short title
-- Status: ready
-- Wave: W1
-- Feature: FT-001
-- REQs: REQ-001, REQ-002
-- Depends on: none
-- Touched files: \`src/...\`, \`tests/...\`
-- Tests: \`npm test -- foo\`
-- Verify: API/manual/UAT steps
-- Docs: product/requirements/feature/changelog/index
+| Task | Status | Wave | Feature | Record |
+|---|---|---|---|---|
+| TASK-001 | planned | W1 | FT-001 | [TASK-001.task.json](TASK-001.task.json) |
+
+## Update rule
+- \`/prd-to-tasks\` creates or updates \`*.task.json\` records and \`index.json\` first.
+- \`/execute\`, \`/verify\`, \`/autopilot\`, and \`/autonomous\` read/write JSON task records, not this markdown summary.
+- After JSON records change, refresh this table as a readable route only.
 `);
+
+writeFile(`${MB}/schemas/task.schema.json`, `${JSON.stringify(TASK_SCHEMA, null, 2)}\n`);
+
+writeFile(`${MB}/tasks/index.json`, `${JSON.stringify(TASK_INDEX, null, 2)}\n`);
+
+writeFile(`${MB}/tasks/TASK-001.task.json`, `${JSON.stringify(EXAMPLE_TASK_RECORD, null, 2)}\n`);
 
 writeFile(`${MB}/testing/index.md`, `---
 description: Стратегия тестирования и верификации (quality gates, anti-cheat, UI/e2e).
@@ -543,7 +654,7 @@ status: active
 - [ ] Optional normative docs, if present, are linked and do not contradict duo docs
 - [ ] RTM lifecycle up to date (requirements.md)
 - [ ] Feature/epic document \`status\` and implementation \`lifecycle\` are both updated
-- [ ] Backlog tasks marked done
+- [ ] JSON task records updated; \`backlog.md\` summary refreshed
 - [ ] Changelog entry added
 - [ ] index.md links valid
 - [ ] Lint passes (0 errors; blocking in autonomous mode)
@@ -606,7 +717,7 @@ status: active
 1) \`/prd\` (fills L1–L3; records open questions)
 2) Pick one top feature: \`FT-<NNN>\`
 3) \`/prd-to-tasks FT-<NNN>\` (creates IMPL plan + TASK-* for this feature)
-4) Execute tasks from \`.memory-bank/tasks/backlog.md\` one-by-one:
+4) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
    - \`/execute TASK-<ID>\` → \`/verify\` → \`/mb-sync\`
 5) After each wave: \`/review\` (or \`mb-review\` fresh context)
 
@@ -618,7 +729,7 @@ status: active
 5) final success only if last review = \`APPROVE\` and no blocking tasks remain
 
 ## Autonomous executor only
-If backlog already exists and review gate already passed, use:
+If JSON task records already exist and review gate already passed, use:
 - \`/autopilot\`
 
 Codex (implement then verify):

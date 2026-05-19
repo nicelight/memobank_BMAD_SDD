@@ -63,9 +63,16 @@ jobs:
 
             test -f .memory-bank/commands/prd.md
             test -f .memory-bank/commands/autonomous.md
+            test -f .memory-bank/schemas/task.schema.json
+            test -f .memory-bank/tasks/index.json
+            test -f .memory-bank/tasks/TASK-001.task.json
             test -f .claude/skills/prd/SKILL.md
             test -f .agents/skills/autonomous/SKILL.md
             test -f AGENTS.md
+
+            mkdir -p scripts
+            cp ../.agents/skills/mb-garden/assets/mb-lint.mjs scripts/mb-lint.mjs
+            node scripts/mb-lint.mjs
           )
 
       - name: Dry bootstrap + sync smoke test
@@ -82,6 +89,9 @@ jobs:
 
             test -f .memory-bank/commands/autonomous.md
             test -f .memory-bank/workflows/autonomy-policy.md
+            test -f .memory-bank/schemas/task.schema.json
+            test -f .memory-bank/tasks/index.json
+            test -f .memory-bank/tasks/TASK-001.task.json
             test -f .claude/skills/cold-start/SKILL.md
             test -f .claude/skills/autonomous/SKILL.md
             test -f .agents/skills/cold-start/SKILL.md

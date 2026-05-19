@@ -33,6 +33,8 @@ From templates, create:
 - `.memory-bank/invariants.md`
 - `.memory-bank/product.md`
 - `.memory-bank/requirements.md`
+- `.memory-bank/schemas/task.schema.json`
+- `.memory-bank/tasks/index.json`
 - `.memory-bank/tasks/backlog.md`
 - `.memory-bank/testing/index.md`
 - `.memory-bank/skills/index.md`
@@ -86,5 +88,7 @@ If you don’t want a script, just create the files manually using the templates
 - `AGENTS.md` exists and points to `.memory-bank/index.md`.
 - `CLAUDE.md` exists and mirrors `AGENTS.md`.
 - `.memory-bank/` has the seeded docs.
+- `.memory-bank/tasks/index.json` and `.memory-bank/schemas/task.schema.json` exist; task state is JSON-backed.
+- `.memory-bank/tasks/backlog.md` is only a readable summary/router.
 - `.memory-bank/commands/` has stub command docs.
 - `.tasks/` and `.protocols/` exist.

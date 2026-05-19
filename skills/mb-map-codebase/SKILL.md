@@ -74,7 +74,7 @@ Use `references/synthesis-checklist.md`.
 > **PRD-less rule (non-negotiable)**: if there is **no `prd.md`**, you MUST NOT create or populate:
 > - `.memory-bank/epics/*`
 > - `.memory-bank/features/*`
-> - `.memory-bank/tasks/backlog.md` with waves/tasks
+> - `.memory-bank/tasks/*.task.json` with real roadmap tasks
 >
 > Empty skeleton files/folders are OK if they were created by bootstrap.
 >

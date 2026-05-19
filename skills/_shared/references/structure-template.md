@@ -147,7 +147,9 @@ status: active
 - [.memory-bank/requirements.md](requirements.md): Требования (REQ-IDs) + RTM.
 - [.memory-bank/epics/](epics/): Эпики (C4 L2).
 - [.memory-bank/features/](features/): Фичи (C4 L3).
-- [.memory-bank/tasks/backlog.md](tasks/backlog.md): План работ (waves + tasks).
+- [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
+- [.memory-bank/tasks/backlog.md](tasks/backlog.md): Human-readable backlog summary/router.
+- [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 
 - [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
@@ -339,37 +341,99 @@ status: draft
 
 ```markdown
 ---
-description: Backlog и execution plan (waves) для реализации.
+description: Human-readable backlog summary/router; task state lives in JSON records.
 status: draft
 ---
 # Backlog
 
-> PRD-less rule: an empty backlog skeleton is OK, but do NOT create waves/TASK-IDs until you have PRD (or explicit human instruction).
+> PRD-less rule: do not treat the seeded example as execution-ready product work until you have PRD (or explicit human instruction).
+> Source of truth: task state lives in `.memory-bank/tasks/index.json` and indexed `*.task.json` records.
+> This file is only a readable summary/router for humans and must not contain markdown task cards.
 
-## Conventions
-Each task should include:
-- goal
-- touched files (expected)
-- tests
-- verification steps
-- docs-first update
+## Task records
+- Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
+- Index: [.memory-bank/tasks/index.json](index.json)
 
-## Task state model
-- `Status: planned|ready|in_progress|blocked|done|failed`
-- `Wave: W1|W2|W3|...`
-- `Depends on: TASK-... | none`
+## Summary
 
-## Task card template
-### TASK-001 — short title
-- Status: ready
-- Wave: W1
-- Feature: FT-001
-- REQs: REQ-001, REQ-002
-- Depends on: none
-- Touched files: `src/...`, `tests/...`
-- Tests: `npm test -- foo`
-- Verify: API/manual/UAT steps
-- Docs: product/requirements/feature/changelog/index
+| Task | Status | Wave | Feature | Record |
+|---|---|---|---|---|
+| TASK-001 | planned | W1 | FT-001 | [TASK-001.task.json](TASK-001.task.json) |
+
+## Update rule
+- `/prd-to-tasks` creates or updates `*.task.json` records and `index.json` first.
+- `/execute`, `/verify`, `/autopilot`, and `/autonomous` read/write JSON task records, not this markdown summary.
+- After JSON records change, refresh this table as a readable route only.
+```
+
+## 6a) `.memory-bank/schemas/task.schema.json`
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Memory Bank Task Record",
+  "type": "object",
+  "required": ["id", "title", "status", "wave", "feature", "reqs", "depends_on", "touched_files", "risk", "gates", "verify", "docs", "evidence_required", "source_artifacts", "normative_inputs", "constraints", "invariants", "verification_targets"],
+  "properties": {
+    "status": { "enum": ["planned", "ready", "in_progress", "blocked", "done", "failed"] },
+    "risk": {
+      "type": "object",
+      "required": ["level", "reasons", "red_verify_required"],
+      "properties": {
+        "level": { "enum": ["low", "medium", "high"] }
+      }
+    }
+  }
+}
+```
+
+## 6b) `.memory-bank/tasks/index.json`
+
+```json
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "file": "TASK-001.task.json"
+    }
+  ]
+}
+```
+
+## 6c) `.memory-bank/tasks/TASK-001.task.json`
+
+```json
+{
+  "id": "TASK-001",
+  "title": "Short task title",
+  "status": "planned",
+  "wave": "W1",
+  "feature": "FT-001",
+  "reqs": ["REQ-001"],
+  "depends_on": [],
+  "touched_files": [],
+  "risk": {
+    "level": "low",
+    "reasons": [],
+    "red_verify_required": false
+  },
+  "gates": [
+    {
+      "name": "unit tests",
+      "command": "npm test",
+      "required": true
+    }
+  ],
+  "verify": [],
+  "docs": [],
+  "evidence_required": [],
+  "source_artifacts": [],
+  "normative_inputs": [],
+  "constraints": [],
+  "invariants": [],
+  "verification_targets": []
+}
 ```
 
 Optional (but recommended) plans folder:
@@ -463,7 +527,7 @@ status: active
 - [ ] Optional normative docs, if present, are linked and do not contradict duo docs
 - [ ] RTM up to date (requirements.md)
 - [ ] Feature statuses updated
-- [ ] Backlog tasks marked done
+- [ ] JSON task records updated; `backlog.md` summary refreshed
 - [ ] Changelog entry added
 - [ ] index.md links valid
 - [ ] Lint passes (0 errors)

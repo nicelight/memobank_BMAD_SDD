@@ -35,7 +35,9 @@ status: active
 > **PRD-less rule (non-negotiable)**: если **нет `prd.md`**, запрещено генерировать roadmap сущности:
 > - `.memory-bank/epics/*`
 > - `.memory-bank/features/*`
-> - `.memory-bank/tasks/backlog.md` (waves/tasks)
+> - `.memory-bank/tasks/*.task.json` task records
+> - `.memory-bank/tasks/index.json` task links
+> - `.memory-bank/tasks/backlog.md` waves/tasks summary, кроме пустого router
 >
 > Маппинг = **as-is документация** по evidence, а не планирование.
 

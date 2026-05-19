@@ -23,18 +23,56 @@ const REQUIRED = [
   '.memory-bank/changelog.md',
   '.memory-bank/workflows/mb-sync.md',
   '.memory-bank/testing/index.md',
+  '.memory-bank/schemas/task.schema.json',
+  '.memory-bank/tasks/index.json',
   '.memory-bank/tasks/backlog.md',
   '.memory-bank/skills/index.md',
 ];
 
 const ALLOWED_STATUS = new Set(['draft', 'active', 'deprecated', 'archived']);
 const ALLOWED_LIFECYCLE = new Set(['planned', 'implemented', 'verified']);
+const ALLOWED_TASK_STATUS = new Set(['planned', 'ready', 'in_progress', 'blocked', 'done', 'failed']);
+const ALLOWED_TASK_RISK = new Set(['low', 'medium', 'high']);
+const TASK_ID_RE = /^TASK-[0-9]{3,}$/;
+const TASK_FILE_RE = /^TASK-[0-9]{3,}\.task\.json$/;
+const INDEX_TOP_LEVEL_KEYS = new Set(['version', 'tasks']);
+const INDEX_TASK_ENTRY_KEYS = new Set(['id', 'file']);
+const REQUIRED_TASK_FIELDS = [
+  'id',
+  'title',
+  'status',
+  'wave',
+  'feature',
+  'reqs',
+  'depends_on',
+  'touched_files',
+  'risk',
+  'gates',
+  'verify',
+  'docs',
+  'evidence_required',
+  'source_artifacts',
+  'normative_inputs',
+  'constraints',
+  'invariants',
+  'verification_targets',
+];
 
 const errors = [];
 const warnings = [];
 
 function readText(p) {
   return fs.readFileSync(p, 'utf8');
+}
+
+function readJson(rel) {
+  const p = path.join(ROOT, rel);
+  try {
+    return JSON.parse(readText(p));
+  } catch (err) {
+    errors.push(`${rel}: invalid JSON (${err.message})`);
+    return undefined;
+  }
 }
 
 function listMarkdownFiles(dir) {
@@ -271,6 +309,225 @@ function checkFileSize(filePath, text) {
   }
 }
 
+function checkBacklogDoesNotContainTaskCards() {
+  const rel = '.memory-bank/tasks/backlog.md';
+  const p = path.join(ROOT, rel);
+  if (!fs.existsSync(p)) return;
+
+  const text = readText(p).replace(/\r\n/g, '\n');
+  const cardHeading = /^#{2,6}\s+TASK-[A-Za-z0-9_-]+(?:\s|$)/m;
+  const taskIdField = /^(?:[-*]\s*)?TASK-ID:\s*TASK-[A-Za-z0-9_-]+\s*$/m;
+  const taskStateField = /^[-*]\s*(Status|Wave|Feature|REQs?|Depends on|Touched files|Tests|Verify|Docs):\s+\S+/m;
+
+  if (cardHeading.test(text) || taskIdField.test(text) || taskStateField.test(text)) {
+    errors.push(
+      `${rel}: markdown task cards are not valid task records; use tasks/index.json and indexed *.task.json files`
+    );
+  }
+}
+
+function hasDoneEvidenceMarker(task) {
+  const fields = ['verify', 'evidence_required', 'verification_targets'];
+  return fields.some((field) => Array.isArray(task[field]) && task[field].length > 0);
+}
+
+function checkArrayField(rel, task, field) {
+  if (!Array.isArray(task[field])) {
+    errors.push(`${rel}: '${field}' must be an array`);
+  }
+}
+
+function checkExactKeys(rel, object, allowedKeys, label) {
+  const keys = Object.keys(object);
+  const extraKeys = keys.filter((key) => !allowedKeys.has(key));
+  if (extraKeys.length) {
+    errors.push(`${rel}: ${label} must not contain extra keys: ${extraKeys.join(', ')}`);
+  }
+}
+
+function checkTaskRecords() {
+  const schemaRel = '.memory-bank/schemas/task.schema.json';
+  const indexRel = '.memory-bank/tasks/index.json';
+
+  if (!fs.existsSync(path.join(ROOT, schemaRel))) {
+    errors.push(`Missing required file: ${schemaRel}`);
+  } else {
+    readJson(schemaRel);
+  }
+
+  if (!fs.existsSync(path.join(ROOT, indexRel))) {
+    errors.push(`Missing required file: ${indexRel}`);
+    return;
+  }
+
+  const index = readJson(indexRel);
+  if (index === undefined) return;
+
+  if (!index || typeof index !== 'object' || Array.isArray(index)) {
+    errors.push(`${indexRel}: index must be a JSON object`);
+    return;
+  }
+  checkExactKeys(indexRel, index, INDEX_TOP_LEVEL_KEYS, 'top-level object');
+  if (index.version !== 1) {
+    errors.push(`${indexRel}: 'version' must be 1`);
+  }
+  if (!Array.isArray(index.tasks)) {
+    errors.push(`${indexRel}: 'tasks' must be an array`);
+    return;
+  }
+
+  const records = new Map();
+  const dependencies = new Map();
+
+  for (const entry of index.tasks) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      errors.push(`${indexRel}: each task index entry must be an object`);
+      continue;
+    }
+    checkExactKeys(indexRel, entry, INDEX_TASK_ENTRY_KEYS, `task index entry '${entry.id ?? '<missing-id>'}'`);
+
+    const id = entry.id;
+    const file = entry.file;
+    if (typeof id !== 'string' || !id.trim()) {
+      errors.push(`${indexRel}: each task index entry needs a non-empty 'id'`);
+      continue;
+    }
+    if (!TASK_ID_RE.test(id)) {
+      errors.push(`${indexRel}: task id '${id}' must match TASK-[0-9]{3,}`);
+      continue;
+    }
+    if (records.has(id)) {
+      errors.push(`${indexRel}: duplicate task id '${id}'`);
+      continue;
+    }
+    if (typeof file !== 'string' || !file.trim()) {
+      errors.push(`${indexRel}: task '${id}' needs a non-empty 'file'`);
+      continue;
+    }
+    if (path.isAbsolute(file) || file.includes('..') || !file.endsWith('.task.json')) {
+      errors.push(`${indexRel}: task '${id}' has invalid file '${file}'`);
+      continue;
+    }
+    if (!TASK_FILE_RE.test(file)) {
+      errors.push(`${indexRel}: task '${id}' file '${file}' must match TASK-[0-9]{3,}.task.json`);
+      continue;
+    }
+    if (file !== `${id}.task.json`) {
+      errors.push(`${indexRel}: task '${id}' file must be '${id}.task.json'`);
+      continue;
+    }
+
+    const rel = normalizeRel(path.join('.memory-bank/tasks', file));
+    const abs = path.join(ROOT, rel);
+    if (!fs.existsSync(abs)) {
+      errors.push(`${indexRel}: indexed task '${id}' file missing: ${rel}`);
+      continue;
+    }
+
+    const task = readJson(rel);
+    if (task === undefined) continue;
+    records.set(id, { rel, task });
+  }
+
+  for (const [id, { rel, task }] of records) {
+    if (!task || typeof task !== 'object' || Array.isArray(task)) {
+      errors.push(`${rel}: task record must be a JSON object`);
+      continue;
+    }
+
+    for (const field of REQUIRED_TASK_FIELDS) {
+      if (!Object.prototype.hasOwnProperty.call(task, field)) {
+        errors.push(`${rel}: missing required field '${field}'`);
+      }
+    }
+
+    if (task.id !== id) {
+      errors.push(`${rel}: task id '${task.id}' does not match index id '${id}'`);
+    }
+    if (typeof task.id !== 'string' || !TASK_ID_RE.test(task.id)) {
+      errors.push(`${rel}: task id '${task.id}' must match TASK-[0-9]{3,}`);
+    }
+    if (!ALLOWED_TASK_STATUS.has(task.status)) {
+      errors.push(
+        `${rel}: invalid task status '${task.status}' (allowed: planned|ready|in_progress|blocked|done|failed)`
+      );
+    }
+
+    for (const field of [
+      'reqs',
+      'depends_on',
+      'touched_files',
+      'gates',
+      'verify',
+      'docs',
+      'evidence_required',
+      'source_artifacts',
+      'normative_inputs',
+      'constraints',
+      'invariants',
+      'verification_targets',
+    ]) {
+      checkArrayField(rel, task, field);
+    }
+
+    if (!task.risk || typeof task.risk !== 'object' || Array.isArray(task.risk)) {
+      errors.push(`${rel}: 'risk' must be an object`);
+    } else {
+      if (!ALLOWED_TASK_RISK.has(task.risk.level)) {
+        errors.push(`${rel}: invalid risk.level '${task.risk.level}' (allowed: low|medium|high)`);
+      }
+      if (!Array.isArray(task.risk.reasons)) {
+        errors.push(`${rel}: 'risk.reasons' must be an array`);
+      }
+      if (typeof task.risk.red_verify_required !== 'boolean') {
+        errors.push(`${rel}: 'risk.red_verify_required' must be a boolean`);
+      }
+      if (task.risk.level === 'high' && task.risk.red_verify_required !== true) {
+        errors.push(`${rel}: high risk tasks must set risk.red_verify_required to true`);
+      }
+    }
+
+    if (task.status === 'done' && !hasDoneEvidenceMarker(task)) {
+      errors.push(`${rel}: done task must include at least one verification/evidence marker`);
+    }
+
+    dependencies.set(id, Array.isArray(task.depends_on) ? task.depends_on : []);
+  }
+
+  for (const [id, deps] of dependencies) {
+    const rel = records.get(id)?.rel ?? indexRel;
+    for (const dep of deps) {
+      if (typeof dep !== 'string' || !TASK_ID_RE.test(dep)) {
+        errors.push(`${rel}: depends_on value '${dep}' must match TASK-[0-9]{3,}`);
+        continue;
+      }
+      if (!records.has(dep)) {
+        errors.push(`${rel}: depends_on references unknown task '${dep}'`);
+      }
+    }
+  }
+
+  const visiting = new Set();
+  const visited = new Set();
+
+  function visit(id, stack) {
+    if (visiting.has(id)) {
+      errors.push(`.memory-bank/tasks/index.json: dependency cycle detected: ${[...stack, id].join(' -> ')}`);
+      return;
+    }
+    if (visited.has(id)) return;
+
+    visiting.add(id);
+    for (const dep of dependencies.get(id) ?? []) {
+      if (records.has(dep)) visit(dep, [...stack, id]);
+    }
+    visiting.delete(id);
+    visited.add(id);
+  }
+
+  for (const id of records.keys()) visit(id, []);
+}
+
 checkRequiredFiles();
 
 const files = listMarkdownFiles(MB);
@@ -282,6 +539,8 @@ for (const f of files) {
 }
 
 checkIndexRouters();
+checkBacklogDoesNotContainTaskCards();
+checkTaskRecords();
 
 if (warnings.length) {
   console.log('⚠️  WARNINGS');

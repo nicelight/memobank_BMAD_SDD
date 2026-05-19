@@ -34,6 +34,8 @@ Fix all **ERROR** findings:
 - missing YAML frontmatter (description + status)
 - broken links
 - missing folder index.md
+- invalid or missing schema-backed task records
+- markdown task cards used as task state in `backlog.md`
 
 ### 2) Refactor for ergonomics
 - Split docs > ~700 lines into atomic docs + router index.
@@ -59,7 +61,7 @@ Run this checklist weekly (or every 5–10 meaningful changes):
 2. **Stale docs**: scan for docs not updated in >2 weeks — archive or refresh.
 3. **Concept coverage check**: every key concept is covered either by a matching `architecture/<X>.md` + `guides/<X>.md` pair or by clearly routed equivalent spec-driven support docs.
 4. **RTM sync**: `requirements.md` RTM matches actual feature/test status.
-5. **Backlog hygiene**: completed tasks marked done, no orphaned tasks without feature link.
+5. **Task record hygiene**: completed tasks marked done in `.task.json`, no orphaned tasks without feature link, `backlog.md` refreshed only as a summary/router.
 6. **Changelog**: `.memory-bank/changelog.md` has entries for recent changes.
 7. **Index links**: all links in `index.md` and router-indexes resolve correctly.
 8. **Archive tombstones**: every doc in `archive/` has a tombstone stub at original location.

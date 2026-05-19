@@ -8,7 +8,7 @@ status: active
 Запустить **полный автономный цикл** без ожидания пользователя:
 - intake PRD / delta
 - построение L1–L3
-- декомпозиция всех FT в TASK-ы
+- декомпозиция всех FT в schema-backed JSON TASK records
 - execution + verification + MB-SYNC
 - промежуточные и финальные review-гейты
 - завершение в явном terminal state
@@ -79,24 +79,30 @@ status: active
 - `/prd-to-tasks --all`
 
 Требование:
-- backlog должен содержать **task cards** с машиночитаемыми полями:
-  - `TASK-ID`
-  - `Status: planned|ready|in_progress|blocked|done|failed`
-  - `Wave: W1|W2|W3|...`
-  - `Feature: FT-...`
-  - `REQs: ...`
-  - `Depends on: ...`
-  - `Touched files: ...`
-  - `Tests: ...`
-  - `Verify: ...`
-  - `Docs: ...`
+- `.memory-bank/tasks/index.json` must list schema-backed task records
+- each indexed `.memory-bank/tasks/TASK-<NNN>.task.json` must contain:
+  - `id`
+  - `title`
+  - `status: planned|ready|in_progress|blocked|done|failed`
+  - `wave`
+  - `feature`
+  - `reqs`
+  - `depends_on`
+  - `touched_files`
+  - `risk.level: low|medium|high`
+  - `gates`
+  - `verify`
+  - `docs`
+- `.memory-bank/tasks/backlog.md` may be refreshed as a readable summary/router only
 
 ## 6) Scheduler loop
-Работай **не regex-скрейпом**, а по task cards и их состояниям.
+Работай по `.memory-bank/tasks/index.json` и indexed `.task.json` records.
+Do not regex-scrape markdown task cards from `.memory-bank/tasks/backlog.md`.
+If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_DEADLOCK` with reason `no schema-backed task records`.
 
 Выбирай только задачи, у которых:
-- `Status: ready`
-- все `Depends on` уже `done`
+- `status: ready`
+- все `depends_on` уже `done`
 - нет blocking bug / blocking review reject
 
 Правила очереди:
@@ -116,6 +122,8 @@ status: active
 - `in_progress -> done` при `VERDICT: PASS` и отсутствии `semantic-fail`
 - `in_progress -> failed` при `VERDICT: FAIL` или `SEMANTIC_VERDICT: semantic-fail`
 - downstream dependents → `blocked`, если upstream failed/blocking
+
+Все переходы записывай в соответствующий `.task.json`. Queue state в `.protocols/AUTONOMOUS-RUN/status.md` должен ссылаться на task record paths, а не дублировать authoritative state.
 
 ## 8) Wave review
 После завершения каждой wave:
@@ -155,7 +163,7 @@ status: active
 
 ## 11) Success condition
 Считай run завершённым только если:
-- в backlog не осталось `ready` / `in_progress`
+- в JSON task records не осталось `ready` / `in_progress`
 - все обязательные REQ/AC имеют `Lifecycle: verified`
 - нет открытых blocking bugs / blockers
 - последний `review` = `APPROVE`

@@ -16,6 +16,8 @@ status: active
 - `TASK-<ID>`
 
 1) Прочитай минимум:
+- `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/TASK-<ID>.task.json`
 - `.protocols/TASK-<ID>/context.md`
 - `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
@@ -23,9 +25,11 @@ status: active
   - `.memory-bank/features/FT-*` и/или
   - `.memory-bank/requirements.md` (REQ IDs)
 
+If the task record is missing, stop with an explicit error. Do not use `.memory-bank/tasks/backlog.md` as authoritative task state.
+
 Приоритет basis для verify:
-1. `Verification Targets`, если они явно указаны в task card / IMPL plan / feature doc
-2. `Normative Inputs`, если они явно перечислены и релевантны проверке
+1. `verification_targets`, если они явно указаны в task record / IMPL plan / feature doc
+2. `normative_inputs`, если они явно перечислены и релевантны проверке
 3. classic acceptance criteria из feature doc
 4. RTM / REQ IDs
 5. tests, logs, screenshots и иные evidence artifacts в `.tasks/TASK-<ID>/`
@@ -49,12 +53,15 @@ status: active
 
 4) Если проблемы:
 - зафиксируй BUG в `.memory-bank/bugs/`
-- добавь follow-up TASK в `.memory-bank/tasks/backlog.md` (если нужно)
-- переведи текущую задачу в `failed`
-- downstream dependents пометь `blocked`
+- добавь follow-up `.task.json`, обнови `.memory-bank/tasks/index.json`, затем refresh `.memory-bank/tasks/backlog.md` как summary
+- переведи текущую задачу в `status: failed` в `.task.json`
+- downstream dependents пометь `status: blocked` в их `.task.json`
 
 5) Если всё ок:
 - `VERDICT: PASS`
-- обнови RTM lifecycle и backlog статусы (если используешь)
+- обнови текущий task record:
+  - `status: done`
+  - add verification/evidence marker in `verify`, `evidence_required`, or `verification_targets`
+- обнови RTM lifecycle и refresh backlog summary (если используешь)
 - если у feature/epic есть `lifecycle`, синхронизируй и его
 </process>

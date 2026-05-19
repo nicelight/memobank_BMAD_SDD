@@ -9,7 +9,7 @@ status: active
 - MBB compliance (frontmatter/links/doc coverage/anti-patterns)
 - архитектура (C4, границы, ADR)
 - scope/RTM (REQ → EP → FT)
-- планирование (backlog/waves/качество TASK)
+- планирование (JSON task records/index/waves/качество TASK; backlog только summary/router)
 - security risks
 
 Это **не** per-task adversarial semantic verification. Для вопроса "решение по существу правильное?" используй `/red-verify TASK-<ID>`.
@@ -29,16 +29,18 @@ status: active
 STAGE_IDs (рекомендуемо):
 - `S-01` Architect (C4 + boundaries + ADR)
 - `S-02` Scope/RTM (REQ→EP→FT)
-- `S-03` Plan/backlog (waves/tasks/gates)
+- `S-03` Plan/tasks (JSON records/index/waves/gates)
 - `S-04` Security
 - `S-05` MBB compliance
 
 Если есть код — опционально добавь code-quality reviewer.
 
 Для `S-03` reviewer обязательно проверь:
-- у task cards есть `Status / Wave / Depends on / Touched files / Tests / Verify / Docs`
+- `.memory-bank/tasks/index.json` содержит только ссылки на `.memory-bank/tasks/*.task.json`
+- task records содержат `status / wave / depends_on / touched_files / gates / verify / docs`
 - только dependency-free задачи помечены `ready`
-- нет “слепого” backlog, который нельзя безопасно запускать автономно
+- `.memory-bank/tasks/backlog.md` является readable summary/router, а не source-of-truth task state
+- нет “слепой” JSON task queue, которую нельзя безопасно запускать автономно
 
 ## 2) Decision rule
 - Если хотя бы один reviewer даёт `REJECT` → зафиксируй fix-list и повтори ревью после исправлений.
@@ -56,7 +58,7 @@ codex exec --ephemeral --full-auto -m gpt-5.2-high \
   'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-02. Review .memory-bank/requirements.md RTM coverage REQ→EP→FT and missing links. Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-02-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-03. Review .memory-bank/tasks/backlog.md and per-feature plans quality (waves, gates, touched files, verify). Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-03-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
+  'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-03. Review .memory-bank/tasks/index.json, indexed .memory-bank/tasks/*.task.json records, backlog summary/router, and per-feature plans quality (waves, gates, touched files, verify). Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-03-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
   'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-04. Review security risks implied by requirements/architecture/runbooks (auth, secrets, OWASP). Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-04-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'

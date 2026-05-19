@@ -25,14 +25,14 @@ Orchestrator must provide:
 - link to the driving spec(s):
   - `.memory-bank/features/FT-*/...` and/or
   - `.memory-bank/requirements.md` (REQ IDs)
-  - `.memory-bank/tasks/backlog.md` entry
+  - `.memory-bank/tasks/index.json` entry and indexed `.memory-bank/tasks/<TASK_ID>.task.json`
 
-If present, also pass through richer structured inputs from the task card or IMPL plan:
-- `Source Artifacts`
-- `Normative Inputs`
-- `Constraints`
-- `Invariants`
-- `Verification Targets`
+If present, also pass through richer structured inputs from the task record or IMPL plan:
+- `source_artifacts`
+- `normative_inputs`
+- `constraints`
+- `invariants`
+- `verification_targets`
 
 ## Required artifacts
 Create:
@@ -61,11 +61,12 @@ Read only what you need:
 - the specific `FT-*` / `REQ-*` relevant to `TASK_ID`
 
 Priority:
-1. richer task-card / IMPL-plan fields when present
+1. richer task record / IMPL-plan fields when present
 2. classic feature + requirement inputs
 3. duo docs and related normative docs as needed
 
 Missing richer fields must not block execution of a classic task.
+If the JSON task record is missing, stop instead of reconstructing task state from `backlog.md`.
 
 ### 2) Write the plan (before touching code)
 In `.protocols/<TASK_ID>/plan.md`:
@@ -143,7 +144,8 @@ After verification is complete:
 - update `.memory-bank/` docs (only WHY/WHERE + navigation)
 - update `.memory-bank/index.md` routers if needed
 - update `.memory-bank/requirements.md` RTM status (if used)
-- mark the backlog task with the correct state (`done` / `failed` / `blocked`)
+- update the JSON task record with the correct state (`done` / `failed` / `blocked`)
+- refresh `.memory-bank/tasks/backlog.md` only as a readable summary/router
 - append a record to `.memory-bank/changelog.md`
 
 ## Definition of done

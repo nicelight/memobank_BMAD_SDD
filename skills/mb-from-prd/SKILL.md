@@ -70,13 +70,14 @@ For each feature:
 Do **not** generate a full-task backlog “в лоб” for all features in one pass.
 
 Instead:
-1) Seed `.memory-bank/tasks/backlog.md` with a short structure (waves + placeholders).
+1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
 2) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
-   - atomic `TASK-*` items grouped by waves
+   - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`
+   - `.memory-bank/tasks/backlog.md` refreshed only as a readable summary/router
 
-When enough structured evidence exists, those feature-level plans and task cards may include optional richer fields such as `Source Artifacts`, `Normative Inputs`, `Constraints`, `Invariants`, and `Verification Targets`.
-Old minimal task cards remain valid.
+When enough structured evidence exists, those feature-level plans and task records may include optional richer fields such as `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, and `verification_targets`.
+Markdown task cards are no longer authoritative task state.
 
 This keeps planning accurate and avoids speculative task explosions.
 
@@ -113,5 +114,5 @@ If the goal is “PRD → done without more user interaction”:
 - product.md + requirements.md are coherent.
 - Every REQ maps to an Epic/Feature in RTM.
 - Epics and features exist with acceptance criteria.
-- backlog.md exists as a plan skeleton; feature-level tasks are produced via `/prd-to-tasks`.
+- schema-backed task records are indexed in `.memory-bank/tasks/index.json`; `backlog.md` exists only as a readable summary/router.
 - index.md is updated.

@@ -100,7 +100,8 @@ Create (if missing):
   - `skills/`
   - `epics/`
   - `features/`
-  - `tasks/`  *(Memory Bank backlog & plans)*
+  - `schemas/` *(JSON schemas, including task records)*
+  - `tasks/`  *(JSON task records, readable backlog summary, and plans)*
   - `commands/` *(slash-command specs used by humans/agents)*
   - `agents/` *(subagent prompt library)*
   - `archive/`
@@ -123,6 +124,8 @@ At minimum you must create:
 - `.memory-bank/invariants.md`
 - `.memory-bank/product.md`
 - `.memory-bank/requirements.md`
+- `.memory-bank/schemas/task.schema.json`
+- `.memory-bank/tasks/index.json`
 - `.memory-bank/testing/index.md`
 - `.memory-bank/tasks/backlog.md`
 
@@ -215,10 +218,11 @@ Status policy:
 Do **not** generate a full task backlog for all features in one pass.
 
 Instead:
-1) Create/refresh `.memory-bank/tasks/backlog.md` as a **skeleton** (waves + placeholders).
+1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
 2) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
-   - atomic `TASK-*` items grouped by waves in `backlog.md`
+   - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`
+   - `.memory-bank/tasks/backlog.md` refreshed only as a readable summary/router
 
 ### 3A.6 Identify key concepts and create support docs
 For every non-trivial concept, create support docs that make the concept cheap to reload later:
@@ -276,7 +280,7 @@ Using the `.tasks/TASK-MB-MAP/` reports, fill:
 > **PRD-less rule (non-negotiable)**: if there is **no `prd.md`**, you MUST NOT create or populate:
 > - `.memory-bank/epics/*`
 > - `.memory-bank/features/*`
-> - `.memory-bank/tasks/backlog.md` with waves/tasks
+> - `.memory-bank/tasks/*.task.json` with real roadmap tasks
 >
 > Empty skeleton files/folders are allowed if they were created by bootstrap.
 >
@@ -296,7 +300,7 @@ When the repo is new/empty and no `prd.md` is available:
 ### 3C.1 Create skeleton only
 Run Step 1 as usual — create all directories, core files from templates, `AGENTS.md`, `CLAUDE.md` symlink.
 
-The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `backlog.md`, etc. remain as draft stubs.
+The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `tasks/index.json`, `backlog.md`, etc. remain as draft stubs/seed records.
 
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
@@ -351,7 +355,7 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority task from `.memory-bank/tasks/backlog.md`.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Run `mb-verify` to check acceptance criteria and record evidence.
 4. If the task is domain-heavy, cross-boundary, or risky in substance, run `mb-red-verify`.

@@ -32,10 +32,12 @@ status: active
 - Если **нет PRD**, ты **НЕ** создаёшь/заполняешь:
   - `.memory-bank/epics/*`
   - `.memory-bank/features/*`
-  - `.memory-bank/tasks/backlog.md` содержимым waves/TASK-IDs
+  - `.memory-bank/tasks/*.task.json` реальными задачами
+  - `.memory-bank/tasks/index.json` ссылками на реальные TASK-IDs
+  - `.memory-bank/tasks/backlog.md` содержимым waves/TASK-IDs, кроме пустого summary/router
 - Пустой skeleton допустим:
   - папки/файлы могут существовать после `mb-init` / `init-mb.js`
-  - но roadmap-сущности и реальные TASK-IDs без PRD не создаются
+  - но roadmap-сущности, реальные TASK-IDs и task records без PRD не создаются
 - Если PRD есть, но пользователь временно недоступен:
   - фиксируй `Open questions` в `.protocols/PRD-BOOTSTRAP/decision-log.md`
   - **останавливайся и жди** (не выдумывай факты).
@@ -44,6 +46,6 @@ status: active
 После `/prd` или `/map-codebase`:
 - запусти `/review` (fresh context)
 - interactive: выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
-- backlog-only unattended: используй `/autopilot`
+- JSON task queue unattended: используй `/autopilot`
 - full unattended (`PRD → done`): используй `/autonomous`
 </process>
