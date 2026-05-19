@@ -95,15 +95,36 @@ status: active
   - `docs`
 - `.memory-bank/tasks/backlog.md` may be refreshed as a readable summary/router only
 
+## 5.1) Review gate по JSON task records
+Сразу после `/prd-to-tasks --all` и до scheduler execution запусти `/review` именно по task planning surface:
+- `.memory-bank/tasks/index.json`
+- all indexed `.memory-bank/tasks/*.task.json`
+- `.memory-bank/tasks/backlog.md` только как readable summary/router
+- per-feature implementation plans
+
+Правило:
+- если review даёт blocking `REJECT` по task records / waves / gates / dependencies / verify surface → исправь JSON task records и повтори `/review`
+- если после 2–3 циклов всё ещё blocking `REJECT` → terminal state `HALT_REVIEW_REJECT`
+- scheduler execution разрешён только после `APPROVE` или после явного решения, что оставшиеся non-blocking замечания не мешают запуску
+
 ## 6) Scheduler loop
 Работай по `.memory-bank/tasks/index.json` и indexed `.task.json` records.
 Do not regex-scrape markdown task cards from `.memory-bank/tasks/backlog.md`.
 If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_DEADLOCK` with reason `no schema-backed task records`.
 
+Перед каждым selection pass выполни promotion pass:
+- `planned -> ready`, если все `depends_on` уже `done` и нет blockers / blocking review rejects / unresolved semantic-concern
+- не продвигай задачу, если upstream failed/blocked, есть open blocking bug или task-level review reject
+- запиши promotion в соответствующий `.task.json`
+
 Выбирай только задачи, у которых:
 - `status: ready`
 - все `depends_on` уже `done`
 - нет blocking bug / blocking review reject
+
+Если после promotion pass `ready` пусто:
+- и JSON task queue полностью закрыт → переходи к финальному review/success evaluation
+- и остались `planned` / `blocked` → `HALT_DEPENDENCY_DEADLOCK` только после фиксации, какие dependencies/blockers/review rejects/semantic-concern помешали promotion
 
 Правила очереди:
 - независимые задачи (нет deps и shared files) можно запускать параллельно
@@ -121,12 +142,14 @@ If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_D
 - `ready -> in_progress`
 - `in_progress -> done` при `VERDICT: PASS` и отсутствии `semantic-fail`
 - `in_progress -> failed` при `VERDICT: FAIL` или `SEMANTIC_VERDICT: semantic-fail`
+- при `SEMANTIC_VERDICT: semantic-concern` нельзя молча оставлять normal `done`: до закрытия wave нужно явно выбрать и записать решение — block task/dependents, создать follow-up task, изменить status (`blocked`/`failed`/оставить `in_progress`) или documented risk acceptance с owner/reason
 - downstream dependents → `blocked`, если upstream failed/blocking
 
 Все переходы записывай в соответствующий `.task.json`. Queue state в `.protocols/AUTONOMOUS-RUN/status.md` должен ссылаться на task record paths, а не дублировать authoritative state.
 
 ## 8) Wave review
 После завершения каждой wave:
+- убедись, что все `semantic-concern` этой wave имеют явное решение (block/follow-up/status/risk acceptance); без этого wave не закрыта
 - обнови `.protocols/AUTONOMOUS-RUN/status.md`
 - запусти `/review`
 

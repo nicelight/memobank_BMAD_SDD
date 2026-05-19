@@ -37,6 +37,23 @@ const TASK_ID_RE = /^TASK-[0-9]{3,}$/;
 const TASK_FILE_RE = /^TASK-[0-9]{3,}\.task\.json$/;
 const INDEX_TOP_LEVEL_KEYS = new Set(['version', 'tasks']);
 const INDEX_TASK_ENTRY_KEYS = new Set(['id', 'file']);
+const GATE_KEYS = new Set(['name', 'command', 'required']);
+const DONE_VERIFY_OBJECT_KEYS = new Set([
+  'evidence',
+  'result',
+  'verdict',
+  'command',
+  'path',
+  'paths',
+  'file',
+  'files',
+  'log',
+  'logs',
+  'artifact',
+  'artifacts',
+  'report',
+  'reports',
+]);
 const REQUIRED_TASK_FIELDS = [
   'id',
   'title',
@@ -326,9 +343,42 @@ function checkBacklogDoesNotContainTaskCards() {
   }
 }
 
-function hasDoneEvidenceMarker(task) {
-  const fields = ['verify', 'evidence_required', 'verification_targets'];
-  return fields.some((field) => Array.isArray(task[field]) && task[field].length > 0);
+function hasPathLikeMarker(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return false;
+  return (
+    /(?:^|[\s"`'])(?:\.{1,2}\/|\/|[A-Za-z]:\\)[^\s"`']+/.test(text) ||
+    /\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.\/-]+\b/.test(text) ||
+    /\b[\w.-]+\.(?:md|txt|log|json|xml|html|htm|png|jpg|jpeg|webm|mp4)\b/i.test(text)
+  );
+}
+
+function hasDoneVerifyTextMarker(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return false;
+  return (
+    /\b(evidence|result|verdict|pass|passed|fail|failed|output|log|artifact|report)\b/i.test(text) ||
+    hasPathLikeMarker(text)
+  );
+}
+
+function hasDoneVerifyObjectMarker(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).some(([key, raw]) => {
+    const normalizedKey = key.toLowerCase().replace(/[-\s]/g, '_');
+    const values = Array.isArray(raw) ? raw : [raw];
+    const hasNonEmptyValue = values.some((item) => String(item ?? '').trim());
+    if (!hasNonEmptyValue) return false;
+    return DONE_VERIFY_OBJECT_KEYS.has(normalizedKey) || values.some((item) => hasPathLikeMarker(item));
+  });
+}
+
+function hasDoneVerifyEvidence(task) {
+  if (!Array.isArray(task.verify) || task.verify.length === 0) return false;
+  return task.verify.some((entry) => {
+    if (typeof entry === 'string') return hasDoneVerifyTextMarker(entry);
+    return hasDoneVerifyObjectMarker(entry);
+  });
 }
 
 function checkArrayField(rel, task, field) {
@@ -343,6 +393,30 @@ function checkExactKeys(rel, object, allowedKeys, label) {
   if (extraKeys.length) {
     errors.push(`${rel}: ${label} must not contain extra keys: ${extraKeys.join(', ')}`);
   }
+}
+
+function checkGateItems(rel, task) {
+  if (!Array.isArray(task.gates)) return;
+
+  task.gates.forEach((gate, index) => {
+    const label = `gates[${index}]`;
+    if (!gate || typeof gate !== 'object' || Array.isArray(gate)) {
+      errors.push(`${rel}: ${label} must be an object with name, command, and required`);
+      return;
+    }
+
+    checkExactKeys(rel, gate, GATE_KEYS, label);
+
+    if (typeof gate.name !== 'string' || !gate.name.trim()) {
+      errors.push(`${rel}: ${label}.name must be a non-empty string`);
+    }
+    if (typeof gate.command !== 'string' || !gate.command.trim()) {
+      errors.push(`${rel}: ${label}.command must be a non-empty string`);
+    }
+    if (typeof gate.required !== 'boolean') {
+      errors.push(`${rel}: ${label}.required must be a boolean`);
+    }
+  });
 }
 
 function checkTaskRecords() {
@@ -469,6 +543,7 @@ function checkTaskRecords() {
     ]) {
       checkArrayField(rel, task, field);
     }
+    checkGateItems(rel, task);
 
     if (!task.risk || typeof task.risk !== 'object' || Array.isArray(task.risk)) {
       errors.push(`${rel}: 'risk' must be an object`);
@@ -487,8 +562,10 @@ function checkTaskRecords() {
       }
     }
 
-    if (task.status === 'done' && !hasDoneEvidenceMarker(task)) {
-      errors.push(`${rel}: done task must include at least one verification/evidence marker`);
+    if (task.status === 'done' && !hasDoneVerifyEvidence(task)) {
+      errors.push(
+        `${rel}: done task must include completed evidence in 'verify' (non-empty string with result/verdict/log/path marker, or object with evidence/result/verdict/command/path-like marker); evidence_required and verification_targets are only planning inputs`
+      );
     }
 
     dependencies.set(id, Array.isArray(task.depends_on) ? task.depends_on : []);

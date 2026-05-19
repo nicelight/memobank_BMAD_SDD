@@ -38,7 +38,8 @@ STAGE_IDs (рекомендуемо):
 Для `S-03` reviewer обязательно проверь:
 - `.memory-bank/tasks/index.json` содержит только ссылки на `.memory-bank/tasks/*.task.json`
 - task records содержат `status / wave / depends_on / touched_files / gates / verify / docs`
-- только dependency-free задачи помечены `ready`
+- `ready` помечены только задачи без dependencies или задачи, у которых все dependencies уже `done`
+- нет `ready` задач с blockers / blocking review rejects / unresolved semantic-concern
 - `.memory-bank/tasks/backlog.md` является readable summary/router, а не source-of-truth task state
 - нет “слепой” JSON task queue, которую нельзя безопасно запускать автономно
 

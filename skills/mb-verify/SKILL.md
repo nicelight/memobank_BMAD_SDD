@@ -19,6 +19,7 @@ If a task may satisfy AC/REQ while still being wrong in substance, follow with `
 
 ## Inputs
 - `TASK_ID` (e.g. `TASK-123`)
+- Authoritative task record via `.memory-bank/tasks/index.json` and `.memory-bank/tasks/<TASK_ID>.task.json`
 - Links to acceptance criteria:
   - `.memory-bank/features/FT-*` and/or
   - `.memory-bank/requirements.md` (REQ IDs)
@@ -31,21 +32,33 @@ If present, also use:
 
 ## Preconditions
 - Implementation is done and gates were run (or failures recorded).
+- `.memory-bank/tasks/index.json` lists the target task record, and the indexed `.task.json` validates the requested `TASK_ID`.
 
 ## Required outputs
 - Update (or create) `.protocols/<TASK_ID>/verification.md` using:
   - `./references/shared-protocols-verification-template.md`
 - Store evidence in `.tasks/<TASK_ID>/`:
   - logs, screenshots, videos, reproduction steps
+- Add completed evidence entries to the task record `verify` field; `evidence_required` and `verification_targets` remain requirements/targets, not proof by themselves.
 
 ## Process
 
 ### 1) Prime only what you need
 Read:
+- `.memory-bank/tasks/index.json`
+- indexed `.memory-bank/tasks/<TASK_ID>.task.json`
 - `.protocols/<TASK_ID>/context.md`
 - `.protocols/<TASK_ID>/plan.md`
 - `.protocols/<TASK_ID>/progress.md`
 - acceptance criteria source docs
+
+Before verifying, validate the authoritative task record:
+- the task is present in `.memory-bank/tasks/index.json`
+- the indexed record `id` matches `TASK_ID`
+- required fields for verification are present (`status`, `feature`, `reqs`, `depends_on`, `gates`, `verify`)
+- `.memory-bank/tasks/backlog.md` is only a readable summary/router and must not be used as authoritative task state
+
+If the authoritative task record is missing or invalid, stop and report the issue instead of verifying from protocol docs alone.
 
 Priority:
 1. explicit `Verification Targets`
@@ -77,7 +90,7 @@ If anything fails:
 
 If all pass:
 - `VERDICT: PASS`
-- mark current task record as `done` and add a verification/evidence marker
+- mark current task record as `done` and add completed verification/evidence entries in `verify`
 
 ### 4) Sync statuses
 - Update RTM lifecycle in `.memory-bank/requirements.md` (if used)

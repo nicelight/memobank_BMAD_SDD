@@ -101,7 +101,7 @@ Create (if missing):
   - `epics/`
   - `features/`
   - `schemas/` *(JSON schemas, including task records)*
-  - `tasks/`  *(JSON task records, readable backlog summary, and plans)*
+  - `tasks/`  *(empty JSON task index until `/prd-to-tasks`, readable backlog summary, and plans)*
   - `commands/` *(slash-command specs used by humans/agents)*
   - `agents/` *(subagent prompt library)*
   - `archive/`
@@ -300,7 +300,8 @@ When the repo is new/empty and no `prd.md` is available:
 ### 3C.1 Create skeleton only
 Run Step 1 as usual — create all directories, core files from templates, `AGENTS.md`, `CLAUDE.md` symlink.
 
-The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `tasks/index.json`, `backlog.md`, etc. remain as draft stubs/seed records.
+The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `tasks/index.json`, `backlog.md`, etc. remain as draft stubs/placeholders.
+In PRD-less mode, `tasks/index.json` must be `{ "version": 1, "tasks": [] }` and no `TASK-001.task.json` or other runnable task record is generated.
 
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
@@ -355,7 +356,7 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and run `/prd-to-tasks FT-<NNN>` for a selected feature first.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Run `mb-verify` to check acceptance criteria and record evidence.
 4. If the task is domain-heavy, cross-boundary, or risky in substance, run `mb-red-verify`.

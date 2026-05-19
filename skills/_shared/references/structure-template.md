@@ -346,9 +346,10 @@ status: draft
 ---
 # Backlog
 
-> PRD-less rule: do not treat the seeded example as execution-ready product work until you have PRD (or explicit human instruction).
+> PRD-less rule: fresh bootstrap does not create runnable task records.
 > Source of truth: task state lives in `.memory-bank/tasks/index.json` and indexed `*.task.json` records.
 > This file is only a readable summary/router for humans and must not contain markdown task cards.
+> Task records are created by `/prd-to-tasks FT-<NNN>` after PRD/features exist.
 
 ## Task records
 - Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
@@ -356,9 +357,10 @@ status: draft
 
 ## Summary
 
+No task records exist yet. Run `/prd`, select a feature, then run `/prd-to-tasks FT-<NNN>` to create indexed `*.task.json` records.
+
 | Task | Status | Wave | Feature | Record |
 |---|---|---|---|---|
-| TASK-001 | planned | W1 | FT-001 | [TASK-001.task.json](TASK-001.task.json) |
 
 ## Update rule
 - `/prd-to-tasks` creates or updates `*.task.json` records and `index.json` first.
@@ -376,6 +378,15 @@ status: draft
   "required": ["id", "title", "status", "wave", "feature", "reqs", "depends_on", "touched_files", "risk", "gates", "verify", "docs", "evidence_required", "source_artifacts", "normative_inputs", "constraints", "invariants", "verification_targets"],
   "properties": {
     "status": { "enum": ["planned", "ready", "in_progress", "blocked", "done", "failed"] },
+    "verify": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "object", "additionalProperties": true }
+        ]
+      }
+    },
     "risk": {
       "type": "object",
       "required": ["level", "reasons", "red_verify_required"],
@@ -392,16 +403,13 @@ status: draft
 ```json
 {
   "version": 1,
-  "tasks": [
-    {
-      "id": "TASK-001",
-      "file": "TASK-001.task.json"
-    }
-  ]
+  "tasks": []
 }
 ```
 
-## 6c) `.memory-bank/tasks/TASK-001.task.json`
+## 6c) Example task record template
+
+The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records when a feature is selected.
 
 ```json
 {

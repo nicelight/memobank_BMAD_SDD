@@ -44,12 +44,19 @@ Do not parse markdown task cards from `.memory-bank/tasks/backlog.md`; that file
 - terminal state
 
 ## Selection rule
-На каждой итерации reread `.memory-bank/tasks/index.json` and indexed `.task.json` records. Выбирай только задачи, у которых:
+На каждой итерации reread `.memory-bank/tasks/index.json` and indexed `.task.json` records.
+
+Сначала выполни promotion pass:
+- `planned -> ready`, если все `depends_on` уже `done` и нет blockers / blocking review rejects / unresolved semantic-concern
+- не продвигай задачу, если upstream failed/blocked, есть open blocking bug или task-level review reject
+- запиши promotion в соответствующий `.task.json`
+
+Затем выбирай только задачи, у которых:
 - `status: ready`
 - все `depends_on` уже `done`
 - нет blocking bug / blocked upstream
 
-Если `ready` пусто:
+Если после promotion pass `ready` пусто:
 - и JSON task queue полностью закрыт → `SUCCESS`
 - и остались `planned` / `blocked` → `HALT_DEPENDENCY_DEADLOCK`
 
@@ -62,7 +69,11 @@ Do not parse markdown task cards from `.memory-bank/tasks/backlog.md`; that file
 5) если итог = `PASS` и нет `semantic-fail`:
    - `status: done` in the task record
    - `/mb-sync`
-   - разблокируй dependents, если все их deps закрыты
+   - promote dependents через explicit `planned -> ready`, если все их deps закрыты и нет blockers / blocking review rejects / unresolved semantic-concern
+5a) если итог = `semantic-concern`:
+   - не оставляй задачу молча в normal `done`
+   - до закрытия wave явно выбери и запиши решение: block task/dependents, создать follow-up task, изменить status (`blocked`/`failed`/оставить `in_progress`) или documented risk acceptance с owner/reason
+   - `/mb-sync`
 6) если `FAIL` или `semantic-fail`:
    - `status: failed` in the task record
    - создай bug + follow-up task

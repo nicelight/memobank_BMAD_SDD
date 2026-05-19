@@ -7,7 +7,7 @@ description: >
 # mb-execute — Execution loop (plan → build → gates → verify → MB-SYNC)
 
 - **What it does:** implements one scoped task and records the run in protocol files.
-- **Use it when:** `TASK-*` already exists and you want a clean, resumable implementation flow.
+- **Use it when:** `TASK-*` already exists as a JSON record created by `/prd-to-tasks` and you want a clean, resumable implementation flow.
 - **Input:** `TASK_ID` plus links to the driving feature, requirement, and backlog entry.
 - **Output:** code changes, protocol artifacts, verification inputs, and synchronized Memory Bank state.
 

@@ -39,6 +39,8 @@ From templates, create:
 - `.memory-bank/testing/index.md`
 - `.memory-bank/skills/index.md`
 
+Fresh PRD-less bootstrap must not create `.memory-bank/tasks/TASK-001.task.json` or any other runnable task record. `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/prd-to-tasks` creates real `TASK-*.task.json` records later.
+
 Also create optional folders that support the richer normative layer without making it mandatory:
 - `.memory-bank/contracts/`
 - `.memory-bank/states/`
@@ -89,6 +91,8 @@ If you don’t want a script, just create the files manually using the templates
 - `CLAUDE.md` exists and mirrors `AGENTS.md`.
 - `.memory-bank/` has the seeded docs.
 - `.memory-bank/tasks/index.json` and `.memory-bank/schemas/task.schema.json` exist; task state is JSON-backed.
+- `.memory-bank/tasks/index.json` has an empty `tasks` array in a PRD-less skeleton.
+- No `.memory-bank/tasks/TASK-001.task.json` is created by bootstrap.
 - `.memory-bank/tasks/backlog.md` is only a readable summary/router.
 - `.memory-bank/commands/` has stub command docs.
 - `.tasks/` and `.protocols/` exist.

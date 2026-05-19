@@ -141,7 +141,8 @@ Required enums:
 Правила ready-state:
 - foundation tasks без deps могут стартовать как `ready`
 - downstream tasks по умолчанию `planned`
-- `ready` выставляй только если все prerequisites уже выполнены или отсутствуют
+- `planned -> ready` происходит явно, когда все prerequisites/dependencies уже `done` или отсутствуют, и нет blockers / blocking review rejects
+- dependent task может быть `ready`, если все её dependencies уже `done`
 
 ## 5) Gate
 Перед `execute`:

@@ -88,7 +88,15 @@ const TASK_SCHEMA = {
         },
       },
     },
-    verify: { type: 'array', items: { type: 'string' } },
+    verify: {
+      type: 'array',
+      items: {
+        anyOf: [
+          { type: 'string' },
+          { type: 'object', additionalProperties: true },
+        ],
+      },
+    },
     docs: { type: 'array', items: { type: 'string' } },
     evidence_required: { type: 'array', items: { type: 'string' } },
     source_artifacts: { type: 'array', items: { type: 'string' } },
@@ -101,43 +109,7 @@ const TASK_SCHEMA = {
 
 const TASK_INDEX = {
   version: 1,
-  tasks: [
-    {
-      id: 'TASK-001',
-      file: 'TASK-001.task.json',
-    },
-  ],
-};
-
-const EXAMPLE_TASK_RECORD = {
-  id: 'TASK-001',
-  title: 'Short task title',
-  status: 'planned',
-  wave: 'W1',
-  feature: 'FT-001',
-  reqs: ['REQ-001'],
-  depends_on: [],
-  touched_files: [],
-  risk: {
-    level: 'low',
-    reasons: [],
-    red_verify_required: false,
-  },
-  gates: [
-    {
-      name: 'unit tests',
-      command: 'npm test',
-      required: true,
-    },
-  ],
-  verify: [],
-  docs: [],
-  evidence_required: [],
-  source_artifacts: [],
-  normative_inputs: [],
-  constraints: [],
-  invariants: [],
-  verification_targets: [],
+  tasks: [],
 };
 
 if (ARGS.has('--help') || ARGS.has('-h')) {
@@ -563,9 +535,10 @@ status: draft
 ---
 # Backlog
 
-> PRD-less rule: do not treat the seeded example as execution-ready product work until you have PRD (or explicit human instruction).
+> PRD-less rule: fresh bootstrap does not create runnable task records.
 > Source of truth: task state lives in \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records.
 > This file is only a readable summary/router for humans and must not contain markdown task cards.
+> Task records are created by \`/prd-to-tasks FT-<NNN>\` after PRD/features exist.
 
 ## Task records
 - Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
@@ -573,9 +546,10 @@ status: draft
 
 ## Summary
 
+No task records exist yet. Run \`/prd\`, select a feature, then run \`/prd-to-tasks FT-<NNN>\` to create indexed \`*.task.json\` records.
+
 | Task | Status | Wave | Feature | Record |
 |---|---|---|---|---|
-| TASK-001 | planned | W1 | FT-001 | [TASK-001.task.json](TASK-001.task.json) |
 
 ## Update rule
 - \`/prd-to-tasks\` creates or updates \`*.task.json\` records and \`index.json\` first.
@@ -586,8 +560,6 @@ status: draft
 writeFile(`${MB}/schemas/task.schema.json`, `${JSON.stringify(TASK_SCHEMA, null, 2)}\n`);
 
 writeFile(`${MB}/tasks/index.json`, `${JSON.stringify(TASK_INDEX, null, 2)}\n`);
-
-writeFile(`${MB}/tasks/TASK-001.task.json`, `${JSON.stringify(EXAMPLE_TASK_RECORD, null, 2)}\n`);
 
 writeFile(`${MB}/testing/index.md`, `---
 description: Стратегия тестирования и верификации (quality gates, anti-cheat, UI/e2e).

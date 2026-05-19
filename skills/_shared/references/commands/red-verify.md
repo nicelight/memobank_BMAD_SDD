@@ -108,8 +108,10 @@ status: active
 
 - `semantic-concern`:
   - есть серьёзные сомнения или hidden assumptions, но не доказан прямой semantic break
-  - создай follow-up task или подними human escalation
-  - не закрывай wave как "надежно завершённую" без явного решения по риску
+  - не оставляй текущую задачу молча в normal `done`
+  - до закрытия wave требуется явное решение: block task/dependents, создать follow-up task, изменить status (`blocked`/`failed`/оставить `in_progress`) или documented risk acceptance с owner/reason
+  - если выбран follow-up, добавь его как JSON task record, обнови `tasks/index.json`, а `backlog.md` только как summary/router
+  - если нужна human escalation, зафиксируй blocking question/decision и не продвигай dependents до решения
 
 - `semantic-fail`:
   - решение по существу неверно, вредно или слишком рискованно

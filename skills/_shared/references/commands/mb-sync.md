@@ -22,3 +22,5 @@ Task synchronization rule:
 - JSON task records are authoritative for task status, dependencies, risk, gates, verification targets, and evidence markers.
 - `backlog.md` must not contain markdown task cards or a separate source-of-truth task state.
 - RTM, backlog summary, and changelog should be reconciled from JSON task records.
+- During sync, apply explicit promotion `planned -> ready` for tasks whose `depends_on` are all `done` and that have no blockers / blocking review rejects / unresolved semantic-concern.
+- Do not promote tasks with failed/blocked upstream dependencies, open blocking bugs, or unresolved semantic risk decisions.

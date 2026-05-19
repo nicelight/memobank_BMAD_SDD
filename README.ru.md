@@ -130,6 +130,8 @@
 
 Также создаются базовые routing files, такие как `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/schemas/task.schema.json`, `.memory-bank/tasks/index.json` и `.memory-bank/tasks/backlog.md`.
 
+Fresh skeleton bootstrap не создает runnable task records. По умолчанию `.memory-bank/tasks/index.json` стартует как `{ "version": 1, "tasks": [] }`; `/prd-to-tasks` создает индексированные `.memory-bank/tasks/TASK-*.task.json` records после появления PRD/features.
+
 ### 2. Роутинг в нужный workflow
 `cold-start` — главный entry point, который выбирает правильный путь:
 - Greenfield: старт от `prd.md` или requirements text
@@ -153,10 +155,10 @@
 Планирование теперь богаче, но по-прежнему обратно совместимо:
 - если есть structured inputs, такие как source artifacts, normative inputs, constraints, invariants или verification targets, planner может их использовать
 - если их нет, классический минимальный feature и requirements flow остаётся валидным
-- task state теперь хранится в schema-backed JSON records `.memory-bank/tasks/*.task.json`, индексированных через `.memory-bank/tasks/index.json`
+- task state хранится в schema-backed JSON records `.memory-bank/tasks/*.task.json`, индексированных через `.memory-bank/tasks/index.json`; fresh skeleton стартует с пустого индекса до создания records через `/prd-to-tasks`
 - `.memory-bank/tasks/backlog.md` является только human-readable summary/router и не должен использоваться как scheduler state
 - `/prd` по-прежнему не должен бездумно выпускать весь implementation backlog за один проход
-- `/prd-to-tasks` остаётся шагом per-feature decomposition
+- `/prd-to-tasks` остаётся шагом per-feature decomposition и отвечает за создание task records
 
 ### 4. Исполнение через возобновляемые file protocols
 У каждой задачи может быть protocol folder вроде `.protocols/TASK-123/`, содержащий:
@@ -175,7 +177,7 @@ Execution и verification теперь следуют явной fallback-мод
 4. связанные normative docs, если нужно
 
 Это значит, что richer fields поддерживаются, но не становятся скрыто обязательными.
-Markdown task cards заменены JSON task records для authoritative task state.
+Markdown task cards заменены JSON task records для authoritative task state. Эти records создаются через `/prd-to-tasks`, а не PRD-less bootstrap.
 
 ### 4.1. Adversarial semantic verification
 Помимо обычного `/verify`, в `memobank` теперь есть отдельный semantic-pass:

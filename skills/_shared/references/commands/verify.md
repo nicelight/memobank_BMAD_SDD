@@ -37,6 +37,9 @@ If the task record is missing, stop with an explicit error. Do not use `.memory-
 Важно:
 - отсутствие richer verification fields не является ошибкой
 - в таком случае verifier должен опираться на classic AC/REQ model
+- `evidence_required` и `verification_targets` описывают требования/цели проверки; сами по себе они не являются proof
+- detailed verification report may live in `.protocols/TASK-<ID>/verification.md`, with artifacts in `.tasks/TASK-<ID>/`
+- before setting `status: done`, the task record `verify` field must contain the completed evidence summary/marker (string or structured object)
 
 2) Для каждого AC/REQ:
 - выполни минимальную проверку (предпочтительно детерминированную)
@@ -61,7 +64,7 @@ If the task record is missing, stop with an explicit error. Do not use `.memory-
 - `VERDICT: PASS`
 - обнови текущий task record:
   - `status: done`
-  - add verification/evidence marker in `verify`, `evidence_required`, or `verification_targets`
+  - add completed verification/evidence entries in `verify`
 - обнови RTM lifecycle и refresh backlog summary (если используешь)
 - если у feature/epic есть `lifecycle`, синхронизируй и его
 </process>
