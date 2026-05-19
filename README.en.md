@@ -234,21 +234,39 @@ This matters because `review`, `mb-sync`, and `mb-garden` should not reject a re
 
 `.codex/` is for Codex project configuration. It is not a skills directory.
 
-## Install from skill.sh
+## Install from source-only fork
+
+Important: do not use `npx skills add <repo>` directly for this fork. The repository is stored in source-only form, so the correct entry point is the installer wrapper shipped by this package.
 
 Install only what you need:
 
 ```bash
-npx skills add mrvladd-d/memobank --skill cold-start --global --yes
-npx skills add mrvladd-d/memobank --skill mb-init --global --yes
-npx skills add mrvladd-d/memobank --skill mb-from-prd --global --yes
+npx github:<owner>/<repo> --skill cold-start --global --yes
+npx github:<owner>/<repo> --skill mb-init --global --yes
+npx github:<owner>/<repo> --skill mb-from-prd --global --yes
 ```
 
 Install the full set:
 
 ```bash
-npx skills add mrvladd-d/memobank --skill '*' --global --yes
+npx github:<owner>/<repo> --skill '*' --global --yes
 ```
+
+For a local clone, run:
+
+```bash
+node scripts/install-framework.mjs --skill '*' --global --yes
+```
+
+The installer keeps this repository source-only: it generates vendored `shared-*` files in a temporary copy and passes that prepared copy to `skills add`.
+
+What happens during installation:
+- a temporary copy of the repository is created;
+- `scripts/vendor-shared.mjs` runs inside that temporary copy;
+- missing `agents/shared-*`, `references/shared-*`, and `scripts/shared-*` files are generated inside each package skill;
+- the wrapper then calls `npx -y skills add <prepared-temp-repo> ...`;
+- the temporary copy is removed after installation;
+- the working repository remains source-only, without committed generated `shared-*` files.
 
 In practice, most users start with:
 - `cold-start` for the all-in-one entry point
@@ -346,6 +364,8 @@ Before release, `scripts/vendor-shared.mjs` vendors those shared assets into eve
 - `scripts/shared-*.js`
 
 This keeps top-level skills self-contained for `skills add` installs while preserving a single shared authoring source inside the repository.
+
+In the source-only repository model, these vendored `shared-*` files are generated artifacts and should not be committed. CI generates them before package install smoke tests.
 
 ## Repository structure
 

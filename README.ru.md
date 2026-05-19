@@ -234,21 +234,39 @@ Execution и verification теперь следуют явной fallback-мод
 
 `.codex/` предназначен для project configuration Codex. Это не каталог skills.
 
-## Установка через skill.sh
+## Установка из source-only форка
+
+Важно: для этого форка не используй `npx skills add <repo>` напрямую. Репозиторий хранится в source-only виде, поэтому правильная точка входа — installer wrapper из этого пакета.
 
 Устанавливай только то, что нужно:
 
 ```bash
-npx skills add mrvladd-d/memobank --skill cold-start --global --yes
-npx skills add mrvladd-d/memobank --skill mb-init --global --yes
-npx skills add mrvladd-d/memobank --skill mb-from-prd --global --yes
+npx github:<owner>/<repo> --skill cold-start --global --yes
+npx github:<owner>/<repo> --skill mb-init --global --yes
+npx github:<owner>/<repo> --skill mb-from-prd --global --yes
 ```
 
 Установка полного набора:
 
 ```bash
-npx skills add mrvladd-d/memobank --skill '*' --global --yes
+npx github:<owner>/<repo> --skill '*' --global --yes
 ```
+
+Для локального клона:
+
+```bash
+node scripts/install-framework.mjs --skill '*' --global --yes
+```
+
+Инсталлятор сохраняет репозиторий source-only: он генерирует vendored `shared-*` файлы во временной копии и передает эту подготовленную копию в `skills add`.
+
+Что происходит во время установки:
+- создаётся временная копия репозитория;
+- во временной копии запускается `scripts/vendor-shared.mjs`;
+- недостающие `agents/shared-*`, `references/shared-*`, `scripts/shared-*` раскладываются внутрь каждого package skill;
+- затем wrapper вызывает `npx -y skills add <prepared-temp-repo> ...`;
+- после установки временная копия удаляется;
+- рабочий репозиторий остаётся source-only, без закоммиченных generated `shared-*` файлов.
 
 На практике большинство пользователей начинают с:
 - `cold-start` как all-in-one entry point
@@ -346,6 +364,8 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 - `scripts/shared-*.js`
 
 Это делает top-level skills self-contained для `skills add`, сохраняя единый shared source внутри репозитория.
+
+В source-only модели репозитория эти `shared-*` файлы считаются generated artifacts и не должны коммититься. CI генерирует их перед smoke-тестом установки package skills.
 
 ## Структура репозитория
 

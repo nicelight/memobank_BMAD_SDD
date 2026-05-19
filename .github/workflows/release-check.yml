@@ -24,14 +24,19 @@ jobs:
             find . -name '.DS_Store'
             exit 1
           fi
+          if find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | grep -q .; then
+            echo 'Found vendored shared-* files in source-only repository'
+            find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print
+            exit 1
+          fi
 
       - name: Syntax check helper scripts
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/vendor-shared.mjs
-          git diff --exit-code
-          node -c skills/_shared/scripts/init-mb.js
+          node --check scripts/vendor-shared.mjs
+          node --check scripts/install-framework.mjs
+          node --check skills/_shared/scripts/init-mb.js
           node --check skills/mb-garden/assets/mb-lint.mjs
 
       - name: Local package install smoke test
@@ -44,7 +49,7 @@ jobs:
           mkdir -p "$TMP_DIR/project"
           (
             cd "$TMP_DIR/project"
-            npx -y skills add "$GITHUB_WORKSPACE" --skill '*' --yes
+            node "$GITHUB_WORKSPACE/scripts/install-framework.mjs" --skill '*' --yes
 
             test -f .agents/skills/cold-start/references/shared-structure-template.md
             test -f .agents/skills/cold-start/agents/shared-repo-scanner.md

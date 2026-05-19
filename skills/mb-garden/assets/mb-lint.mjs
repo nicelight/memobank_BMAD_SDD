@@ -51,16 +51,18 @@ function listMarkdownFiles(dir) {
 }
 
 function hasFrontmatter(text) {
-  return text.startsWith('---\n') && text.includes('\n---\n');
+  const normalized = text.replace(/\r\n/g, '\n');
+  return normalized.startsWith('---\n') && normalized.includes('\n---\n');
 }
 
 function parseFrontmatter(text) {
   // Minimal YAML-ish parser for frontmatter block:
   // - key: value
   // - key: (then indented block, e.g. lists)
-  const end = text.indexOf('\n---\n', 4);
+  const normalized = text.replace(/\r\n/g, '\n');
+  const end = normalized.indexOf('\n---\n', 4);
   if (end === -1) return null;
-  const block = text.slice(4, end).replace(/\r\n/g, '\n').trimEnd();
+  const block = normalized.slice(4, end).trimEnd();
   const lines = block.split('\n');
   const kv = {};
 

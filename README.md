@@ -7,6 +7,14 @@ It turns a repository into an agent-friendly workspace with:
 - `.protocols/` for resumable execution state
 - `.tasks/` for runtime artifacts
 
+Install this source-only fork through its wrapper, not through `npx skills add` directly:
+
+```bash
+npx github:<owner>/<repo> --skill '*' --global --yes
+```
+
+During installation the wrapper prepares a temporary copy, generates the missing `shared-*` package files there, runs `skills add` against that prepared copy, and leaves this repository source-only.
+
 [Full documentation here](README.en.md)
 
 ---
@@ -20,5 +28,12 @@ It turns a repository into an agent-friendly workspace with:
 - `.protocols/` для возобновляемого состояния выполнения
 - `.tasks/` для runtime-артефактов
 
-[Полная документация тут](README.ru.md)
+Устанавливай этот source-only форк через wrapper, а не через прямой `npx skills add`:
 
+```bash
+npx github:<owner>/<repo> --skill '*' --global --yes
+```
+
+Во время установки wrapper создаёт временную копию, генерирует в ней недостающие package-файлы `shared-*`, запускает `skills add` по подготовленной копии и оставляет этот репозиторий source-only.
+
+[Полная документация тут](README.ru.md)
