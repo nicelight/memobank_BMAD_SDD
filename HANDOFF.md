@@ -66,6 +66,7 @@ source-only repo
 
 ## Operational Notes
 
+- Read `PROJECT_MAP.md` before assigning independent agents to feature work.
 - `skills/_shared/` is the source of truth for shared prompts, references, and scripts.
 - `skills/*/shared-*` files are generated artifacts in this fork.
 - CI should fail if generated `shared-*` files are committed outside `skills/_shared`.
