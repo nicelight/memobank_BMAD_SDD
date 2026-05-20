@@ -291,7 +291,7 @@ Run `cold-start`, then follow the normal loop:
 /mb-sync
 ```
 
-If the backlog is already prepared and the repo is ready for batch execution:
+If the JSON task queue / task records are already prepared and the repo is ready for batch execution:
 
 ```text
 /autopilot

@@ -23,7 +23,7 @@ status: active
 - разрешены автономные code-edit сессии через Codex / Claude CLI,
 - не требуется ручной выбор одной фичи за раз.
 
-Если нужен **только backlog executor**, а PRD → FT → TASK уже готовы, используй `/autopilot`.
+Если нужен **только JSON task queue executor**, а PRD → FT → TASK уже готовы, используй `/autopilot`.
 
 ## 1) Протокол автономного запуска
 Создай:

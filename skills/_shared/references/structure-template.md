@@ -53,7 +53,7 @@ Claude (fresh session):
 
 ## Two modes (interactive vs autonomous)
 - **Interactive**: run `/prd` → pick one `FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` and review after each wave.
-- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if backlog already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
+- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task queue / `tasks/index.json` records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
 - Folder per process: `.tasks/TASK-<ID>/`

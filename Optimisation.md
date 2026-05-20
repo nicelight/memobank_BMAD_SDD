@@ -219,11 +219,13 @@ Smoke test должен проверять:
 
 # Фаза 6 — vendoring
 
-После изменений в `_shared` выполни:
+После изменений в `_shared` проверь install-time vendoring через wrapper:
 
-    node scripts/vendor-shared.mjs
+    node scripts/install-framework.mjs --skill '*' --yes
 
-Проверь, что vendored copies обновились корректно.
+Рабочее дерево должно оставаться source-only: не оставляй generated `skills/*/{agents,references,scripts}/shared-*`.
+
+`scripts/vendor-shared.mjs` запускается только внутри temporary/prepared copy. Если по ошибке запускаешь его локально, удали generated outputs и верни source-only hygiene к `0`.
 
 ---
 
@@ -247,10 +249,13 @@ Smoke test должен проверять:
 
 В конце обязательно выполни:
 
-    node scripts/vendor-shared.mjs
+    node scripts/install-framework.mjs --skill '*' --yes
+    find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
     git diff --exit-code || true
     node -c skills/_shared/scripts/init-mb.js
     node --check skills/mb-garden/assets/mb-lint.mjs
+
+`find ... | wc -l` должен вернуть `0`. Если нужен ручной осмотр vendored outputs, используй temp install smoke (`MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes`) и проверяй prepared temporary copy, а не рабочее дерево.
 
 Также сделай dry bootstrap в temp directory:
 

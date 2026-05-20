@@ -12,7 +12,7 @@ description: >
 - **Output:** code changes, protocol artifacts, verification inputs, and synchronized Memory Bank state.
 
 ## Goal
-Turn a backlog item into a **reproducible, verifiable change**:
+Turn a JSON task record into a **reproducible, verifiable change**:
 - clear plan
 - bounded implementation
 - deterministic gates

@@ -291,7 +291,7 @@ node scripts/install-framework.mjs --skill '*' --global --yes
 /mb-sync
 ```
 
-Если backlog уже готов и репозиторий готов к batch execution:
+Если JSON task queue / task records уже подготовлены и репозиторий готов к batch execution:
 
 ```text
 /autopilot
