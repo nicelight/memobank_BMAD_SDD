@@ -41,6 +41,7 @@ Store a concise report in:
 If concerns are material:
 - `.memory-bank/bugs/BUG-<short>.md`
 - follow-up `.task.json` records indexed in `.memory-bank/tasks/index.json`
+- recommended task/dependent status for the active scheduler or explicit standalone owner
 
 Use:
 - `./references/shared-protocols-red-verification-template.md`
@@ -119,15 +120,17 @@ The output must be concise and high-signal. Include:
 - how the change could still be wrong
 - counterproposal or escalation path
 
-For `T3`, also cover critical/security/runtime/recovery concerns and confirm that the human-aware checkpoint plus rollback/recovery note are present before closure.
+For `T3`, also cover critical/security/runtime/recovery concerns and confirm exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` are present before closure.
 
 ### 5) Take action from the verdict
 - `semantic-pass`: no substantive concerns found; closure-eligible when `mb-verify` also has `PASS`
 - `semantic-concern`: not proven wrong, but blocked or human-review-required; never normal `done`
-- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; mark the task `failed`
+- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; recommend task `status: failed`
 
-For `semantic-concern`, block task/dependents or leave the task pending human review. If human review accepts the concern, record owner/reason and repeat `mb-red-verify`; normal `done` requires `semantic-pass`.
-For `semantic-fail`, file a bug, add follow-up tasks, mark the task `failed`, and stop downstream progression.
+When invoked by `/autopilot` or `/autonomous`, `mb-red-verify` must not independently close the task, write `done`, write `failed`, block dependents, or promote dependents. It writes the semantic verdict and returns the recommended status/dependent action to the scheduler.
+
+For `semantic-concern`, recommend blocking task/dependents or leaving the task pending human review. If human review accepts the concern, record owner/reason and repeat `mb-red-verify`; normal `done` requires `semantic-pass`.
+For `semantic-fail`, file or recommend a bug, recommend follow-up tasks, recommend `status: failed`, and stop downstream progression through the scheduler/explicit standalone owner.
 
 ## Definition of done
 - `red-verification.md` exists and is substance-focused.

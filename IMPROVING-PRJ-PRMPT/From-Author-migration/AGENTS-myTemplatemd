@@ -3,15 +3,13 @@
 
 
 ## Prime before work
-1. Read `AGENTS.md` (this guide)
-2. Read `.memory-bank/constitution.md` if it exists; treat it as the top governing policy
-3. Read `.memory-bank/mbb/index.md` (rules)
-4. Read `.memory-bank/spec-index.md` if it exists; treat the specifications listed there as the project source of truth
-5. Read `.memory-bank/index.md` (table of contents)
-6. Read the core spec layer:
+1. Read `.memory-bank/mbb/index.md` (rules)
+2. Read `.memory-bank/spec-index.md` if it exists; treat the specifications listed there as the project source of truth
+3. Read `.memory-bank/index.md` (table of contents)
+4. Read the core spec layer:
    - `.memory-bank/product.md`
    - `.memory-bank/requirements.md`
-7. Read the smallest sufficient task-scoped spec subset for the current task:
+5. Read the smallest sufficient task-scoped spec subset for the current task:
    - relevant `.memory-bank/epics/EP-*.md`
    - relevant `.memory-bank/features/FT-*.md`
    - relevant `.memory-bank/architecture/*.md`
@@ -21,10 +19,9 @@
    - relevant `.memory-bank/states/*`
    - relevant `.memory-bank/adrs/*`
    - relevant `.memory-bank/runbooks/*`
-8. Only after spec priming inspect code, `.tasks/`, and implementation details
+6. Only after spec priming inspect code, `.tasks/`, and implementation details
 
 Fallback rule:
-- if `.memory-bank/constitution.md` does not exist yet, use `.memory-bank/mbb/index.md` as the highest governance layer.
 - if `.memory-bank/spec-index.md` does not exist yet, use `.memory-bank/index.md` plus the core/task-scoped spec layers above.
 
 ## Spec Driven Context Policy
@@ -66,12 +63,12 @@ Before meaningful implementation work:
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + .memory-bank/constitution.md (if exists) + .memory-bank/mbb/index.md + .memory-bank/spec-index.md (if exists) + relevant spec files + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'`
+- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + .memory-bank/mbb/index.md + .memory-bank/spec-index.md (if exists) + relevant spec files + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'`
 
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` and review after each wave.
-- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if the JSON task queue already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
+- **Interactive**: run `/prd` → pick one `FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` and review after each wave.
+- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if backlog already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 Naming:
 - Folder: `.tasks/TASK-<ID>/`
@@ -110,8 +107,6 @@ Naming:
 - Все текстовые файлы: UTF-8 без BOM.
 - После правок проверять, что в `git diff` нет артефактов кодировки (например, "Р...").
 - Не делать destructive git-операции без явного запроса (например, `reset --hard`, force push).
-- Не менять язык файла: русские файлы редактировать по-русски, английские по-английски.
-- Не упрощать русский текст ради ASCII.
 - Не коммитить и не пушить без явной команды тимлида.
 
 ## Практика изменений
@@ -120,27 +115,17 @@ Naming:
 - При неоднозначности, влияющей на архитектуру/риски/стоимость, остановиться и запросить консультацию тимлида.
 - Для любой нетривиальной задачи сначала определить, какие спецификации из `.memory-bank/spec-index.md` относятся к задаче, и загрузить их в контекст.
 
-### Windows 10 / PowerShell
-- В Windows считать кодировку подозрительной по умолчанию и явно предпочитать UTF-8 при чтении и записи.
-- Не доверять только выводу PowerShell: консоль может показывать кракозябры даже при нормальном файле.
-- После первой правки сразу проверять `git diff`; только после чистого diff продолжать остальные изменения.
-- Не использовать инструменты, которые могут молча сохранить файл в ANSI, CP1251 или UTF-8 с BOM.
-
 ## Entry points
 - /cold-start → .memory-bank/commands/cold-start.md
 - /mb → .memory-bank/commands/mb.md
 - /mb-init → .memory-bank/commands/mb-init.md
-- /constitution → .memory-bank/commands/constitution.md
 - /prd → .memory-bank/commands/prd.md
-- /clarify → .memory-bank/commands/clarify.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /mb-from-prd → .memory-bank/commands/mb-from-prd.md (alias)
 - /mb-execute → .memory-bank/commands/mb-execute.md (alias)
 - /execute → .memory-bank/commands/execute.md
 - /verify → .memory-bank/commands/verify.md
 - /mb-verify → .memory-bank/commands/mb-verify.md (alias)
-- /red-verify → .memory-bank/commands/red-verify.md
-- /mb-red-verify → .memory-bank/commands/mb-red-verify.md (alias)
 - /autopilot → .memory-bank/commands/autopilot.md
 - /autonomous → .memory-bank/commands/autonomous.md
 - /map-codebase → .memory-bank/commands/map-codebase.md

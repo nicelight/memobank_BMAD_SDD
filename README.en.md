@@ -79,19 +79,13 @@ Current command set:
 - `/brief`
 - `/constitution`
 - `/prd`
-- `/mb-from-prd`
 - `/clarify`
 - `/prd-to-tasks`
 - `/execute`
-- `/mb-execute`
 - `/verify`
-- `/mb-verify`
 - `/red-verify`
-- `/mb-red-verify`
 - `/review`
-- `/mb-review`
 - `/map-codebase`
-- `/mb-map-codebase`
 - `/mb-sync`
 - `/mb-garden`
 - `/mb-doctor`
@@ -101,7 +95,6 @@ Current command set:
 - `/discuss`
 - `/add-tests`
 - `/find-skills`
-- `/find-skill`
 
 ## How it works
 
@@ -203,7 +196,7 @@ Authoritative task state lives in JSON task records created by `/prd-to-tasks`, 
 ### 4.1. Adversarial semantic verification
 In addition to normal `/verify`, `memobank` now includes a separate semantic pass:
 - `/red-verify TASK-123`
-- `/mb-red-verify TASK-123`
+- `/red-verify TASK-123`
 
 Its purpose is not to repeat process checks, but to catch cases where "everything passes on paper, yet the solution is still wrong in substance."
 

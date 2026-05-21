@@ -1,8 +1,8 @@
 ---
-description: Алиас “инициализировать skeleton Memory Bank”. По сути это init-mb.js + базовые файлы.
+description: Инициализировать skeleton Memory Bank. По сути это init-mb.js + базовые файлы.
 status: active
 ---
-# /mb-init — Initialize Memory Bank skeleton (alias)
+# /mb-init — Initialize Memory Bank skeleton
 
 <objective>
 Быстро создать skeleton:

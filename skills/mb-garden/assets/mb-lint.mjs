@@ -66,8 +66,8 @@ const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
 const PASS_EVIDENCE_RE = /\bverdict\s*:?\s*pass\b|\bpass(?:ed)?\b/i;
 const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
 const RED_VERIFY_PASS_RE = /^\s*"?SEMANTIC_VERDICT"?\s*:\s*"?semantic-pass"?\s*,?\s*$/im;
-const HUMAN_CHECKPOINT_RE = /\bhuman[-\s]aware checkpoint\b/i;
-const ROLLBACK_RECOVERY_RE = /\b(rollback|recovery)\b/i;
+const T3_HUMAN_CHECKPOINT_MARKER = 'HUMAN_CHECKPOINT: done';
+const T3_ROLLBACK_RECOVERY_MARKER = 'ROLLBACK_RECOVERY_NOTE: present';
 const REQUIRED_TASK_FIELDS = [
   'id',
   'title',
@@ -740,6 +740,10 @@ function isRedVerificationFile(file) {
   return /red/i.test(path.basename(file));
 }
 
+function hasExactMarker(text, marker) {
+  return text.replace(/\r\n/g, '\n').split('\n').some((line) => line.trim() === marker);
+}
+
 function hasProtocolOrArtifactStatusEvidence(id, status) {
   const marker = status === 'done' ? PASS_EVIDENCE_RE : FAIL_EVIDENCE_RE;
   const files = [
@@ -806,11 +810,11 @@ function checkTierProtocolRequirements(rel, task) {
 
   if (task.status === 'done' && task.tier === 'T3') {
     const text = protocolAndArtifactText(task.id);
-    if (!HUMAN_CHECKPOINT_RE.test(text)) {
-      errors.push(`${rel}: T3 done task must include a human-aware checkpoint marker`);
+    if (!hasExactMarker(text, T3_HUMAN_CHECKPOINT_MARKER)) {
+      errors.push(`${rel}: T3 done task must include exact marker '${T3_HUMAN_CHECKPOINT_MARKER}'`);
     }
-    if (!ROLLBACK_RECOVERY_RE.test(text)) {
-      errors.push(`${rel}: T3 done task must include a rollback/recovery note`);
+    if (!hasExactMarker(text, T3_ROLLBACK_RECOVERY_MARKER)) {
+      errors.push(`${rel}: T3 done task must include exact marker '${T3_ROLLBACK_RECOVERY_MARKER}'`);
     }
   }
 

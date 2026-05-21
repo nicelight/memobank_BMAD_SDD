@@ -33,8 +33,8 @@ const EVIDENCE_WORD_RE = /\b(evidence|result|verdict|pass|passed|fail|failed|err
 const PASS_EVIDENCE_RE = /\bverdict\s*:?\s*pass\b|\bpass(?:ed)?\b/i;
 const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
 const RED_VERIFY_PASS_RE = /^\s*"?SEMANTIC_VERDICT"?\s*:\s*"?semantic-pass"?\s*,?\s*$/im;
-const HUMAN_CHECKPOINT_RE = /\bhuman[-\s]aware checkpoint\b/i;
-const ROLLBACK_RECOVERY_RE = /\b(rollback|recovery)\b/i;
+const T3_HUMAN_CHECKPOINT_MARKER = 'HUMAN_CHECKPOINT: done';
+const T3_ROLLBACK_RECOVERY_MARKER = 'ROLLBACK_RECOVERY_NOTE: present';
 const PATH_MARKER_RE =
   /(?:^|[\s"`'])(?:\.{1,2}\/|\/|[A-Za-z]:\\)[^\s"`']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.\/-]+\b|\b[\w.-]+\.(?:md|txt|log|json|xml|html|htm|png|jpg|jpeg|webm|mp4)\b/i;
 
@@ -421,18 +421,18 @@ function checkFullProtocolTask(record) {
 
     if (task.tier === 'T3') {
       const text = protocolAndArtifactText(id);
-      if (!HUMAN_CHECKPOINT_RE.test(text)) {
-        addFinding(severity, 'TASK_T3_CHECKPOINT_MISSING', `${rel}: T3 done task has no human-aware checkpoint marker.`, {
+      if (!hasExactMarker(text, T3_HUMAN_CHECKPOINT_MARKER)) {
+        addFinding(severity, 'TASK_T3_CHECKPOINT_MISSING', `${rel}: T3 done task has no exact ${T3_HUMAN_CHECKPOINT_MARKER} marker.`, {
           path: rel,
           task_id: id,
-          suggested_fix: `Record a human-aware checkpoint in .protocols/${id}/handoff.md or another task protocol/artifact.`,
+          suggested_fix: `Record ${T3_HUMAN_CHECKPOINT_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
         });
       }
-      if (!ROLLBACK_RECOVERY_RE.test(text)) {
-        addFinding(severity, 'TASK_T3_ROLLBACK_MISSING', `${rel}: T3 done task has no rollback/recovery note.`, {
+      if (!hasExactMarker(text, T3_ROLLBACK_RECOVERY_MARKER)) {
+        addFinding(severity, 'TASK_T3_ROLLBACK_MISSING', `${rel}: T3 done task has no exact ${T3_ROLLBACK_RECOVERY_MARKER} marker.`, {
           path: rel,
           task_id: id,
-          suggested_fix: `Record a rollback/recovery note in .protocols/${id}/handoff.md or another task protocol/artifact.`,
+          suggested_fix: `Record ${T3_ROLLBACK_RECOVERY_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
         });
       }
     }
@@ -863,6 +863,10 @@ function protocolAndArtifactText(id) {
       }
     })
     .join('\n');
+}
+
+function hasExactMarker(text, marker) {
+  return text.replace(/\r\n/g, '\n').split('\n').some((line) => line.trim() === marker);
 }
 
 function isRedVerificationFile(file) {

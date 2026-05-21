@@ -145,6 +145,15 @@ If any indexed task record is missing `tier`, set terminal state `HALT_POLICY_VI
 Read the task queue and task metadata only from JSON task records.
 Before task selection and before progression after each closed task, run `/mb-lint`, then `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat doctor absence, non-zero exit, or readiness errors as `HALT_QUALITY_GATES`.
 
+### Status ownership
+
+- `/autonomous` is the scheduler for the end-to-end run.
+- `/autonomous` owns `planned -> ready`, `ready -> in_progress`, `in_progress -> done`, `in_progress -> failed`, dependent block/unblock decisions, terminal queue state, and final run status.
+- `/execute` owns implementation, local gates, progress, and handoff evidence only; it must not close/promote/block tasks in scheduler mode.
+- `/verify` owns verification evidence/verdict only; it must not close tasks or block/promote dependents in scheduler mode.
+- `/red-verify` owns semantic evidence/verdict only; it must not independently close tasks in scheduler mode.
+- `/mb-sync` syncs the scheduler-provided closure/failure/blocking decision after verification; it must not independently advance dependents.
+
 Перед каждым selection pass выполни promotion pass:
 - `planned -> ready`, если все `depends_on` уже `done` и нет blockers / blocking review rejects / unresolved semantic-concern
 - не продвигай задачу, если upstream failed/blocked, есть open blocking bug или task-level review reject
@@ -166,13 +175,18 @@ Before task selection and before progression after each closed task, run `/mb-li
 
 ## 8) Execution loop per TASK
 Для каждого выбранного `TASK-*`:
-1) `/execute TASK-<ID>`
-2) route only by `task.tier` from the JSON record:
+1) scheduler writes `ready -> in_progress`
+2) `/execute TASK-<ID>`
+3) verify by `task.tier` from the JSON record:
    - `T0` / `T1`: compact path is allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
-   - `T2` / `T3`: full protocol path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before any `done` transition
-   - `T3`: require human-aware checkpoint plus rollback/recovery note; no silent autonomous closure
-3) `/mb-sync`
-4) run `/mb-lint`, then `/mb-doctor --strict` before promoting dependents
+   - `T2` / `T3`: full protocol path is required; run `/verify TASK-<ID>`
+   - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
+4) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
+5) scheduler records the closure/failure/blocking decision from verification verdicts, then runs `/mb-sync` to synchronize that decision
+6) scheduler writes final closure/failure/blocking status and dependent block/unblock decisions
+7) run `/mb-lint`, then `/mb-doctor --strict` before promoting dependents
+
+After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → `/mb-sync` → scheduler closure.
 
 Переходы состояния:
 - `ready -> in_progress`

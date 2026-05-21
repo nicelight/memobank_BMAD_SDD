@@ -53,8 +53,8 @@ Use for auth, permissions, secrets, security-sensitive behavior, deploy/runtime 
 - Compact-only protocol: invalid
 - `/verify`: required
 - `/red-verify`: required
-- Human-aware checkpoint: required before autonomous closure
-- Rollback/recovery note: required
+- Human-aware checkpoint marker: required before autonomous closure as exact standalone line `HUMAN_CHECKPOINT: done`
+- Rollback/recovery note marker: required as exact standalone line `ROLLBACK_RECOVERY_NOTE: present`
 - MB-SYNC: required
 
 ## Assignment Rules

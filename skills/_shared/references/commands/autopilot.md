@@ -51,6 +51,15 @@ Before task selection and before progression after a task closes, run `/mb-docto
 - current failure budget
 - terminal state
 
+## Status ownership
+
+- `/autopilot` is the scheduler for an already prepared JSON task queue.
+- `/autopilot` owns `planned -> ready`, `ready -> in_progress`, `in_progress -> done`, `in_progress -> failed`, dependent block/unblock decisions, and terminal queue state.
+- `/execute` returns implementation artifacts, gates, progress, and handoff evidence; it does not close or promote tasks in scheduler mode.
+- `/verify` writes verification evidence/verdict and recommended next status; it does not close tasks or block/promote dependents in scheduler mode.
+- `/red-verify` writes semantic evidence/verdict and recommended next status; it does not independently close tasks in scheduler mode.
+- `/mb-sync` records the scheduler-provided closure/failure/blocking decision and consistency updates; it does not independently advance dependents.
+
 ## Selection rule
 На каждой итерации reread `.memory-bank/tasks/index.json` and indexed `.task.json` records.
 
@@ -76,21 +85,22 @@ Before task selection and before progression after a task closes, run `/mb-docto
 4) verification by tier:
    - `T0` / `T1`: compact path is allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
    - `T2` / `T3`: full path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before closure
-   - `T3`: require human-aware checkpoint plus rollback/recovery note; no silent autonomous closure
-5) closure:
+   - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
+5) scheduler closure decision:
    - `T0` / `T1`: normal `done` allowed after verification `PASS`
    - `T2` / `T3`: `done` allowed only after `/verify` `PASS` evidence and `/red-verify` `semantic-pass`
+6) run `/mb-sync` to sync the scheduler decision; `/mb-sync` must not promote dependents by itself
+7) apply scheduler-owned closure:
    - `status: done` in the task record
-   - `/mb-sync`
    - run `/mb-doctor --strict` before promoting dependents
    - promote dependents через explicit `planned -> ready`, если все их deps закрыты и нет blockers / blocking review rejects / unresolved semantic-concern
-5a) если итог = `semantic-concern`:
+8) если итог = `semantic-concern`:
    - не ставь normal `done`
    - до продолжения task/wave явно выбери и запиши решение: `blocked` для task/dependents или `in_progress` pending human review
    - если human review принимает concern, сначала зафиксируй owner/reason и повтори `/red-verify`; normal `done` разрешён только после `semantic-pass`
    - не продвигай dependents, пока задача не получила `semantic-pass`
    - `/mb-sync` только для записи blocked / human-review-required состояния
-6) если `FAIL` или `semantic-fail`:
+9) если `FAIL` или `semantic-fail`:
    - `status: failed` in the task record
    - создай bug + follow-up task
    - downstream dependents → `blocked`
@@ -106,7 +116,7 @@ codex exec --ephemeral --full-auto -m gpt-5.2-high \
   "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record, and the tier-selected protocol path. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 checkpoint and rollback/recovery note. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ### Claude (fresh session per TASK)
@@ -115,7 +125,7 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
   "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record, and the tier-selected protocol path. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 checkpoint and rollback/recovery note. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ## Terminal states

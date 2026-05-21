@@ -32,7 +32,13 @@ Tier policy:
 - `T0`: `/verify` is normally not required; verification may be recorded in `.protocols/TASK-<ID>/run.md`.
 - `T1`: `/verify` is optional for strictly local scope; compact `run.md` may contain the verification evidence and verdict.
 - `T2` / `T3`: `/verify` is required before closure and must update `.protocols/TASK-<ID>/verification.md`.
-- `T3`: include critical/security/runtime evidence where relevant and confirm the rollback/recovery note exists before closure.
+- `T3`: include critical/security/runtime evidence where relevant and confirm exact marker `ROLLBACK_RECOVERY_NOTE: present` exists before closure.
+
+Status ownership:
+- `/verify` owns verification evidence and `VERDICT: PASS|FAIL|NEEDS-CLARIFICATION`.
+- In scheduler mode (`/autopilot` / `/autonomous`), `/verify` must not close the task, set `status: done`, set `status: failed`, block dependents, or promote dependents. It reports the verdict and recommended next status to the scheduler.
+- In standalone/manual mode, `/verify` may state the recommended next status. It may only perform local `T0` / `T1` compact closure when the direct standalone path explicitly chose compact local closure.
+- For `T2` / `T3`, `/verify` never closes as `done`; PASS only makes the task eligible for `/red-verify`.
 
 Приоритет basis для verify:
 1. `verification_targets`, если они явно указаны в task record / IMPL plan / feature doc
@@ -66,17 +72,16 @@ Tier policy:
 
 4) Если проблемы:
 - зафиксируй BUG в `.memory-bank/bugs/`
-- добавь follow-up `.task.json` и обнови `.memory-bank/tasks/index.json`
-- переведи текущую задачу в `status: failed` в `.task.json`
-- downstream dependents пометь `status: blocked` в их `.task.json`
+- in standalone/manual mode, add follow-up `.task.json` and update `.memory-bank/tasks/index.json` only if that is the explicit local workflow
+- record `VERDICT: FAIL` and recommend `status: failed`
+- in scheduler mode, do not write `failed` or `blocked`; return the recommendation so the scheduler owns failure handling and dependent blocking
 
 5) Если всё ок:
 - `VERDICT: PASS`
 - обнови текущий task record:
   - add completed verification/evidence entries in `verify`
 - status by tier:
-  - `T0` / `T1`: may keep compact closure behavior and set `status: done` when local policy allows it
+  - `T0` / `T1`: may keep compact closure behavior and set `status: done` only when an explicit standalone compact path allows it; otherwise recommend `done`
   - `T2` / `T3`: leave `status: in_progress` (or otherwise explicitly not `done`) pending `/red-verify`
-- обнови RTM lifecycle
-- если у feature/epic есть `lifecycle`, синхронизируй и его
+- record RTM/feature lifecycle recommendations for `/mb-sync`; do not independently perform scheduler closure
 </process>

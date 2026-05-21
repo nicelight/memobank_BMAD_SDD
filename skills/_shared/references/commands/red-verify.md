@@ -17,12 +17,18 @@ status: active
 - `/verify` → "выполнено ли по AC/REQ и есть ли evidence?"
 - `/review` → "достаточно ли качественен сам Memory Bank / planning surface?"
 - `/red-verify` → "это вообще хорошее и правильное решение в substance?"
+- scheduler (`/autopilot` / `/autonomous`) → task status transitions, closure, failure handling, and dependent block/unblock in scheduler mode
 </objective>
 
 <when-to-use>
 Required by tier:
 - `T2` and `T3` tasks must run `/red-verify` before closure.
 - `T0` and `T1` tasks usually do not need `/red-verify` unless their real scope grew beyond the recorded tier; in that case update `task.tier` first.
+
+Status ownership:
+- `/red-verify` owns semantic evidence and `SEMANTIC_VERDICT: semantic-pass|semantic-concern|semantic-fail`.
+- In scheduler mode (`/autopilot` / `/autonomous`), `/red-verify` must not independently close the task, write `status: done`, write `status: failed`, block dependents, or promote dependents. It returns the semantic verdict and recommended next status to the scheduler.
+- In standalone/manual mode, `/red-verify` may state recommended status changes. It should not claim full scheduler ownership unless the user/direct workflow explicitly chose a local closure path.
 
 Особенно полезно, если:
 - менялись `contracts/*`, `states/*`, миграции, схемы, data behavior
@@ -92,8 +98,8 @@ Required by tier:
 - critical/security concerns
 - deploy/runtime/production failure modes
 - irreversible/data-loss, compliance, payments, or secrets exposure concerns when relevant
-- rollback/recovery note is present and credible
-- human-aware checkpoint is present before autonomous closure
+- exact marker `ROLLBACK_RECOVERY_NOTE: present` is present and credible
+- exact marker `HUMAN_CHECKPOINT: done` is present before autonomous closure
 
 4) Заполни `.protocols/TASK-<ID>/red-verification.md`
 Используй шаблон проекта, если он есть.
@@ -117,22 +123,22 @@ Required by tier:
 - `semantic-pass`:
   - substantive concerns не обнаружены
   - closure-eligible for normal `done` when `/verify` also has `PASS`
-  - можно завершать loop через `/mb-sync`
+  - recommend `/mb-sync` and closure by the scheduler or explicit standalone owner
 
 - `semantic-concern`:
   - есть серьёзные сомнения или hidden assumptions, но не доказан прямой semantic break
   - not closure-eligible for normal `done`
-  - до продолжения wave требуется явное решение: block task/dependents или оставить task `in_progress` pending human review
+  - до продолжения wave требуется явное решение by scheduler/explicit standalone owner: block task/dependents или оставить task `in_progress` pending human review
   - если human review принимает concern, зафиксируй owner/reason, обнови work/evidence as needed и повтори `/red-verify`; normal `done` разрешён только после `semantic-pass`
-  - если выбран follow-up, добавь его как JSON task record и обнови `tasks/index.json`
-  - не продвигай dependents, пока задача не получила `semantic-pass`
+  - если выбран follow-up, recommend or create it only according to the active workflow ownership
+  - recommend not promoting dependents until the task receives `semantic-pass`
 
 - `semantic-fail`:
   - решение по существу неверно, вредно или слишком рискованно
-  - заведи bug doc в `.memory-bank/bugs/BUG-<short>.md`
-  - добавь follow-up task как JSON task record и обнови `tasks/index.json`
-  - текущую задачу пометь `failed`
-  - downstream dependents не продвигай
+  - заведи or recommend bug doc в `.memory-bank/bugs/BUG-<short>.md` according to active workflow ownership
+  - recommend follow-up task as JSON task record
+  - recommend current task `status: failed`
+  - recommend downstream dependents remain unpromoted/blocked by scheduler
 
 7) Место в normal loop
 Рекомендуемый порядок:

@@ -17,6 +17,16 @@ function flattenReferenceName(referenceFile) {
   return `shared-${rel.replace(/[\\/]/g, '-')}`;
 }
 
+function removeGeneratedSharedFiles(dir) {
+  if (!existsSync(dir)) return;
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.startsWith('shared-')) {
+      rmSync(join(dir, entry.name), { force: true });
+    }
+  }
+}
+
 const skillDirs = readdirSync(skillsRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== '_shared')
   .map((entry) => join(skillsRoot, entry.name))
@@ -34,6 +44,10 @@ for (const skillDir of skillDirs) {
   const agentsDir = join(skillDir, 'agents');
   const referencesDir = join(skillDir, 'references');
   const scriptsDir = join(skillDir, 'scripts');
+
+  removeGeneratedSharedFiles(agentsDir);
+  removeGeneratedSharedFiles(referencesDir);
+  removeGeneratedSharedFiles(scriptsDir);
 
   mkdirSync(agentsDir, { recursive: true });
   mkdirSync(referencesDir, { recursive: true });

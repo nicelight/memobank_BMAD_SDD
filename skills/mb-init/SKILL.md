@@ -66,7 +66,7 @@ Use `./references/shared-commands-*.md`:
 - `discuss.md`
 - `add-tests.md`
 - `review.md`
-- `find-skill.md`
+- `find-skills.md`
 
 ### 4) Create native skills (proxy commands)
 Create thin proxy skills for each command so they work natively across runtimes:

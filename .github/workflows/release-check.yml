@@ -102,7 +102,24 @@ jobs:
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
             test -f AGENTS.md
-            grep -q '/clarify' AGENTS.md
+            for command in \
+              /analysis \
+              /brainstorm \
+              /brief \
+              /prd \
+              /clarify \
+              /prd-to-tasks \
+              /execute \
+              /verify \
+              /red-verify \
+              /autopilot \
+              /autonomous \
+              /mb-sync \
+              /mb-doctor \
+              /constitution
+            do
+              grep -q -- "- $command " AGENTS.md
+            done
 
             mkdir -p scripts
             cp ../.agents/skills/mb-garden/assets/mb-lint.mjs scripts/mb-lint.mjs

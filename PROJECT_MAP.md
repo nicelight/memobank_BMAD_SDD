@@ -33,7 +33,7 @@ source-only repo
   -> scripts/install-framework.mjs
   -> temporary repo copy
   -> scripts/vendor-shared.mjs
-  -> 490 generated shared-* files
+  -> generated shared-* files for installable skills
   -> npx -y skills add <prepared-temp-repo> ...
 ```
 
@@ -67,6 +67,7 @@ Canonical shared source:
 Installable skill entrypoints:
 
 - `skills/cold-start/SKILL.md`
+- `skills/mb-analysis/SKILL.md`
 - `skills/mb-init/SKILL.md`
 - `skills/mb-from-prd/SKILL.md`
 - `skills/mb-map-codebase/SKILL.md`
@@ -79,7 +80,9 @@ Installable skill entrypoints:
 
 Skill-specific non-shared assets:
 
+- `skills/mb-analysis/assets/*.md`: analysis index, brainstorming, and product brief templates.
 - `skills/mb-garden/assets/mb-lint.mjs`: deterministic Memory Bank linter.
+- `skills/mb-garden/assets/mb-doctor.mjs`: deterministic autonomous readiness check.
 - `skills/mb-garden/assets/memory-bank-lint.yml`: related lint config asset.
 - `skills/mb-harness/assets/codex-config.toml`: Codex harness config template.
 - `skills/mb-from-prd/references/*.md`: PRD decomposition templates.
@@ -99,6 +102,7 @@ For updates that change the JSON-only task registry or indexed task record model
 - `skills/_shared/references/commands/verify.md`
 - `skills/_shared/references/commands/mb-sync.md`
 - `skills/mb-garden/assets/mb-lint.mjs`
+- `skills/mb-garden/assets/mb-doctor.mjs`
 - `.github/workflows/release-check.yml`
 - `README.en.md`, `README.ru.md`
 
@@ -118,10 +122,7 @@ The second command should print `0` in the source-only working tree.
 Install smoke without mutating the working repository:
 
 ```bash
-TMP_DIR="$(mktemp -d)"
-mkdir -p "$TMP_DIR/project"
-cd "$TMP_DIR/project"
-npx -y /path/to/this/repo --skill '*' --yes
+node scripts/install-framework.mjs --skill '*' --yes
 ```
 
 To inspect the generated temporary package tree during installer debugging:

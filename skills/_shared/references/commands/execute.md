@@ -21,11 +21,12 @@ Execution mode:
 - Scheduler mode: `/execute` was called by `/autopilot` or `/autonomous`.
 - Standalone mode: user invoked `/execute TASK-<ID>` directly.
 
-Ownership boundary:
+Status ownership:
 - In scheduler mode, the scheduler owns task state transitions, verify/red-verify, MB-SYNC, final closure, failure handling, and dependent promotion.
 - In scheduler mode, `/execute` must implement scoped changes, update protocol/progress/evidence, run implementation gates that belong to the task, and report result/evidence to the scheduler.
 - In scheduler mode, `/execute` must not mutate `ready -> in_progress`, `in_progress -> failed`, or `in_progress -> done`; must not run `/mb-sync`; must not update JSON task status after verification; and must not promote or block dependent tasks.
-- In standalone mode, `/execute` may guide local follow-up verification, MB-SYNC, and task state updates.
+- In standalone mode, `/execute` owns implementation, local gates, protocol progress, and handoff evidence. It should recommend follow-up verification/status, not silently perform final closure.
+- Exception: for explicitly compact standalone `T0` / `T1` tasks, local closure may be recorded in `run.md` and the task record only when the user/direct command path intentionally uses compact local closure.
 
 ## 1) Прочитай источники
 Открой минимум:
@@ -58,13 +59,13 @@ If the task record has no `tier`, stop with an explicit error. Authoritative rou
 Protocol routing:
 - `T0` / `T1`: compact protocol is allowed. Create `.protocols/TASK-<ID>/run.md` and record tier, goal, scope, context used, plan, changes, gates/checks, evidence, and current handoff state. In standalone mode, also record verification summary, MB-SYNC decision, and verdict when local closure is performed. In scheduler mode, leave scheduler-owned closure fields pending for the scheduler.
 - `T2` / `T3`: full protocol is required. Create `.protocols/TASK-<ID>/context.md`, `plan.md`, `progress.md`, `verification.md`, and `handoff.md`. Compact-only protocol is invalid. In scheduler mode, `/execute` updates implementation/progress/evidence and leaves verification/closure sections for the scheduler-owned verify/red-verify flow.
-- `T3`: before closure, record a human-aware checkpoint marker and a rollback/recovery note in the full protocol.
+- `T3`: before closure, record both exact standalone marker lines in the full protocol: `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Если в проекте есть шаблоны протоколов (из `mb-execute`), используй их, иначе создай минимальные файлы вручную.
 
 В scheduler mode (`/autopilot` / `/autonomous`) не меняй task `status` в `.task.json`: за `ready -> in_progress`, `in_progress -> failed/done`, verification closure, MB-SYNC, failure handling, and dependent promotion отвечает scheduler. Только фиксируй protocol/progress/evidence и report result back to scheduler.
 
-В standalone mode `/execute TASK-<ID>` may update local task state as part of the direct task lifecycle, then call or guide follow-up `/verify`, `/red-verify`, and `/mb-sync` as needed.
+В standalone mode `/execute TASK-<ID>` may recommend the next task state and guide follow-up `/verify`, `/red-verify`, and `/mb-sync` as needed. Do not silently claim scheduler-style closure; only explicitly compact standalone `T0` / `T1` paths may record local closure.
 
 В full protocol `plan.md` и `context.md`, а в compact protocol `run.md`, явно зафиксируй:
 - task tier and authoritative task record path
@@ -134,15 +135,15 @@ Standalone mode:
 - `T1`: separate `/verify` is optional when scope remains local; record local verification in compact `run.md`.
 - `T2` / `T3`: pass `TASK-<ID>` to `/verify` (or `mb-verify`) and then `/red-verify`; both are required before closure.
 - If richer fields were absent, pass verifier an explicit instruction to use classic AC/REQ basis.
-- `T3`: verification package must include critical/security/runtime concerns where relevant plus the rollback/recovery note.
+- `T3`: verification package must include critical/security/runtime concerns where relevant plus the exact rollback/recovery marker `ROLLBACK_RECOVERY_NOTE: present`.
 
 ## 5) MB-SYNC and closure
-Standalone mode: run `/mb-sync` after required verification:
+Standalone mode: after required verification, hand off an explicit closure recommendation, then run `/mb-sync` only to synchronize that already-made local decision:
 - обнови `.memory-bank/` (WHY/WHERE + навигация)
-- обнови RTM и JSON task record status
+- обнови RTM and task evidence/status only when an explicit standalone closure decision exists
 - добавь запись в `.memory-bank/changelog.md`
-- если задача failed и есть dependents — пометь их `blocked`
-- для `T2` / `T3` убедись, что closure expectations выполнены; для `T3` не закрывай задачу молча без checkpoint и rollback/recovery note
+- если задача failed и есть dependents — recommend `blocked`; do not silently advance/block dependents as if running the scheduler
+- для `T2` / `T3` убедись, что closure expectations выполнены; для `T3` не закрывай задачу без exact marker lines `HUMAN_CHECKPOINT: done` и `ROLLBACK_RECOVERY_NOTE: present`
 
 Scheduler mode: do not run `/mb-sync`, do not update JSON task status, and do not close/promote/block tasks. Return a concise report with changed files, gates run, evidence paths, protocol paths, and any blocker/FAIL reason so the scheduler can perform verify/red-verify, MB-SYNC, closure, failure handling, and dependent promotion.
 </process>

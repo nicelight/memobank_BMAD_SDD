@@ -1,15 +1,15 @@
 ---
 name: mb-execute
 description: >
-  Execute one TASK-* with a reproducible protocol, quality gates, and Memory Bank sync.
+  Execute one TASK-* with a reproducible protocol, quality gates, and scheduler/standalone handoff.
 ---
 
-# mb-execute — Execution loop (plan → build → gates → verify → MB-SYNC)
+# mb-execute — Execution loop (plan → build → gates → handoff)
 
 - **What it does:** implements one scoped task and records the run in protocol files.
 - **Use it when:** `TASK-*` already exists as a JSON record created by `/prd-to-tasks` and you want a clean, resumable implementation flow.
 - **Input:** `TASK_ID` plus the indexed JSON task record, including mandatory `tier`.
-- **Output:** code changes, protocol artifacts, verification inputs, and synchronized Memory Bank state for standalone runs, or scheduler handoff inputs for `/autopilot` / `/autonomous`.
+- **Output:** code changes, protocol artifacts, verification inputs, and scheduler/standalone handoff recommendations.
 
 ## Goal
 Turn a JSON task record into a **reproducible, verifiable change**:
@@ -17,7 +17,7 @@ Turn a JSON task record into a **reproducible, verifiable change**:
 - bounded implementation
 - deterministic gates
 - recorded verification
-- synchronized Memory Bank
+- explicit verification / MB-SYNC handoff
 
 ## Inputs
 Orchestrator must provide:
@@ -40,7 +40,7 @@ The task record must contain `tier: T0|T1|T2|T3`. Authoritative routing is only 
 Create artifacts by tier:
 - `T0` / `T1`: compact `.protocols/<TASK_ID>/run.md` is allowed and records context, plan, checks, verification summary, MB-SYNC decision, and verdict.
 - `T2` / `T3`: full protocol is required: `.protocols/<TASK_ID>/context.md`, `plan.md`, `progress.md`, `verification.md`, `handoff.md`.
-- `T3`: include a human-aware checkpoint and rollback/recovery note before closure.
+- `T3`: include exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` before closure.
 
 And a runtime folder:
 - `.tasks/<TASK_ID>/`
@@ -145,11 +145,11 @@ Scheduler mode ownership:
 - Standalone `mb-execute` may guide or call follow-up `mb-verify`, `mb-red-verify`, and MB-SYNC as needed, but only outside scheduler-owned runs.
 
 ### 6) MB-SYNC / closure handoff
-For standalone execution, after verification is complete:
+For standalone execution, after verification is complete, provide an explicit closure recommendation and sync only an already-made local decision:
 - update `.memory-bank/` docs (only WHY/WHERE + navigation)
 - update `.memory-bank/index.md` routers if needed
 - update `.memory-bank/requirements.md` RTM status (if used)
-- update the JSON task record with the correct state (`done` / `failed` / `blocked`)
+- update the JSON task record only when an explicit standalone closure decision exists; otherwise recommend the correct state (`done` / `failed` / `blocked`)
 - append a record to `.memory-bank/changelog.md`
 
 When invoked from `/autopilot` or `/autonomous`, skip this closure step locally and leave MB-SYNC plus final state promotion to the scheduler.
@@ -158,4 +158,4 @@ When invoked from `/autopilot` or `/autonomous`, skip this closure step locally 
 - Protocol folder matches the task tier: compact `run.md` for eligible `T0` / `T1`, full five-file protocol for `T2` / `T3`.
 - Gates pass (or failures are explicitly recorded + bug filed).
 - Verification evidence is recorded in compact `run.md` or full `verification.md` according to tier.
-- Memory Bank is synced + changelog updated for standalone execution; scheduler runs own final sync in `/autopilot` / `/autonomous` mode.
+- Memory Bank sync / changelog is completed only for explicit standalone closure; scheduler runs own final sync in `/autopilot` / `/autonomous` mode.

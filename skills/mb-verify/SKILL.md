@@ -9,7 +9,7 @@ description: >
 - **What it does:** checks a completed task against acceptance criteria and records the result with evidence.
 - **Use it when:** implementation is done and you want an explicit PASS, FAIL, or partial verdict.
 - **Input:** `TASK_ID`, acceptance criteria sources, and the task protocol files.
-- **Output:** `verification.md`, evidence artifacts, updated task state, and follow-up bugs when criteria fail.
+- **Output:** `verification.md`, evidence artifacts, verification verdict, and recommended next status/follow-up bugs when criteria fail.
 
 ## Goal
 Independent-ish verification so we don’t “trust without verify”.
@@ -44,6 +44,13 @@ If present, also use:
   - logs, screenshots, videos, reproduction steps
 - Add completed evidence entries to the task record `verify` field; `evidence_required` and `verification_targets` remain requirements/targets, not proof by themselves.
 - Before any command sets `status: done`, the task record `verify` field must contain completed verification/evidence entries.
+
+## Status ownership
+
+- `mb-verify` owns verification evidence and `VERDICT: PASS|FAIL|NEEDS-CLARIFICATION`.
+- When invoked by `/autopilot` or `/autonomous`, it must not close the task, set `status: done`, set `status: failed`, block dependents, or promote dependents. It reports a recommended next status to the scheduler.
+- In standalone/manual mode, it may state the recommended next status. It may only set `status: done` for explicitly compact `T0` / `T1` local closure.
+- `T2` / `T3` are never closed by `mb-verify`; PASS only makes them eligible for `mb-red-verify`.
 
 ## Process
 
@@ -89,21 +96,20 @@ If anything fails:
 - set `VERDICT: FAIL`
 - create a bug doc in `.memory-bank/bugs/BUG-<short>.md`
 - add a follow-up `.task.json` and update `.memory-bank/tasks/index.json` (if needed)
-- mark current task record as `failed`
-- block downstream dependents until the bug/follow-up is resolved
+- recommend current task `status: failed`
+- in scheduler mode, do not block downstream dependents directly; return that recommendation to the scheduler
 
 If all pass:
 - `VERDICT: PASS`
 - add completed verification/evidence entries in `verify`
 - apply status by tier:
-  - `T0` / `T1`: may keep compact closure behavior and set `status: done` when local policy allows it
+  - `T0` / `T1`: may keep compact closure behavior and set `status: done` only when explicit standalone compact closure allows it
   - `T2` / `T3`: do not set `status: done`; leave the task pending `/red-verify` / `mb-red-verify` with an explicit non-`done` state such as `in_progress`
 - for `T2` / `T3`, final closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
-### 4) Sync statuses
-- Update RTM lifecycle in `.memory-bank/requirements.md` (if used)
-- If the feature/epic doc tracks `lifecycle`, sync it there too
-- Update task state in the authoritative `.task.json` record according to the tier policy above
+### 4) Sync recommendations
+- Record RTM/feature lifecycle recommendations for `/mb-sync`
+- Do not independently perform scheduler closure or dependent block/promotion
 
 ## Definition of done
 - Verification output exists and is evidence-backed: compact `run.md` for eligible `T0` / `T1`, full `verification.md` for `T2` / `T3`.

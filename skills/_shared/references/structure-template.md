@@ -47,7 +47,7 @@ When a task requires reading many files or producing long output:
 - Route each `TASK-XXX` by `task.tier` and `.memory-bank/workflows/tier-policy.md`.
 - T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
 - T2/T3 require full protocol state plus `/verify` PASS and `/red-verify` semantic-pass before done.
-- T3 also requires a human-aware checkpoint and rollback/recovery note.
+- T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.

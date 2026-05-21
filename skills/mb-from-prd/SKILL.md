@@ -121,5 +121,6 @@ If the goal is “PRD → done without more user interaction”:
 - product.md + requirements.md are coherent.
 - Every REQ maps to an Epic/Feature in RTM.
 - Epics and features exist with acceptance criteria.
-- schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
+- No schema-backed task records are required from `mb-from-prd` itself.
+- If task planning is explicitly continued after `/clarify FT-<NNN>` and `clarification_status: complete`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
 - index.md is updated.

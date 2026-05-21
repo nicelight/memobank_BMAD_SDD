@@ -79,19 +79,13 @@ Constitution — это документ governing principles проекта. `/
 - `/brief`
 - `/constitution`
 - `/prd`
-- `/mb-from-prd`
 - `/clarify`
 - `/prd-to-tasks`
 - `/execute`
-- `/mb-execute`
 - `/verify`
-- `/mb-verify`
 - `/red-verify`
-- `/mb-red-verify`
 - `/review`
-- `/mb-review`
 - `/map-codebase`
-- `/mb-map-codebase`
 - `/mb-sync`
 - `/mb-garden`
 - `/mb-doctor`
@@ -101,7 +95,6 @@ Constitution — это документ governing principles проекта. `/
 - `/discuss`
 - `/add-tests`
 - `/find-skills`
-- `/find-skill`
 
 ## Как это работает
 
@@ -203,7 +196,7 @@ Authoritative task state хранится в JSON task records, которые �
 ### 4.1. Adversarial semantic verification
 Помимо обычного `/verify`, в `memobank` теперь есть отдельный semantic-pass:
 - `/red-verify TASK-123`
-- `/mb-red-verify TASK-123`
+- `/red-verify TASK-123`
 
 Его задача — не повторять process checks, а ловить случаи "формально всё прошло, но решение по существу неверно".
 
