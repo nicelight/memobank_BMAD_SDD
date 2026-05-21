@@ -25,9 +25,10 @@
 - [ ] У feature/epic **`lifecycle`** отражает реальную стадию реализации (`planned|implemented|verified`).
 - [ ] Acceptance criteria не расходятся с реализацией.
 
-### 4) Backlog
-- [ ] `tasks/backlog.md` — выполненные задачи отмечены.
-- [ ] Новые задачи (из багов, из новых требований) добавлены.
+### 4) Task registry
+- [ ] `.memory-bank/tasks/index.json` отражает актуальный набор задач.
+- [ ] `.memory-bank/tasks/TASK-*.task.json` records отражают актуальные статусы задач.
+- [ ] Новые задачи (из багов, из новых требований) добавлены как schema-backed task records.
 
 ### 5) Changelog
 - [ ] `.memory-bank/changelog.md` содержит запись о текущей wave/change.
@@ -60,6 +61,6 @@ status: active
 
 ## Если что-то не проходит
 1. Исправь проблему немедленно (пока контекст свеж).
-2. Если исправление нетривиально — создай задачу в backlog.
+2. Если исправление нетривиально — создай schema-backed task record и обнови `.memory-bank/tasks/index.json`.
 3. В interactive режиме можно отметить partial sync в `changelog.md`.
 4. В autonomous режиме partial sync недопустим: остановись с `HALT_QUALITY_GATES`.

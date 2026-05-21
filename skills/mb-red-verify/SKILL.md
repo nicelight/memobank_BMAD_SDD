@@ -28,6 +28,8 @@ Catch changes that are "disciplined but wrong":
 - Implementation exists.
 - Quality gates were already run (or failures were recorded).
 - For non-trivial tasks, `mb-verify` should usually run first.
+- The indexed task record contains `tier`. Authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
+- `T2` / `T3` require this pass before closure. `T0` / `T1` usually skip it unless scope has grown and the tier is updated first.
 
 ## Required outputs
 Create or update:
@@ -58,6 +60,7 @@ This keeps the verifier from merely confirming the workflow surface.
 
 ## When to use it
 Use `mb-red-verify` when:
+- `task.tier` is `T2` or `T3`
 - contracts, states, migrations, or data behavior changed
 - the task crosses boundaries between modules/features
 - runtime or API behavior changed
@@ -116,13 +119,15 @@ The output must be concise and high-signal. Include:
 - how the change could still be wrong
 - counterproposal or escalation path
 
-### 5) Take action from the verdict
-- `semantic-pass`: no substantive concerns found
-- `semantic-concern`: not proven wrong, but not trustworthy enough for autonomous closure without follow-up or human review
-- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept
+For `T3`, also cover critical/security/runtime/recovery concerns and confirm that the human-aware checkpoint plus rollback/recovery note are present before closure.
 
-For `semantic-concern`, create follow-up work or escalate explicitly.
-For `semantic-fail`, file a bug, add follow-up tasks, and stop downstream progression.
+### 5) Take action from the verdict
+- `semantic-pass`: no substantive concerns found; closure-eligible when `mb-verify` also has `PASS`
+- `semantic-concern`: not proven wrong, but blocked or human-review-required; never normal `done`
+- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; mark the task `failed`
+
+For `semantic-concern`, block task/dependents or leave the task pending human review. If human review accepts the concern, record owner/reason and repeat `mb-red-verify`; normal `done` requires `semantic-pass`.
+For `semantic-fail`, file a bug, add follow-up tasks, mark the task `failed`, and stop downstream progression.
 
 ## Definition of done
 - `red-verification.md` exists and is substance-focused.

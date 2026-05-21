@@ -10,7 +10,7 @@
 ## Input (from orchestrator)
 - `TASK_ID` (например `TASK-123`)
 - ссылки на task intent:
-  - `.memory-bank/tasks/backlog.md`
+  - `.memory-bank/tasks/index.json` и indexed `.memory-bank/tasks/<TASK_ID>.task.json`
   - `.memory-bank/features/FT-*` и/или `.memory-bank/requirements.md`
 - протоколы и evidence:
   - `.protocols/<TASK_ID>/plan.md`
@@ -29,7 +29,7 @@
 4. `contracts/*`, `states/*`, `runbooks/*`, `invariants.md`
 5. broader spec reconciliation
 
-Не anchor на том, что task card или `verification.md` уже выглядят убедительно.
+Не anchor на том, что task record или `verification.md` уже выглядят убедительно.
 
 ## What to challenge
 - solved the wrong problem

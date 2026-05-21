@@ -9,7 +9,8 @@ status: active
 ## Non-goals
 
 ## Inputs / source specs
-- Backlog: `.memory-bank/tasks/backlog.md` (link)
+- Task record: `.memory-bank/tasks/<TASK_ID>.task.json`
+- Task index: `.memory-bank/tasks/index.json`
 - Feature/Epic: ...
 - REQ IDs: ...
 
@@ -55,7 +56,7 @@ Checklist:
 - [ ] Update `.memory-bank/` docs (WHY/WHERE, no pseudocode)
 - [ ] Update `.memory-bank/index.md` routers (if needed)
 - [ ] Update RTM in `.memory-bank/requirements.md`
-- [ ] Mark task in `.memory-bank/tasks/backlog.md`
+- [ ] Update task record and `.memory-bank/tasks/index.json` if task state changed
 - [ ] Append entry to `.memory-bank/changelog.md`
 
 ## Definition of done

@@ -20,6 +20,10 @@ status: active
 </objective>
 
 <when-to-use>
+Required by tier:
+- `T2` and `T3` tasks must run `/red-verify` before closure.
+- `T0` and `T1` tasks usually do not need `/red-verify` unless their real scope grew beyond the recorded tier; in that case update `task.tier` first.
+
 Особенно полезно, если:
 - менялись `contracts/*`, `states/*`, миграции, схемы, data behavior
 - задача затрагивает несколько feature/module boundaries
@@ -45,7 +49,6 @@ status: active
 1) Не anchor слишком рано на full spec surface
 Сначала прочитай в таком порядке:
 - task intent из `.memory-bank/tasks/TASK-<ID>.task.json` через `.memory-bank/tasks/index.json`
-- `.memory-bank/tasks/backlog.md` только как readable summary/router, если он помогает навигации
 - linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
 - `.protocols/TASK-<ID>/verification.md`, если уже есть
@@ -63,6 +66,8 @@ status: active
 - другие spec docs, если они нужны для reconciliation
 
 Важно:
+- if the task record has no `tier`, stop with an explicit error
+- authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used
 - не начинай с предположения, что task record и verify verdict уже доказывают correctness
 - сначала сформируй независимую hostile модель риска
 - затем сравни её со specs и кодом
@@ -82,6 +87,13 @@ status: active
 - state/data consistency
 - operational behavior (retries, observability, migrations, failure modes)
 - future maintenance cost
+
+Для `T3` обязательно добавь отдельную проверку:
+- critical/security concerns
+- deploy/runtime/production failure modes
+- irreversible/data-loss, compliance, payments, or secrets exposure concerns when relevant
+- rollback/recovery note is present and credible
+- human-aware checkpoint is present before autonomous closure
 
 4) Заполни `.protocols/TASK-<ID>/red-verification.md`
 Используй шаблон проекта, если он есть.
@@ -104,27 +116,29 @@ status: active
 6) Вердикт
 - `semantic-pass`:
   - substantive concerns не обнаружены
+  - closure-eligible for normal `done` when `/verify` also has `PASS`
   - можно завершать loop через `/mb-sync`
 
 - `semantic-concern`:
   - есть серьёзные сомнения или hidden assumptions, но не доказан прямой semantic break
-  - не оставляй текущую задачу молча в normal `done`
-  - до закрытия wave требуется явное решение: block task/dependents, создать follow-up task, изменить status (`blocked`/`failed`/оставить `in_progress`) или documented risk acceptance с owner/reason
-  - если выбран follow-up, добавь его как JSON task record, обнови `tasks/index.json`, а `backlog.md` только как summary/router
-  - если нужна human escalation, зафиксируй blocking question/decision и не продвигай dependents до решения
+  - not closure-eligible for normal `done`
+  - до продолжения wave требуется явное решение: block task/dependents или оставить task `in_progress` pending human review
+  - если human review принимает concern, зафиксируй owner/reason, обнови work/evidence as needed и повтори `/red-verify`; normal `done` разрешён только после `semantic-pass`
+  - если выбран follow-up, добавь его как JSON task record и обнови `tasks/index.json`
+  - не продвигай dependents, пока задача не получила `semantic-pass`
 
 - `semantic-fail`:
   - решение по существу неверно, вредно или слишком рискованно
   - заведи bug doc в `.memory-bank/bugs/BUG-<short>.md`
-  - добавь follow-up task как JSON task record, обнови `tasks/index.json`, а `backlog.md` только как summary/router
-  - текущую задачу пометь `failed` или верни в `blocked` по контексту репозитория
+  - добавь follow-up task как JSON task record и обнови `tasks/index.json`
+  - текущую задачу пометь `failed`
   - downstream dependents не продвигай
 
 7) Место в normal loop
 Рекомендуемый порядок:
 - `/execute TASK-<ID>`
 - `/verify TASK-<ID>`
-- `/red-verify TASK-<ID>` для рискованных задач
+- `/red-verify TASK-<ID>` для `T2` / `T3`
 - `/mb-sync`
 
 </process>

@@ -1,5 +1,5 @@
 ---
-description: Выполнение одной задачи (TASK-XXX) по протоколу: plan → build → gates → verify → MB-SYNC.
+description: Выполнение одной задачи (TASK-XXX) по протоколу: plan → build → gates; standalone can continue to verify → MB-SYNC.
 status: active
 ---
 # /execute — Execute one TASK (protocol-driven)
@@ -8,7 +8,7 @@ status: active
 Выполнять задачи последовательно или волнами так, чтобы:
 - работа была параллельной, но без конфликтов
 - результаты были верифицируемы
-- Memory Bank обновлялся сразу
+- standalone closure could update Memory Bank promptly, while scheduler mode reports evidence for scheduler-owned sync
 </objective>
 
 <process>
@@ -17,13 +17,24 @@ status: active
 Ожидается `$ARGUMENTS`:
 - `TASK-<ID>`
 
+Execution mode:
+- Scheduler mode: `/execute` was called by `/autopilot` or `/autonomous`.
+- Standalone mode: user invoked `/execute TASK-<ID>` directly.
+
+Ownership boundary:
+- In scheduler mode, the scheduler owns task state transitions, verify/red-verify, MB-SYNC, final closure, failure handling, and dependent promotion.
+- In scheduler mode, `/execute` must implement scoped changes, update protocol/progress/evidence, run implementation gates that belong to the task, and report result/evidence to the scheduler.
+- In scheduler mode, `/execute` must not mutate `ready -> in_progress`, `in_progress -> failed`, or `in_progress -> done`; must not run `/mb-sync`; must not update JSON task status after verification; and must not promote or block dependent tasks.
+- In standalone mode, `/execute` may guide local follow-up verification, MB-SYNC, and task state updates.
+
 ## 1) Прочитай источники
 Открой минимум:
 - `.memory-bank/tasks/index.json`
 - `.memory-bank/tasks/TASK-<ID>.task.json`
 - соответствующие спеки (например `.memory-bank/features/FT-*` / `.memory-bank/requirements.md`)
 
-If the task record is missing from `index.json`, the indexed file is missing, or the record `id` does not match `TASK-<ID>`, stop with an explicit error. Do not reconstruct task state from `.memory-bank/tasks/backlog.md`.
+If the task record is missing from `index.json`, the indexed file is missing, or the record `id` does not match `TASK-<ID>`, stop with an explicit error.
+If the task record has no `tier`, stop with an explicit error. Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 
 Приоритет чтения:
 1. explicit task record / IMPL-plan поля:
@@ -41,25 +52,24 @@ If the task record is missing from `index.json`, the indexed file is missing, or
 - отсутствие richer fields не является ошибкой
 - для classic tasks используй fallback к feature + requirements + duo docs
 
-## 2) Создай протокол выполнения
-Создай:
-- `.protocols/TASK-<ID>/context.md`
-- `.protocols/TASK-<ID>/plan.md`
-- `.protocols/TASK-<ID>/progress.md`
-- `.protocols/TASK-<ID>/verification.md`
-- `.protocols/TASK-<ID>/handoff.md`
+## 2) Создай протокол выполнения по `task.tier`
+Сначала прочитай `tier` из authoritative `.task.json`.
+
+Protocol routing:
+- `T0` / `T1`: compact protocol is allowed. Create `.protocols/TASK-<ID>/run.md` and record tier, goal, scope, context used, plan, changes, gates/checks, evidence, and current handoff state. In standalone mode, also record verification summary, MB-SYNC decision, and verdict when local closure is performed. In scheduler mode, leave scheduler-owned closure fields pending for the scheduler.
+- `T2` / `T3`: full protocol is required. Create `.protocols/TASK-<ID>/context.md`, `plan.md`, `progress.md`, `verification.md`, and `handoff.md`. Compact-only protocol is invalid. In scheduler mode, `/execute` updates implementation/progress/evidence and leaves verification/closure sections for the scheduler-owned verify/red-verify flow.
+- `T3`: before closure, record a human-aware checkpoint marker and a rollback/recovery note in the full protocol.
+
 Если в проекте есть шаблоны протоколов (из `mb-execute`), используй их, иначе создай минимальные файлы вручную.
 
-Если задача выполняется внутри `/autopilot` или `/autonomous`, синхронизируй task state in the task record:
-- before start: `status: ready -> in_progress` in `.task.json`
-- after PASS: `status: in_progress -> done` in `.task.json`
-- after FAIL: `status: in_progress -> failed` in `.task.json`
-- refresh `.memory-bank/tasks/backlog.md` only as a readable summary/router
+В scheduler mode (`/autopilot` / `/autonomous`) не меняй task `status` в `.task.json`: за `ready -> in_progress`, `in_progress -> failed/done`, verification closure, MB-SYNC, failure handling, and dependent promotion отвечает scheduler. Только фиксируй protocol/progress/evidence и report result back to scheduler.
 
-В `plan.md` и `context.md` явно зафиксируй:
+В standalone mode `/execute TASK-<ID>` may update local task state as part of the direct task lifecycle, then call or guide follow-up `/verify`, `/red-verify`, and `/mb-sync` as needed.
+
+В full protocol `plan.md` и `context.md`, а в compact protocol `run.md`, явно зафиксируй:
+- task tier and authoritative task record path
 - какие richer inputs были найдены
 - какой fallback использован, если richer inputs отсутствуют
-- path to the authoritative task record
 
 ## 3) Реализация (fan-out опционально)
 ### 3.1 Изоляция (без конфликтов)
@@ -81,24 +91,24 @@ If the task record is missing from `index.json`, the indexed file is missing, or
 
 ```bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-<ID>. Read AGENTS.md and .protocols/TASK-<ID>/{context,plan,progress}.md. Keep context.md updated (loaded docs + commands). Implement only scoped changes. Write report to .tasks/TASK-<ID>/TASK-<ID>-S-IMPL-final-report-code-01.md. Update progress.md.'
+  'TASK_ID=TASK-<ID>. Read AGENTS.md and the indexed JSON task record. Route only by task.tier. Use compact run.md for T0/T1 or full protocol files for T2/T3. Implement only scoped changes. Write report to .tasks/TASK-<ID>/TASK-<ID>-S-IMPL-final-report-code-01.md.'
 ```
 
 ### 3.2.2 Fresh Claude session per TASK (required when working in Claude Code)
 Если ты работаешь в **Claude Code**, для чистого контекста делай так:
-1) Оркестратор готовит `.protocols/TASK-<ID>/{context,plan,progress}.md` и папку `.tasks/TASK-<ID>/`.
+1) Оркестратор готовит tier-selected protocol files (`run.md` for T0/T1, full files for T2/T3) и папку `.tasks/TASK-<ID>/`.
 2) Запусти новую “чистую” сессию через shell:
 
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  'TASK_ID=TASK-<ID>. Read AGENTS.md, .protocols/TASK-<ID>/{context,plan,progress}.md, and acceptance criteria docs. Keep context.md updated (loaded docs + commands). Implement only scoped changes. Update progress.md. Write report to .tasks/TASK-<ID>/TASK-<ID>-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-<ID>. Read AGENTS.md, the indexed JSON task record, tier-selected protocol files, and acceptance criteria docs. Route only by task.tier. Implement only scoped changes. Write report to .tasks/TASK-<ID>/TASK-<ID>-S-IMPL-final-report-code-01.md.'
 ```
 
-3) Для верификации — отдельная свежая сессия:
+3) Standalone follow-up verification, or scheduler-owned verification after `/execute` returns, uses a separate fresh session:
 
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  'TASK_ID=TASK-<ID>. Read .protocols/TASK-<ID>/{context,plan,progress}.md + acceptance criteria. Keep context.md updated. Fill .protocols/TASK-<ID>/verification.md and store evidence in .tasks/TASK-<ID>/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'
+  'TASK_ID=TASK-<ID>. Read the indexed JSON task record, tier-selected protocol files, and acceptance criteria. For T0/T1 record verification in run.md; for T2/T3 fill verification.md and store evidence in .tasks/TASK-<ID>/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'
 ```
 
 ### 3.3 Gates
@@ -109,18 +119,30 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 
 ### 3.4 Параллельно vs последовательно (dependencies)
 - Если задачи **независимы** (нет наследования/зависимостей и не трогают одни и те же файлы) — можно запускать в отдельных чистых сессиях параллельно.
-- Если есть **наследование** (TASK-B зависит от результатов TASK-A) — запускай **строго последовательно**: сначала TASK-A (implement + verify + mb-sync), потом TASK-B.
+- Если есть **наследование** (TASK-B зависит от результатов TASK-A) — standalone mode выполняет TASK-A строго последовательно through implement + verify + mb-sync before TASK-B; scheduler mode reports TASK-A result/evidence and lets the scheduler promote dependent tasks.
 - Если есть пересечение по файлам/модулям — считай задачи зависимыми (или изолируй worktree/branch).
 
-## 4) Верификация
-- передай `TASK-<ID>` в `/verify` (или `mb-verify`) для заполнения `verification.md`
-- если richer fields отсутствовали, передай verifier явное указание использовать classic AC/REQ basis
-- если изменение domain-heavy, cross-boundary, migration/state/API/runtime-sensitive или есть риск "технически PASS, но семантически мимо" — затем запусти `/red-verify TASK-<ID>`
+## 4) Верификация по `task.tier`
+Scheduler mode:
+- Do not call `/verify` or `/red-verify`.
+- Do not write final verification verdict/status into the JSON task record.
+- Record implementation gates/checks and evidence paths in the protocol, then report them to the scheduler.
+- If richer fields were absent, include a note that the scheduler/verifier should use classic AC/REQ basis.
 
-## 5) MB-SYNC (обязательный финал)
-Запусти `/mb-sync`:
+Standalone mode:
+- `T0`: separate `/verify` is not required; record checks and verdict in compact `run.md`.
+- `T1`: separate `/verify` is optional when scope remains local; record local verification in compact `run.md`.
+- `T2` / `T3`: pass `TASK-<ID>` to `/verify` (or `mb-verify`) and then `/red-verify`; both are required before closure.
+- If richer fields were absent, pass verifier an explicit instruction to use classic AC/REQ basis.
+- `T3`: verification package must include critical/security/runtime concerns where relevant plus the rollback/recovery note.
+
+## 5) MB-SYNC and closure
+Standalone mode: run `/mb-sync` after required verification:
 - обнови `.memory-bank/` (WHY/WHERE + навигация)
-- обнови RTM и JSON task record status; refresh backlog summary only
+- обнови RTM и JSON task record status
 - добавь запись в `.memory-bank/changelog.md`
 - если задача failed и есть dependents — пометь их `blocked`
+- для `T2` / `T3` убедись, что closure expectations выполнены; для `T3` не закрывай задачу молча без checkpoint и rollback/recovery note
+
+Scheduler mode: do not run `/mb-sync`, do not update JSON task status, and do not close/promote/block tasks. Return a concise report with changed files, gates run, evidence paths, protocol paths, and any blocker/FAIL reason so the scheduler can perform verify/red-verify, MB-SYNC, closure, failure handling, and dependent promotion.
 </process>

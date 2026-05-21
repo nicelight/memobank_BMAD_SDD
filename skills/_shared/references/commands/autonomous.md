@@ -8,6 +8,7 @@ status: active
 Запустить **полный автономный цикл** без ожидания пользователя:
 - intake PRD / delta
 - построение L1–L3
+- feature-level clarification gate
 - декомпозиция всех FT в schema-backed JSON TASK records
 - execution + verification + MB-SYNC
 - промежуточные и финальные review-гейты
@@ -47,6 +48,11 @@ status: active
 - есть хотя бы один исполнитель (`codex` или `claude`)
 - есть policy-гейт: `.memory-bank/workflows/autonomy-policy.md`
 
+Default pre-queue health check:
+- до создания executable JSON task queue запусти `/mb-lint`, затем plain `/mb-doctor` using the repository's documented command or `node scripts/mb-doctor.mjs`
+- pre-queue `/mb-doctor` is a health check only and must not require executable task records / ready queue
+- не запускай `/mb-doctor --strict` до того, как `/prd-to-tasks --all` создаст queue
+
 Если в репозитории уже есть существенный код:
 - сначала построй/обнови baseline через `/map-codebase`
 - только потом накладывай PRD delta
@@ -74,8 +80,24 @@ status: active
 - если после 2–3 циклов всё ещё `REJECT` → terminal state `HALT_REVIEW_REJECT`
 - batch execution разрешён **только после `APPROVE`**
 
-## 5) Декомпозиция всех фич
-Запусти:
+## 5) Clarification gate перед декомпозицией
+Перед `/prd-to-tasks --all` все targeted features должны иметь:
+
+```yaml
+clarification_status: complete
+```
+
+Для каждой feature с `clarification_status: pending` запусти `/clarify FT-<NNN>` в autonomous mode, используя только evidence из PRD, product, requirements, feature doc и явно linked relevant docs.
+
+Правила:
+- не придумывай product decisions
+- не создавай task records для pending features
+- если `/clarify` требует ответа пользователя или находит blocking ambiguity, запиши blockers в `.protocols/AUTONOMOUS-RUN/status.md`, поставь terminal state `HALT_CLARIFICATION_REQUIRED` и остановись
+- если metadata отсутствует, treat as clarification blocker and halt with `HALT_CLARIFICATION_REQUIRED`
+- продолжай только когда все targeted features are `clarification_status: complete`
+
+## 6) Декомпозиция всех фич
+После clarification gate запусти:
 - `/prd-to-tasks --all`
 
 Требование:
@@ -89,17 +111,16 @@ status: active
   - `reqs`
   - `depends_on`
   - `touched_files`
-  - `risk.level: low|medium|high`
+  - `tier: T0|T1|T2|T3`
   - `gates`
   - `verify`
   - `docs`
-- `.memory-bank/tasks/backlog.md` may be refreshed as a readable summary/router only
+- Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 
-## 5.1) Review gate по JSON task records
+## 6.1) Review gate по JSON task records
 Сразу после `/prd-to-tasks --all` и до scheduler execution запусти `/review` именно по task planning surface:
 - `.memory-bank/tasks/index.json`
 - all indexed `.memory-bank/tasks/*.task.json`
-- `.memory-bank/tasks/backlog.md` только как readable summary/router
 - per-feature implementation plans
 
 Правило:
@@ -107,10 +128,22 @@ status: active
 - если после 2–3 циклов всё ещё blocking `REJECT` → terminal state `HALT_REVIEW_REJECT`
 - scheduler execution разрешён только после `APPROVE` или после явного решения, что оставшиеся non-blocking замечания не мешают запуску
 
-## 6) Scheduler loop
+## 6.2) Readiness gate
+Перед scheduler execution запусти `/mb-lint`, затем `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`.
+
+Правило:
+- strict doctor is a post-queue gate: запускай его только после того, как `/prd-to-tasks --all` создал `.memory-bank/tasks/index.json` и indexed task records
+- если doctor command/script отсутствует, падает, или возвращает readiness errors → terminal state `HALT_QUALITY_GATES`
+- after task queue exists, required ordering is `mb-lint` + `mb-doctor --strict`; do not replace strict doctor with plain `mb-lint`
+- pending/missing feature clarification or tasks linked to unclarified features are readiness errors
+- strict doctor должен быть зелёным до первого task selection pass
+
+## 7) Scheduler loop
 Работай по `.memory-bank/tasks/index.json` и indexed `.task.json` records.
-Do not regex-scrape markdown task cards from `.memory-bank/tasks/backlog.md`.
 If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_DEADLOCK` with reason `no schema-backed task records`.
+If any indexed task record is missing `tier`, set terminal state `HALT_POLICY_VIOLATION` and stop.
+Read the task queue and task metadata only from JSON task records.
+Before task selection and before progression after each closed task, run `/mb-lint`, then `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat doctor absence, non-zero exit, or readiness errors as `HALT_QUALITY_GATES`.
 
 Перед каждым selection pass выполни promotion pass:
 - `planned -> ready`, если все `depends_on` уже `done` и нет blockers / blocking review rejects / unresolved semantic-concern
@@ -131,26 +164,32 @@ If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_D
 - зависимые или shared-file задачи — только последовательно
 - follow-up task, добавленная по итогам verify, должна попасть в **следующую итерацию того же run**
 
-## 7) Execution loop per TASK
+## 8) Execution loop per TASK
 Для каждого выбранного `TASK-*`:
 1) `/execute TASK-<ID>`
-2) `/verify TASK-<ID>`
-3) `/red-verify TASK-<ID>` для рискованных по существу задач
-4) `/mb-sync`
+2) route only by `task.tier` from the JSON record:
+   - `T0` / `T1`: compact path is allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
+   - `T2` / `T3`: full protocol path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before any `done` transition
+   - `T3`: require human-aware checkpoint plus rollback/recovery note; no silent autonomous closure
+3) `/mb-sync`
+4) run `/mb-lint`, then `/mb-doctor --strict` before promoting dependents
 
 Переходы состояния:
 - `ready -> in_progress`
-- `in_progress -> done` при `VERDICT: PASS` и отсутствии `semantic-fail`
+- `in_progress -> done` for `T0` / `T1` при verification `VERDICT: PASS`
+- `in_progress -> done` for `T2` / `T3` only after `/verify` `VERDICT: PASS` evidence and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
 - `in_progress -> failed` при `VERDICT: FAIL` или `SEMANTIC_VERDICT: semantic-fail`
-- при `SEMANTIC_VERDICT: semantic-concern` нельзя молча оставлять normal `done`: до закрытия wave нужно явно выбрать и записать решение — block task/dependents, создать follow-up task, изменить status (`blocked`/`failed`/оставить `in_progress`) или documented risk acceptance с owner/reason
+- `SEMANTIC_VERDICT: semantic-concern` is never normal `done`: set the task/dependents to `blocked` or require human review, and record owner/reason/follow-up evidence
+- после `semantic-concern` не закрывай задачу и не продвигай dependents until a subsequent `/red-verify` returns `SEMANTIC_VERDICT: semantic-pass`
 - downstream dependents → `blocked`, если upstream failed/blocking
 
 Все переходы записывай в соответствующий `.task.json`. Queue state в `.protocols/AUTONOMOUS-RUN/status.md` должен ссылаться на task record paths, а не дублировать authoritative state.
 
-## 8) Wave review
+## 9) Wave review
 После завершения каждой wave:
-- убедись, что все `semantic-concern` этой wave имеют явное решение (block/follow-up/status/risk acceptance); без этого wave не закрыта
+- убедись, что все `semantic-concern` этой wave имеют явное решение (blocked status, human review required, or follow-up); без subsequent `semantic-pass` affected tasks are not closed
 - обнови `.protocols/AUTONOMOUS-RUN/status.md`
+- запусти `/mb-lint`, затем `/mb-doctor --strict`; если gate падает, не закрывай wave и не переходи к следующей wave
 - запусти `/review`
 
 Если доступны **оба** движка:
@@ -162,7 +201,7 @@ If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_D
 - исправь и повтори
 - если budget исчерпан → `HALT_REVIEW_REJECT`
 
-## 9) Failure budgets
+## 10) Failure budgets
 Зафиксируй и соблюдай:
 - `max_retries_per_task`
 - `max_consecutive_failures`
@@ -172,11 +211,12 @@ If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_D
 При превышении любого лимита:
 - terminal state `HALT_FAILURE_BUDGET`
 
-## 10) Terminal states
+## 11) Terminal states
 Финал должен быть **явным** в `.protocols/AUTONOMOUS-RUN/status.md`:
 
 - `SUCCESS`
 - `HALT_BLOCKING_QUESTIONS`
+- `HALT_CLARIFICATION_REQUIRED`
 - `HALT_REVIEW_REJECT`
 - `HALT_FAILURE_BUDGET`
 - `HALT_DEPENDENCY_DEADLOCK`
@@ -184,10 +224,11 @@ If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_D
 - `HALT_QUALITY_GATES`
 - `HALT_BUDGET_EXCEEDED`
 
-## 11) Success condition
+## 12) Success condition
 Считай run завершённым только если:
 - в JSON task records не осталось `ready` / `in_progress`
 - все обязательные REQ/AC имеют `Lifecycle: verified`
 - нет открытых blocking bugs / blockers
-- последний `review` = `APPROVE`
+- latest `/review` = `APPROVE`
+- latest `/mb-lint` + `/mb-doctor --strict` pass without readiness errors
 </process>

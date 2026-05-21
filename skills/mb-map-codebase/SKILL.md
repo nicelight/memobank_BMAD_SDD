@@ -9,7 +9,7 @@ description: >
 - **What it does:** scans an existing repository, merges evidence from scoped workers, and writes **as-is** Memory Bank docs.
 - **Use it when:** code already exists and you need a reliable baseline before planning changes.
 - **Input:** repository root plus an initialized `.memory-bank/`.
-- **Output:** product, architecture, testing, runbook, and contract docs that describe the current system without speculative backlog generation.
+- **Output:** product, architecture, testing, runbook, and contract docs that describe the current system without speculative task planning.
 
 ## Preconditions
 - You are in the repo root.

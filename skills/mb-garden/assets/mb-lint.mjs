@@ -19,25 +19,32 @@ if (!fs.existsSync(MB)) {
 
 const REQUIRED = [
   '.memory-bank/index.md',
+  '.memory-bank/constitution.md',
   '.memory-bank/mbb/index.md',
   '.memory-bank/changelog.md',
   '.memory-bank/workflows/mb-sync.md',
   '.memory-bank/testing/index.md',
   '.memory-bank/schemas/task.schema.json',
   '.memory-bank/tasks/index.json',
-  '.memory-bank/tasks/backlog.md',
   '.memory-bank/skills/index.md',
 ];
 
 const ALLOWED_STATUS = new Set(['draft', 'active', 'deprecated', 'archived']);
 const ALLOWED_LIFECYCLE = new Set(['planned', 'implemented', 'verified']);
+const ALLOWED_CLARIFICATION_STATUS = new Set(['pending', 'complete']);
+const ANALYSIS_DIR_REL = '.memory-bank/analysis';
+const ANALYSIS_PRODUCT_BRIEF_REL = '.memory-bank/analysis/product-brief.md';
+const ANALYSIS_PRD_SOURCE_MARKER = '.memory-bank/analysis/product-brief.md';
 const ALLOWED_TASK_STATUS = new Set(['planned', 'ready', 'in_progress', 'blocked', 'done', 'failed']);
-const ALLOWED_TASK_RISK = new Set(['low', 'medium', 'high']);
+const ALLOWED_TASK_TIER = new Set(['T0', 'T1', 'T2', 'T3']);
 const TASK_ID_RE = /^TASK-[0-9]{3,}$/;
 const TASK_FILE_RE = /^TASK-[0-9]{3,}\.task\.json$/;
+const FEATURE_ID_RE = /^FT-[0-9]{3,}$/;
 const INDEX_TOP_LEVEL_KEYS = new Set(['version', 'tasks']);
 const INDEX_TASK_ENTRY_KEYS = new Set(['id', 'file']);
+const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const GATE_KEYS = new Set(['name', 'command', 'required']);
+const LEGACY_TASK_RISK_KEYS = new Set(['risk', 'risk.level', 'risk_level', 'riskLevel']);
 const DONE_VERIFY_OBJECT_KEYS = new Set([
   'evidence',
   'result',
@@ -54,6 +61,13 @@ const DONE_VERIFY_OBJECT_KEYS = new Set([
   'report',
   'reports',
 ]);
+const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
+const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
+const PASS_EVIDENCE_RE = /\bverdict\s*:?\s*pass\b|\bpass(?:ed)?\b/i;
+const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
+const RED_VERIFY_PASS_RE = /^\s*"?SEMANTIC_VERDICT"?\s*:\s*"?semantic-pass"?\s*,?\s*$/im;
+const HUMAN_CHECKPOINT_RE = /\bhuman[-\s]aware checkpoint\b/i;
+const ROLLBACK_RECOVERY_RE = /\b(rollback|recovery)\b/i;
 const REQUIRED_TASK_FIELDS = [
   'id',
   'title',
@@ -63,7 +77,7 @@ const REQUIRED_TASK_FIELDS = [
   'reqs',
   'depends_on',
   'touched_files',
-  'risk',
+  'tier',
   'gates',
   'verify',
   'docs',
@@ -215,6 +229,101 @@ function hasSourceOfTruth(fm) {
   return true;
 }
 
+function hasOwn(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function isFeatureDoc(rel) {
+  const n = normalizeRel(rel);
+  return n.startsWith('.memory-bank/features/') && path.basename(n).startsWith('FT-') && n.endsWith('.md');
+}
+
+function featureIdFromFile(filePath) {
+  const base = path.basename(filePath, path.extname(filePath));
+  const match = base.match(/^(FT-[0-9]{3,})(?:[-_].*)?$/);
+  return match?.[1];
+}
+
+function hasClarificationCompletionMarker(text) {
+  const normalized = text.replace(/\r\n/g, '\n');
+  return (
+    /^## Clarifications\s*$/m.test(normalized) ||
+    /(?:^|\n)Clarification: no critical ambiguity found(?:\n|$)/.test(normalized)
+  );
+}
+
+function hasSectionHeading(text, title) {
+  const normalized = text.replace(/\r\n/g, '\n');
+  const escapedTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^#{2,6}\\s+${escapedTitle}\\s*$`, 'im').test(normalized);
+}
+
+function isAnalysisBrainstormingReport(rel) {
+  const n = normalizeRel(rel);
+  return n.startsWith(`${ANALYSIS_DIR_REL}/brainstorming/`) && path.basename(n) !== 'index.md' && n.endsWith('.md');
+}
+
+function prdFiles() {
+  const candidates = [
+    '.memory-bank/prd.md',
+    '.memory-bank/PRD.md',
+    '.memory-bank/product-requirements.md',
+    '.memory-bank/product-requirements-document.md',
+  ];
+  return candidates.filter((rel) => hasFile(path.join(ROOT, rel)));
+}
+
+function checkAnalysisStructure() {
+  const analysisDir = path.join(ROOT, ANALYSIS_DIR_REL);
+  if (!fs.existsSync(analysisDir)) return;
+
+  if (!hasFile(path.join(analysisDir, 'index.md'))) {
+    errors.push(`${ANALYSIS_DIR_REL}: missing required index.md`);
+  }
+
+  const productBriefPath = path.join(ROOT, ANALYSIS_PRODUCT_BRIEF_REL);
+  const productBriefExists = hasFile(productBriefPath);
+  if (productBriefExists) {
+    const text = readText(productBriefPath);
+    const fm = parseFrontmatter(text);
+    if (!fm || stripYamlQuotes(fm.type) !== 'product-brief') {
+      errors.push(`${ANALYSIS_PRODUCT_BRIEF_REL}: frontmatter must include 'type: product-brief'`);
+    }
+    if (!fm || !hasOwn(fm, 'status') || !String(fm.status).trim()) {
+      errors.push(`${ANALYSIS_PRODUCT_BRIEF_REL}: frontmatter must include non-empty 'status'`);
+    }
+    if (!hasSectionHeading(text, 'Decision')) {
+      errors.push(`${ANALYSIS_PRODUCT_BRIEF_REL}: missing 'Decision' section`);
+    }
+  }
+
+  for (const filePath of listMarkdownFiles(analysisDir)) {
+    const rel = normalizeRel(path.relative(ROOT, filePath));
+    if (!isAnalysisBrainstormingReport(rel)) continue;
+
+    const text = readText(filePath);
+    const fm = parseFrontmatter(text);
+    if (!fm || stripYamlQuotes(fm.type) !== 'brainstorming-report') {
+      errors.push(`${rel}: frontmatter must include 'type: brainstorming-report'`);
+    }
+    if (!fm || !hasOwn(fm, 'id') || !String(fm.id).trim()) {
+      errors.push(`${rel}: frontmatter must include non-empty 'id'`);
+    }
+    if (!hasSectionHeading(text, 'Recommended next step')) {
+      errors.push(`${rel}: missing 'Recommended next step' section`);
+    }
+  }
+
+  if (productBriefExists) {
+    for (const rel of prdFiles()) {
+      const text = readText(path.join(ROOT, rel));
+      if (!text.includes(ANALYSIS_PRD_SOURCE_MARKER)) {
+        warnings.push(`${rel}: PRD exists but does not mention ${ANALYSIS_PRD_SOURCE_MARKER}`);
+      }
+    }
+  }
+}
+
 function checkRequiredFiles() {
   for (const rel of REQUIRED) {
     const p = path.join(ROOT, rel);
@@ -262,6 +371,47 @@ function checkFrontmatter(filePath, text) {
         );
       }
     }
+  }
+
+  checkFeatureClarificationMetadata(rel, text, fm);
+}
+
+function checkFeatureClarificationMetadata(rel, text, fm) {
+  if (!isFeatureDoc(rel)) return;
+  if (!fm) return;
+
+  let clarificationStatus;
+  if (!hasOwn(fm, 'clarification_status')) {
+    errors.push(`${rel}: frontmatter must include 'clarification_status' (pending|complete)`);
+  } else {
+    clarificationStatus = stripYamlQuotes(fm.clarification_status);
+    if (!ALLOWED_CLARIFICATION_STATUS.has(clarificationStatus)) {
+      errors.push(`${rel}: invalid clarification_status '${clarificationStatus}' (allowed: pending|complete)`);
+    }
+  }
+
+  if (!hasOwn(fm, 'last_clarified')) {
+    errors.push(`${rel}: frontmatter must include 'last_clarified' (null or YYYY-MM-DD)`);
+  } else {
+    const lastClarified = stripYamlQuotes(fm.last_clarified);
+    if (lastClarified !== 'null' && !/^\d{4}-\d{2}-\d{2}$/.test(lastClarified)) {
+      errors.push(`${rel}: invalid last_clarified '${lastClarified}' (expected null or YYYY-MM-DD)`);
+    }
+  }
+
+  if (!hasOwn(fm, 'clarification_questions')) {
+    errors.push(`${rel}: frontmatter must include 'clarification_questions' (integer >= 0)`);
+  } else {
+    const questionCount = stripYamlQuotes(fm.clarification_questions);
+    if (!/^(0|[1-9][0-9]*)$/.test(questionCount)) {
+      errors.push(`${rel}: invalid clarification_questions '${questionCount}' (expected integer >= 0)`);
+    }
+  }
+
+  if (clarificationStatus === 'complete' && !hasClarificationCompletionMarker(text)) {
+    errors.push(
+      `${rel}: clarification_status complete requires '## Clarifications' or 'Clarification: no critical ambiguity found'`
+    );
   }
 }
 
@@ -326,23 +476,6 @@ function checkFileSize(filePath, text) {
   }
 }
 
-function checkBacklogDoesNotContainTaskCards() {
-  const rel = '.memory-bank/tasks/backlog.md';
-  const p = path.join(ROOT, rel);
-  if (!fs.existsSync(p)) return;
-
-  const text = readText(p).replace(/\r\n/g, '\n');
-  const cardHeading = /^#{2,6}\s+TASK-[A-Za-z0-9_-]+(?:\s|$)/m;
-  const taskIdField = /^(?:[-*]\s*)?TASK-ID:\s*TASK-[A-Za-z0-9_-]+\s*$/m;
-  const taskStateField = /^[-*]\s*(Status|Wave|Feature|REQs?|Depends on|Touched files|Tests|Verify|Docs):\s+\S+/m;
-
-  if (cardHeading.test(text) || taskIdField.test(text) || taskStateField.test(text)) {
-    errors.push(
-      `${rel}: markdown task cards are not valid task records; use tasks/index.json and indexed *.task.json files`
-    );
-  }
-}
-
 function hasPathLikeMarker(value) {
   const text = String(value ?? '').trim();
   if (!text) return false;
@@ -379,6 +512,51 @@ function hasDoneVerifyEvidence(task) {
     if (typeof entry === 'string') return hasDoneVerifyTextMarker(entry);
     return hasDoneVerifyObjectMarker(entry);
   });
+}
+
+function hasNonEmptyEvidenceValue(value) {
+  if (Array.isArray(value)) return value.some((item) => hasNonEmptyEvidenceValue(item));
+  if (value && typeof value === 'object') return Object.values(value).some((item) => hasNonEmptyEvidenceValue(item));
+  return String(value ?? '').trim().length > 0;
+}
+
+function hasStatusEvidenceMarker(value, status) {
+  const marker = status === 'done' ? PASS_EVIDENCE_RE : FAIL_EVIDENCE_RE;
+  if (typeof value === 'string') return marker.test(value);
+  if (Array.isArray(value)) return value.some((item) => hasStatusEvidenceMarker(item, status));
+  if (!value || typeof value !== 'object') return false;
+
+  return Object.entries(value).some(([key, child]) => {
+    return (marker.test(key) && hasNonEmptyEvidenceValue(child)) || hasStatusEvidenceMarker(child, status);
+  });
+}
+
+function hasTaskStatusEvidence(task, status) {
+  if (!Array.isArray(task.verify) || task.verify.length === 0) return false;
+  return task.verify.some((entry) => hasStatusEvidenceMarker(entry, status));
+}
+
+function hasCompactRunEvidence(id) {
+  const runPath = path.join(protocolDirForTask(id), 'run.md');
+  if (!hasFile(runPath)) return false;
+
+  const text = readText(runPath).replace(/\r\n/g, '\n');
+  return (
+    (/\bverdict\b/i.test(text) && /\bpass(?:ed)?\b/i.test(text)) ||
+    /\bchecks\s*\/\s*evidence\b/i.test(text)
+  );
+}
+
+function checkDoneEvidence(rel, task) {
+  if (task.status !== 'done') return;
+  if (!ALLOWED_TASK_TIER.has(task.tier)) return;
+  if (FULL_PROTOCOL_TIERS.has(task.tier)) return;
+
+  if (!hasDoneVerifyEvidence(task) && !hasCompactRunEvidence(task.id)) {
+    errors.push(
+      `${rel}: ${task.tier} done task must include completed evidence in 'verify' or compact .protocols/${task.id}/run.md`
+    );
+  }
 }
 
 function checkArrayField(rel, task, field) {
@@ -419,6 +597,230 @@ function checkGateItems(rel, task) {
   });
 }
 
+function checkLegacyTaskRiskKeys(rel, task) {
+  for (const key of LEGACY_TASK_RISK_KEYS) {
+    if (hasOwn(task, key)) {
+      errors.push(`${rel}: task record must not contain '${key}'; use 'tier' (T0|T1|T2|T3)`);
+    }
+  }
+}
+
+function featureDocsById() {
+  const featureDir = path.join(ROOT, '.memory-bank', 'features');
+  const byId = new Map();
+  if (!fs.existsSync(featureDir)) return byId;
+
+  for (const file of listMarkdownFiles(featureDir)) {
+    const featureId = featureIdFromFile(file);
+    if (!featureId) continue;
+
+    const rel = normalizeRel(path.relative(ROOT, file));
+    const fm = parseFrontmatter(readText(file));
+    const status = fm && hasOwn(fm, 'clarification_status') ? stripYamlQuotes(fm.clarification_status) : undefined;
+    const entry = { rel, status };
+    if (!byId.has(featureId)) byId.set(featureId, []);
+    byId.get(featureId).push(entry);
+  }
+
+  return byId;
+}
+
+function checkTaskFeatureClarification(rel, task, featuresById) {
+  if (typeof task.feature !== 'string') return;
+  const featureId = task.feature.trim();
+  if (!FEATURE_ID_RE.test(featureId)) return;
+
+  const featureDocs = featuresById.get(featureId);
+  if (!featureDocs?.length) return;
+
+  for (const feature of featureDocs) {
+    if (feature.status !== 'pending') continue;
+    errors.push(
+      `${rel}: indexed task '${task.id}' must not be generated from pending clarification feature ${featureId} (${feature.rel})`
+    );
+  }
+}
+
+function walkJson(value, visitor, pathParts = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      const childPath = [...pathParts, String(index)];
+      visitor(String(index), item, childPath);
+      walkJson(item, visitor, childPath);
+    });
+    return;
+  }
+
+  if (!value || typeof value !== 'object') return;
+
+  for (const [key, child] of Object.entries(value)) {
+    const childPath = [...pathParts, key];
+    visitor(key, child, childPath);
+    walkJson(child, visitor, childPath);
+  }
+}
+
+function checkTaskSchemaDoesNotContainRisk(schemaRel, schema) {
+  if (schema === undefined) return;
+
+  const findings = new Set();
+  walkJson(schema, (key, value, pathParts) => {
+    const jsonPath = pathParts.join('.');
+    if (key === 'risk' || key === 'risk.level') {
+      findings.add(jsonPath);
+    }
+    if (typeof value === 'string' && /\brisk(?:\.level)?\b/i.test(value)) {
+      findings.add(`${jsonPath}=${value}`);
+    }
+  });
+
+  if (findings.size) {
+    errors.push(`${schemaRel}: task schema must not contain risk or risk.level (${[...findings].join(', ')})`);
+  }
+}
+
+function protocolDirForTask(id) {
+  return path.join(ROOT, '.protocols', id);
+}
+
+function taskArtifactDirForTask(id) {
+  return path.join(ROOT, '.tasks', id);
+}
+
+function hasFile(absPath) {
+  return fs.existsSync(absPath) && fs.statSync(absPath).isFile();
+}
+
+function listFilesRecursive(absDir) {
+  if (!fs.existsSync(absDir)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
+    const full = path.join(absDir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listFilesRecursive(full));
+    } else if (entry.isFile()) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+function missingFullProtocolFiles(id) {
+  const dir = protocolDirForTask(id);
+  return FULL_PROTOCOL_FILES.filter((file) => !hasFile(path.join(dir, file)));
+}
+
+function hasCompactOnlyProtocol(id) {
+  const dir = protocolDirForTask(id);
+  const hasRun = hasFile(path.join(dir, 'run.md'));
+  if (!hasRun) return false;
+  return missingFullProtocolFiles(id).length > 0;
+}
+
+function hasRedVerificationEvidence(id) {
+  return redVerificationFiles(id).some((file) => {
+    try {
+      return RED_VERIFY_PASS_RE.test(readText(file).replace(/\r\n/g, '\n'));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function redVerificationFiles(id) {
+  const protocolFile = path.join(protocolDirForTask(id), 'red-verification.md');
+  const files = hasFile(protocolFile) ? [protocolFile] : [];
+  return [
+    ...files,
+    ...listFilesRecursive(taskArtifactDirForTask(id)).filter((file) => isRedVerificationFile(file)),
+  ];
+}
+
+function isRedVerificationFile(file) {
+  return /red/i.test(path.basename(file));
+}
+
+function hasProtocolOrArtifactStatusEvidence(id, status) {
+  const marker = status === 'done' ? PASS_EVIDENCE_RE : FAIL_EVIDENCE_RE;
+  const files = [
+    ...listFilesRecursive(protocolDirForTask(id)).filter((file) => file.endsWith('.md')),
+    ...listFilesRecursive(taskArtifactDirForTask(id)).filter((file) => /\.(md|txt|log|json)$/i.test(file)),
+  ].filter((file) => !isRedVerificationFile(file));
+
+  return files.some((file) => {
+    try {
+      return marker.test(readText(file));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function protocolAndArtifactText(id) {
+  const files = [
+    ...listFilesRecursive(protocolDirForTask(id)).filter((file) => file.endsWith('.md')),
+    ...listFilesRecursive(taskArtifactDirForTask(id)).filter((file) => /\.(md|txt|log|json)$/i.test(file)),
+  ];
+
+  return files
+    .map((file) => {
+      try {
+        return readText(file);
+      } catch {
+        return '';
+      }
+    })
+    .join('\n');
+}
+
+function checkTierProtocolRequirements(rel, task) {
+  if (!ALLOWED_TASK_TIER.has(task.tier)) return;
+  if (!FULL_PROTOCOL_TIERS.has(task.tier)) return;
+  if (!FULL_PROTOCOL_STATUSES.has(task.status)) return;
+
+  const missing = missingFullProtocolFiles(task.id);
+  if (missing.length) {
+    errors.push(`${rel}: ${task.tier} ${task.status} task must have full protocol files: ${missing.join(', ')}`);
+  }
+
+  if (hasCompactOnlyProtocol(task.id)) {
+    errors.push(`${rel}: ${task.tier} ${task.status} task must not use compact-only protocol`);
+  }
+
+  if (task.status === 'in_progress') return;
+
+  const hasStatusEvidence =
+    hasTaskStatusEvidence(task, task.status) || hasProtocolOrArtifactStatusEvidence(task.id, task.status);
+
+  if (task.status === 'done' && !hasStatusEvidence) {
+    errors.push(
+      `${rel}: ${task.tier} done task must have PASS verification evidence/verdict in task.verify, .protocols/${task.id}/, or .tasks/${task.id}/`
+    );
+  }
+
+  if (task.status === 'done' && !hasRedVerificationEvidence(task.id)) {
+    errors.push(
+      `${rel}: ${task.tier} done task must have red-verification evidence with SEMANTIC_VERDICT: semantic-pass (.protocols/${task.id}/red-verification.md or .tasks/${task.id}/*RED* artifact)`
+    );
+  }
+
+  if (task.status === 'done' && task.tier === 'T3') {
+    const text = protocolAndArtifactText(task.id);
+    if (!HUMAN_CHECKPOINT_RE.test(text)) {
+      errors.push(`${rel}: T3 done task must include a human-aware checkpoint marker`);
+    }
+    if (!ROLLBACK_RECOVERY_RE.test(text)) {
+      errors.push(`${rel}: T3 done task must include a rollback/recovery note`);
+    }
+  }
+
+  if (task.status === 'failed' && !hasStatusEvidence) {
+    errors.push(
+      `${rel}: ${task.tier} failed task must have FAIL verification evidence/verdict in task.verify, .protocols/${task.id}/, or .tasks/${task.id}/`
+    );
+  }
+}
+
 function checkTaskRecords() {
   const schemaRel = '.memory-bank/schemas/task.schema.json';
   const indexRel = '.memory-bank/tasks/index.json';
@@ -426,7 +828,7 @@ function checkTaskRecords() {
   if (!fs.existsSync(path.join(ROOT, schemaRel))) {
     errors.push(`Missing required file: ${schemaRel}`);
   } else {
-    readJson(schemaRel);
+    checkTaskSchemaDoesNotContainRisk(schemaRel, readJson(schemaRel));
   }
 
   if (!fs.existsSync(path.join(ROOT, indexRel))) {
@@ -452,6 +854,7 @@ function checkTaskRecords() {
 
   const records = new Map();
   const dependencies = new Map();
+  const featuresById = featureDocsById();
 
   for (const entry of index.tasks) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
@@ -526,6 +929,10 @@ function checkTaskRecords() {
         `${rel}: invalid task status '${task.status}' (allowed: planned|ready|in_progress|blocked|done|failed)`
       );
     }
+    if (!ALLOWED_TASK_TIER.has(task.tier)) {
+      errors.push(`${rel}: invalid tier '${task.tier}' (allowed: T0|T1|T2|T3)`);
+    }
+    checkLegacyTaskRiskKeys(rel, task);
 
     for (const field of [
       'reqs',
@@ -545,28 +952,9 @@ function checkTaskRecords() {
     }
     checkGateItems(rel, task);
 
-    if (!task.risk || typeof task.risk !== 'object' || Array.isArray(task.risk)) {
-      errors.push(`${rel}: 'risk' must be an object`);
-    } else {
-      if (!ALLOWED_TASK_RISK.has(task.risk.level)) {
-        errors.push(`${rel}: invalid risk.level '${task.risk.level}' (allowed: low|medium|high)`);
-      }
-      if (!Array.isArray(task.risk.reasons)) {
-        errors.push(`${rel}: 'risk.reasons' must be an array`);
-      }
-      if (typeof task.risk.red_verify_required !== 'boolean') {
-        errors.push(`${rel}: 'risk.red_verify_required' must be a boolean`);
-      }
-      if (task.risk.level === 'high' && task.risk.red_verify_required !== true) {
-        errors.push(`${rel}: high risk tasks must set risk.red_verify_required to true`);
-      }
-    }
-
-    if (task.status === 'done' && !hasDoneVerifyEvidence(task)) {
-      errors.push(
-        `${rel}: done task must include completed evidence in 'verify' (non-empty string with result/verdict/log/path marker, or object with evidence/result/verdict/command/path-like marker); evidence_required and verification_targets are only planning inputs`
-      );
-    }
+    checkDoneEvidence(rel, task);
+    checkTierProtocolRequirements(rel, task);
+    checkTaskFeatureClarification(rel, task, featuresById);
 
     dependencies.set(id, Array.isArray(task.depends_on) ? task.depends_on : []);
   }
@@ -616,7 +1004,7 @@ for (const f of files) {
 }
 
 checkIndexRouters();
-checkBacklogDoesNotContainTaskCards();
+checkAnalysisStructure();
 checkTaskRecords();
 
 if (warnings.length) {

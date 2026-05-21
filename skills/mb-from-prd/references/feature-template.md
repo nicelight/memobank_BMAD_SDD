@@ -5,6 +5,9 @@ lifecycle: planned
 feature_id: FT-XXX
 epic_id: EP-XXX
 req_ids: [REQ-XXX]
+clarification_status: pending
+last_clarified: null
+clarification_questions: 0
 ---
 # FT-XXX — <Feature name>
 
@@ -32,6 +35,9 @@ req_ids: [REQ-XXX]
 - MUST: ...
 - NEVER: ...
 
+## Clarifications
+- No accepted clarification answers yet. Run `/clarify FT-XXX` before `/prd-to-tasks FT-XXX`.
+
 ## Use cases
 - UC-01: ...
 
@@ -52,7 +58,7 @@ req_ids: [REQ-XXX]
 - Browser / API / data invariants: ...
 
 ## Tasks
-- See `.memory-bank/tasks/backlog.md` (TASK-IDs)
+- See `.memory-bank/tasks/index.json` and indexed `.memory-bank/tasks/TASK-*.task.json` records
 - Optional IMPL plan: `.memory-bank/tasks/plans/IMPL-FT-XXX.md`
 
 ## Notes

@@ -12,7 +12,7 @@ Before changing this repository, read:
 - `scripts/vendor-shared.mjs`
 - `.github/workflows/release-check.yml`
 
-If the task mentions schema-backed tasks, task cards, backlog, scheduler, autopilot, or autonomous execution, also read `Optimisation.md` as planning context only. It is not automatically an implementation instruction.
+If the task mentions schema-backed tasks, task records, task queues, scheduler, autopilot, or autonomous execution, also read `Optimisation.md` as planning context only. It is not automatically an implementation instruction.
 
 ## Core Invariant: Source-Only Skill Packaging
 
@@ -86,9 +86,9 @@ Skill-specific non-shared assets:
 - `skills/mb-map-codebase/references/*.md`: mapping/synthesis references.
 - `skills/mb-verify/agents/verifier.md`: verifier-specific agent prompt.
 
-## Future Task-Schema Work Hotspots
+## JSON Task Registry Work Hotspots
 
-For updates that move task cards from markdown to strict records, expect the main touch points to be:
+For updates that change the JSON-only task registry or indexed task record model, expect the main touch points to be:
 
 - `skills/_shared/scripts/init-mb.js`
 - `skills/_shared/references/structure-template.md`
@@ -102,7 +102,7 @@ For updates that move task cards from markdown to strict records, expect the mai
 - `.github/workflows/release-check.yml`
 - `README.en.md`, `README.ru.md`
 
-Keep backward compatibility with `.memory-bank/tasks/backlog.md` unless explicitly told otherwise.
+Task planning is JSON-only: `.memory-bank/tasks/index.json` indexes `.memory-bank/tasks/TASK-*.task.json` records, and commands must treat those records as the only task model.
 
 ## Verification Commands
 

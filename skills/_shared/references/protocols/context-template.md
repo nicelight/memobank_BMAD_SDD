@@ -8,7 +8,8 @@ status: active
 This file captures the **minimal reproducible context** so a fresh session can resume work safely.
 
 ## Inputs (what drives this task)
-- Backlog: `.memory-bank/tasks/backlog.md` (link to TASK line)
+- Task record: `.memory-bank/tasks/<TASK_ID>.task.json`
+- Task index: `.memory-bank/tasks/index.json`
 - Specs: (FT/EP/REQ docs you opened)
 - Acceptance criteria source: (FT or verification section)
 

@@ -13,7 +13,7 @@
 - `.memory-bank/mbb/index.md`
 
 2) Выборочно проверь ключевые файлы:
-- `product.md`, `requirements.md`, `testing/index.md`, `tasks/backlog.md`
+- `product.md`, `requirements.md`, `testing/index.md`, `tasks/index.json`
 - несколько файлов из `epics/`, `features/`, `architecture/`, `guides/` (если есть)
 - если есть normative layer: `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*`
 
@@ -37,7 +37,7 @@
 - концепт без достаточного support coverage: нет ни duo-пары, ни эквивалентных spec-driven support docs
 - changelog не обновлён после изменений
 - RTM рассинхронизирован с реальными features
-- backlog содержит задачи без привязки к feature/REQ
+- task records содержат задачи без привязки к feature/REQ
 
 5) Проверь дополнительные GUIDE-правила:
 - **facts vs interpretations**: документы чётко разделяют факты (из кода, метрик, тестов) и интерпретации/гипотезы. Интерпретации помечены ("предположительно", "вероятно", "требует проверки")

@@ -7,6 +7,8 @@ It turns a repository into an agent-friendly workspace with:
 - `.protocols/` for resumable execution state
 - `.tasks/` for runtime artifacts
 
+Generated Memory Banks include `.memory-bank/constitution.md` for short project governing principles. The `/constitution` command creates or updates it; agents read it early during priming, and it does not replace invariants, contracts, or `spec-index.md`.
+
 Install this source-only fork through its wrapper, not through `npx skills add` directly:
 
 ```bash
@@ -27,6 +29,8 @@ During installation the wrapper prepares a temporary copy, generates the missing
 - `.memory-bank/` для долговременного знания о проекте
 - `.protocols/` для возобновляемого состояния выполнения
 - `.tasks/` для runtime-артефактов
+
+Сгенерированный Memory Bank включает `.memory-bank/constitution.md` для коротких governing principles проекта. Команда `/constitution` создаёт или обновляет его; агенты читают его рано во время priming, и он не заменяет invariants, contracts или `spec-index.md`.
 
 Устанавливай этот source-only форк через wrapper, а не через прямой `npx skills add`:
 

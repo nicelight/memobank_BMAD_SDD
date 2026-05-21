@@ -1,5 +1,5 @@
 ---
-description: Единая точка входа — выбрать сценарий и запустить правильный флоу (PRD / map-codebase / skeleton-only).
+description: Единая точка входа — выбрать сценарий и запустить правильный флоу (analysis / PRD / map-codebase / skeleton-only).
 status: active
 ---
 # /cold-start — Bootstrap router (choose the right flow)
@@ -9,6 +9,7 @@ status: active
 - определяет сценарий (greenfield / brownfield / skeleton-only)
 - запускает правильный следующий шаг
 - не генерирует EP/FT/TASK без PRD
+- не обходит feature clarification перед task decomposition
 </objective>
 
 <process>
@@ -20,13 +21,20 @@ status: active
 ## 1) Определи сценарий (не угадывай)
 Проверь:
 - Есть ли `prd.md`?
+- Есть ли `.memory-bank/analysis/product-brief.md`?
+- Есть ли `.memory-bank/analysis/brainstorming.md` или другой durable brainstorming artifact?
 - Есть ли существенный код (например: `src/`, `package.json`, `go.mod`, `Cargo.toml`, `requirements.txt`)?
+- Насколько вход пользователя ясен: vague idea / clear concept / existing PRD?
 
 Выбор:
-- **Если есть код** → это **brownfield** → запусти `/map-codebase`.
-- **Если кода почти нет, но есть PRD** → это **greenfield** → запусти `/prd`.
-- **Если есть и код, и PRD** → сначала `/map-codebase` (as-is baseline), потом `/prd` как delta.
-- **Если нет кода и нет PRD** → это **skeleton-only**: попроси пользователя предоставить PRD (или хотя бы требования текстом) и остановись.
+- **Если есть код** → это **brownfield** → сначала запусти `/map-codebase` для as-is baseline.
+- **Если есть и код, и PRD / product brief / clear delta** → сначала `/map-codebase`, потом `/prd` как delta.
+- **Если кода почти нет и есть PRD** → это **greenfield with existing PRD** → запусти `/prd` напрямую.
+- **Если кода почти нет и есть `.memory-bank/analysis/product-brief.md`** → запусти `/prd`, используя brief как primary upstream source.
+- **Если кода почти нет и концепт ясен, но PRD нет** → запусти `/brief`, затем `/prd`.
+- **Если кода почти нет и идея сырая / направление нестабильно** → запусти `/analysis`; `/analysis` должен направить в `/brainstorm` или `/brief`.
+- **Если есть brainstorming artifact, но нет product brief и PRD** → запусти `/brief` перед `/prd`.
+- **Если нет кода и нет PRD / clear concept / analysis artifacts** → это **skeleton-only**: попроси пользователя предоставить PRD, product brief или хотя бы требования текстом и остановись.
 
 ## 2) Правила (важно)
 - Если **нет PRD**, ты **НЕ** создаёшь/заполняешь:
@@ -34,18 +42,21 @@ status: active
   - `.memory-bank/features/*`
   - `.memory-bank/tasks/*.task.json` реальными задачами
   - `.memory-bank/tasks/index.json` ссылками на реальные TASK-IDs
-  - `.memory-bank/tasks/backlog.md` содержимым waves/TASK-IDs, кроме пустого summary/router
 - Пустой skeleton допустим:
   - папки/файлы могут существовать после `mb-init` / `init-mb.js`
   - но roadmap-сущности, реальные TASK-IDs и task records без PRD не создаются
 - Если PRD есть, но пользователь временно недоступен:
   - фиксируй `Open questions` в `.protocols/PRD-BOOTSTRAP/decision-log.md`
   - **останавливайся и жди** (не выдумывай факты).
+- Analysis artifacts живут в `.memory-bank/analysis/` и являются durable Memory Bank artifacts, но Analysis не обязателен для каждого проекта.
+- Product Brief — upstream input contract для `/prd`, а не PRD, backlog или task plan.
+- `/cold-start` никогда не рекомендует `/prd-to-tasks` напрямую. Канонический downstream после `/prd`: `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+- `/prd-to-tasks` must not run while clarification is pending or missing.
 
 ## 3) После запуска флоу
 После `/prd` или `/map-codebase`:
 - запусти `/review` (fresh context)
-- interactive: выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
+- interactive: выбери фичу, пройди `/clarify FT-<NNN>`, затем `/prd-to-tasks FT-<NNN>` и выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
 - JSON task queue unattended: используй `/autopilot`
 - full unattended (`PRD → done`): используй `/autonomous`
 </process>

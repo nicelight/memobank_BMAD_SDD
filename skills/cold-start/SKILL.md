@@ -10,7 +10,7 @@ description: >
 
 > **Note**: `cold-start` is the **package skill** for all-in-one bootstrap.
 > Do not confuse it with the generated project command `/cold-start`: that command is a lightweight router used **after** skeleton creation inside a target repo.
-> For modular usage, prefer individual skills: `mb-init` (skeleton), `mb-from-prd` (greenfield), `mb-map-codebase` (brownfield), `mb-review` (review), `mb-execute` (implementation), `mb-verify` (UAT), `mb-red-verify` (semantic adversarial verification).
+> For modular usage, prefer individual skills: `mb-init` (skeleton), `mb-analysis` (optional idea discovery), `mb-from-prd` (greenfield), `mb-map-codebase` (brownfield), `mb-review` (review), `mb-execute` (implementation), `mb-verify` (UAT), `mb-red-verify` (semantic adversarial verification).
 
 - **What it does:** creates the Memory Bank skeleton, writes agent entry points, and routes the repo into the right workflow.
 - **Use it when:** you want one entry point for either a new project with a PRD or an existing codebase that needs mapping first.
@@ -18,6 +18,8 @@ description: >
 - **Output:** `.memory-bank/`, `.tasks/`, `.protocols/`, agent entry files, and the next step for greenfield or brownfield work.
 
 Supported scenarios:
+- **Idea-only**: repo has a raw idea, but no stable PRD yet; optionally route through `/analysis`, `/brainstorm`, and `/brief`.
+- **Clear concept**: repo has enough direction for a product brief; optionally run `/brief` before `/prd`.
 - **Greenfield**: repo has `prd.md` or requirements text, but no code yet.
 - **Brownfield**: repo already contains code and needs **as-is** documentation before change planning.
 
@@ -101,7 +103,7 @@ Create (if missing):
   - `epics/`
   - `features/`
   - `schemas/` *(JSON schemas, including task records)*
-  - `tasks/`  *(empty JSON task index until `/prd-to-tasks`, readable backlog summary, and plans)*
+  - `tasks/`  *(empty JSON task index until `/prd-to-tasks`, indexed task records, and plans)*
   - `commands/` *(slash-command specs used by humans/agents)*
   - `agents/` *(subagent prompt library)*
   - `archive/`
@@ -118,6 +120,7 @@ At minimum you must create:
 - `AGENTS.md`
 - `CLAUDE.md` symlink/copy
 - `.memory-bank/index.md`
+- `.memory-bank/constitution.md`
 - `.memory-bank/mbb/index.md`
 - `.memory-bank/spec-index.md`
 - `.memory-bank/glossary.md`
@@ -127,9 +130,10 @@ At minimum you must create:
 - `.memory-bank/schemas/task.schema.json`
 - `.memory-bank/tasks/index.json`
 - `.memory-bank/testing/index.md`
-- `.memory-bank/tasks/backlog.md`
 
 Also create the command specs under `.memory-bank/commands/` (use `references/commands/*`).
+This includes optional Analysis commands (`analysis.md`, `brainstorm.md`, `brief.md`) when those command specs are present in the package.
+It also includes `constitution.md` for the `/constitution` command, which creates or updates `.memory-bank/constitution.md`.
 
 ### 1.2.1 Create native skills (proxy commands)
 Create thin proxy skills so commands work natively in each runtime:
@@ -137,9 +141,11 @@ Create thin proxy skills so commands work natively in each runtime:
 - `.agents/skills/<name>/SKILL.md` → Codex CLI + OpenCode
 
 Each proxy just says: `Read and follow the instructions in .memory-bank/commands/<name>.md`.
-This makes commands available natively (`/mb`, `/prd`, `/execute`, etc.) in all three tools.
+This makes commands available natively (`/mb`, `/constitution`, `/prd`, `/execute`, etc.) in all three tools.
 
 The `init-mb.js` script creates both sets automatically.
+
+Agents read `.memory-bank/constitution.md` early during priming. It is the short governing-principles layer for project decisions, not a replacement for `.memory-bank/invariants.md`, `.memory-bank/contracts/*`, `.memory-bank/spec-index.md`, or tier/workflow policy.
 
 ### 1.3 Enforce frontmatter rule
 Every markdown file inside `.memory-bank/` must include YAML frontmatter with at least:
@@ -167,6 +173,7 @@ If Codex is used, create `.codex/config.toml` with profiles:
 ### Decision rule
 - If repo has substantial code (`src/`, `package.json`, `go.mod`, `Cargo.toml`, etc.) → **Brownfield** (Step 3B).
 - If repo is mostly empty and you have `prd.md` → **Greenfield** (Step 3A).
+- If repo is mostly empty and you only have an idea or loose concept → optionally run **Analysis** first: `/analysis`, `/brainstorm` when the idea is raw, and `/brief` before `/prd`.
 - If both exist: treat as **Brownfield + PRD delta** (Step 3B).
 - If repo is empty/new **and no `prd.md`** → **Skeleton-only** (Step 3C).
 
@@ -182,9 +189,11 @@ Record the scenario in:
 - If gaps exist, run deep questioning **in rounds** (3–5 questions each). Use `./references/shared-deep-questioning.md`.
 - If PRD mentions “use skills/tools/CLIs” — run `/find-skills` first (project-installed → marketplace).
 
+Deep Questioning is PRD-level discovery. Clarification is the later feature-level ambiguity gate run with `/clarify FT-<NNN>`.
+
 If user is temporarily unavailable (“запуск и ушёл”):
 - Record `Open questions` in `.protocols/PRD-BOOTSTRAP/decision-log.md`.
-- **Stop and wait** (do not invent facts; do not proceed to EP/FT/backlog generation without answers).
+- **Stop and wait** (do not invent facts; do not proceed to EP/FT/task generation without answers).
 
 If the user explicitly wants **autonomous mode**:
 - record non-blocking gaps as `Assumptions`
@@ -209,20 +218,24 @@ Each feature MUST include:
 - acceptance criteria
 - failure modes / edge cases
 - test strategy pointers
+- clarification metadata starting as `clarification_status: pending`
 
 Status policy:
 - Default EP/FT frontmatter to `status: draft` until `Open questions` are resolved.
 - Promote to `status: active` only when acceptance criteria + verification plan are stable.
+- `/prd` / `mb-from-prd` do not mark feature clarification complete; canonical planning path is `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
 
 ### 3A.5 Tasks planning (per-feature, no “everything at once”)
-Do **not** generate a full task backlog for all features in one pass.
+Do **not** generate a full task queue for all features in one pass.
 
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
-2) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce:
+2) For each selected feature, run `/clarify FT-<NNN>` first; task planning starts only after that feature-level ambiguity gate is complete.
+3) Then run `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
-   - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`
-   - `.memory-bank/tasks/backlog.md` refreshed only as a readable summary/router
+   - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
+
+Task routing is authoritative only through `task.tier`; the old `risk` / `risk.level` model is invalid.
 
 ### 3A.6 Identify key concepts and create support docs
 For every non-trivial concept, create support docs that make the concept cheap to reload later:
@@ -289,7 +302,7 @@ Using the `.tasks/TASK-MB-MAP/` reports, fill:
 ### 3B.3 Ask user for PRD delta
 After baseline MB exists:
 - ask the user for `prd.md` describing **what to change/add**
-- run `/prd` and `/prd-to-tasks` style decomposition against the existing baseline
+- run `/prd`, `/clarify FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
 
 ---
 
@@ -300,13 +313,13 @@ When the repo is new/empty and no `prd.md` is available:
 ### 3C.1 Create skeleton only
 Run Step 1 as usual — create all directories, core files from templates, `AGENTS.md`, `CLAUDE.md` symlink.
 
-The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `tasks/index.json`, `backlog.md`, etc. remain as draft stubs/placeholders.
+The skeleton provides a ready-to-fill structure: `product.md`, `requirements.md`, `tasks/index.json`, etc. remain as draft stubs/placeholders.
 In PRD-less mode, `tasks/index.json` must be `{ "version": 1, "tasks": [] }` and no `TASK-001.task.json` or other runnable task record is generated.
 
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
 
-> "Memory Bank skeleton created. To fill it with product details, epics, features, and a backlog, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/prd` when ready."
+> "Memory Bank skeleton created. To fill it with product details, epics, features, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/prd` when ready, then `/clarify FT-<NNN>` before `/prd-to-tasks FT-<NNN>`."
 
 ### 3C.3 Wait or proceed
 - **If user provides PRD now** → continue to Step 3A (Greenfield workflow).
@@ -340,7 +353,7 @@ Run **fresh-context** reviewers (do not reuse the writer context):
 - Architect (C4 + dependencies)
 - Scope analyst (REQ → Epic → Feature → Task coverage)
 - MBB compliance reviewer (frontmatter, links, atomics, duo)
-- Plan reviewer (backlog quality, waves, gates)
+- Plan reviewer (task record quality, waves, gates)
 - Security reviewer (auth, sensitive data, OWASP risks)
 - Code quality reviewer (conditional: if code exists — quality gates, conventions, hotspots)
 
@@ -356,10 +369,10 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and run `/prd-to-tasks FT-<NNN>` for a selected feature first.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and run `/clarify FT-<NNN>` for a selected feature first, then `/prd-to-tasks FT-<NNN>` only after `clarification_status: complete`.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
-3. Run `mb-verify` to check acceptance criteria and record evidence.
-4. If the task is domain-heavy, cross-boundary, or risky in substance, run `mb-red-verify`.
+3. Route by `task.tier`: `T0`/`T1` may use compact verification in `run.md`; `T2`/`T3` require `mb-verify` and `mb-red-verify`.
+4. For `T3`, require human-aware checkpoint plus rollback/recovery note before closure.
 5. Repeat until the wave is complete or user stops.
 
 If the intended mode is unattended end-to-end:
@@ -376,13 +389,14 @@ You are done when:
 
 - `AGENTS.md` exists, short, points to `.memory-bank/index.md`.
 - `CLAUDE.md` is a symlink/copy of `AGENTS.md`.
-- `.memory-bank/` contains at minimum: index + MBB + product + testing (requirements/backlog can remain as stubs until PRD exists).
+- `.memory-bank/` contains at minimum: index + MBB + product + testing (requirements can remain as stubs until PRD exists).
+- `.memory-bank/constitution.md` exists and `/constitution` is available for governing-principles updates.
 - `.tasks/` contains scan/review artifacts with naming + stage ids.
-- Greenfield: epics/features/backlog created from PRD.
+- Greenfield: epics/features/task records created from PRD.
 - Brownfield: repo mapped **as-is** into MB and user asked for PRD delta (no roadmap entities invented without PRD).
 - Skeleton-only: skeleton created, user asked for PRD (valid stopping point).
 - Multi-expert review passes (APPROVE) — for Greenfield/Brownfield; skip for Skeleton-only.
-- Execution loop is available (mb-execute + mb-verify reachable or documented, plus mb-red-verify for risky tasks).
+- Execution loop is available (mb-execute + mb-verify reachable or documented, plus mb-red-verify for T2/T3 tasks).
 - Autonomous loop is available (`/autonomous` + `/autopilot` documented).
 
 ---

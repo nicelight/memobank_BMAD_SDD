@@ -12,16 +12,15 @@ The goal is practical: let agents work for a long time without losing project co
 ## What changed in the current project
 
 Current `memobank` is no longer only a duo-doc system built around `architecture/ + guides/`.
-It now uses a layered, backward-compatible model:
+It now uses a layered model with strict JSON task state:
 - classic duo docs remain valid and supported
+- `.memory-bank/constitution.md` defines short project governing principles for agent decisions
 - an explicit normative layer can be added through `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*`, and `testing/*`
 - richer planning and verification inputs are supported when present
-- old repositories using the classic minimal model should still continue to work
+- task execution state is JSON-only: `tasks/index.json` plus indexed `TASK-*.task.json` records
+- every task record uses mandatory `tier: T0|T1|T2|T3`
 
-This is an additive evolution, not a destructive rewrite.
-The repo is meant to support both:
-- older duo-doc-first Memory Banks
-- newer richer spec-driven Memory Banks
+The documentation model remains additive. The task model is intentionally strict and machine-readable.
 
 ## Core model
 
@@ -32,6 +31,7 @@ The current Memory Bank structure is organized into three layers.
 - `.memory-bank/guides/` for HOW
 
 ### Layer B: explicit normative docs
+- `.memory-bank/constitution.md`
 - `.memory-bank/spec-index.md`
 - `.memory-bank/glossary.md`
 - `.memory-bank/invariants.md`
@@ -43,17 +43,21 @@ The current Memory Bank structure is organized into three layers.
 ### Layer C: planning and execution state
 - `.memory-bank/epics/`
 - `.memory-bank/features/`
-- `.memory-bank/tasks/`
+- `.memory-bank/tasks/index.json`
+- `.memory-bank/tasks/TASK-*.task.json`
 - `.protocols/`
 - `.tasks/`
 
 The important rule is simple: richer docs strengthen source-of-truth routing, but they do not invalidate working duo docs.
+The Constitution is the project governing-principles document. `/constitution` creates or updates it, agents read it early during priming, and it does not replace `invariants.md`, `contracts/*`, or `spec-index.md`.
+Generated `AGENTS.md` is only the bootstrap and command router for agents. It points agents to the Constitution and Memory Bank files; it is not the Constitution itself.
 
 ## What the pack includes
 
 ### Package skills
 - `cold-start` - all-in-one bootstrap for greenfield and brownfield repositories
 - `mb-init` - skeleton and command generation only
+- `mb-analysis` - optional upstream discovery: idea routing, brainstorming, and product brief before PRD
 - `mb-from-prd` - PRD-driven planning into product, requirements, epics, and features
 - `mb-map-codebase` - map an existing repository into as-is Memory Bank docs
 - `mb-execute` - execute one `TASK-*` with a resumable protocol
@@ -70,8 +74,13 @@ Current command set:
 - `/cold-start`
 - `/mb`
 - `/mb-init`
+- `/analysis`
+- `/brainstorm`
+- `/brief`
+- `/constitution`
 - `/prd`
 - `/mb-from-prd`
+- `/clarify`
 - `/prd-to-tasks`
 - `/execute`
 - `/mb-execute`
@@ -85,6 +94,7 @@ Current command set:
 - `/mb-map-codebase`
 - `/mb-sync`
 - `/mb-garden`
+- `/mb-doctor`
 - `/mb-harness`
 - `/autopilot`
 - `/autonomous`
@@ -105,6 +115,8 @@ Current command set:
 - `.memory-bank/commands/*.md`
 - `.claude/skills/*` proxy skills
 - `.agents/skills/*` proxy skills
+
+The generated `AGENTS.md` contains Orchestrator Mode. If the top-level agent is not given another explicit role, it acts as an orchestrator: it plans, checks scope and risks, delegates implementation and verification, and routes work through the Memory Bank instead of treating chat history as source of truth.
 
 The generated Memory Bank skeleton includes the current layered structure:
 - `architecture/`
@@ -128,23 +140,29 @@ The generated Memory Bank skeleton includes the current layered structure:
 - `archive/`
 - `bugs/`
 
-It also seeds core routing files such as `.memory-bank/index.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/schemas/task.schema.json`, `.memory-bank/tasks/index.json`, and `.memory-bank/tasks/backlog.md`.
+It also seeds core routing files such as `.memory-bank/index.md`, `.memory-bank/constitution.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/workflows/tier-policy.md`, `.memory-bank/schemas/task.schema.json`, and `.memory-bank/tasks/index.json`.
 
 Fresh skeleton bootstrap does not create runnable task records. By default `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/prd-to-tasks` creates indexed `.memory-bank/tasks/TASK-*.task.json` records after PRD/features exist.
+There is no generated markdown task list: tooling reads the JSON registry and task records directly.
 
 ### 2. Route into the correct workflow
 `cold-start` is the main entry point and chooses the right path:
-- Greenfield: start from `prd.md` or requirements text
+- Idea-only: optionally run `/analysis`, then `/brainstorm` and `/brief` before `/prd`
+- Clear concept: optionally run `/brief`, then `/prd`
+- Existing PRD: start from `prd.md` or requirements text and run `/prd`
 - Brownfield: map the existing codebase into as-is docs first
 - Skeleton-only: initialize the structure and stop for later planning
 
-### 3. Plan by feature, not by a giant upfront backlog
+Analysis is optional discovery. It helps turn a raw idea or clear concept into better PRD input, but it does not replace `/clarify`: after `/prd`, every feature still goes through `/clarify FT-<NNN>` before `/prd-to-tasks FT-<NNN>`.
+
+### 3. Plan by feature, not by a giant upfront task queue
 The intended planning loop is:
 - `/prd`
+- `/clarify FT-001`
 - `/prd-to-tasks FT-001`
 - `/execute TASK-001`
 - `/verify TASK-001`
-- `/red-verify TASK-001` for risky semantic changes
+- `/red-verify TASK-001` for T2/T3 tasks
 - `/mb-sync`
 - `/review` when needed
 
@@ -152,12 +170,14 @@ For existing codebases, the brownfield entry is:
 - `/map-codebase`
 - then PRD delta or change-planning work
 
-Planning is now richer, but still backward-compatible:
+Planning is now richer, but mechanically strict:
 - if structured inputs such as source artifacts, normative inputs, constraints, invariants, or verification targets are present, the planner can use them
 - if they are absent, the classic minimal feature and requirements flow is still valid
 - task state is stored in schema-backed JSON records under `.memory-bank/tasks/*.task.json`, indexed by `.memory-bank/tasks/index.json`; fresh skeleton starts with an empty index until `/prd-to-tasks` creates records
-- `.memory-bank/tasks/backlog.md` is only a human-readable summary/router and must not be used as scheduler state
-- `/prd` still should not emit the entire implementation backlog blindly in one shot
+- each task record must contain `tier: T0|T1|T2|T3`; execution routing is authoritative only through `task.tier`
+- `.memory-bank/tasks/backlog.md` and markdown task cards are obsolete and unsupported as workflow artifacts
+- the old `risk` / `risk.level` task model is removed and invalid
+- `/prd` still should not emit the entire implementation task queue blindly in one shot
 - `/prd-to-tasks` remains the per-feature decomposition step and is responsible for creating task records
 
 ### 4. Execute with resumable file protocols
@@ -169,6 +189,7 @@ Each task may have a protocol folder such as `.protocols/TASK-123/` containing:
 - `handoff.md`
 
 This makes task execution resumable across fresh sessions, engines, and review passes.
+T0/T1 tasks may use compact `.protocols/TASK-123/run.md`; T2/T3 tasks require the full protocol files. T3 also requires a human-aware checkpoint and rollback/recovery note.
 
 Execution and verification now follow an explicit fallback model:
 1. richer structured inputs if present
@@ -177,7 +198,7 @@ Execution and verification now follow an explicit fallback model:
 4. related normative docs when needed
 
 That means richer fields are supported, but not silently mandatory.
-Markdown task cards are replaced by JSON task records for authoritative task state. These records are created by `/prd-to-tasks`, not by PRD-less bootstrap.
+Authoritative task state lives in JSON task records created by `/prd-to-tasks`, not by PRD-less bootstrap.
 
 ### 4.1. Adversarial semantic verification
 In addition to normal `/verify`, `memobank` now includes a separate semantic pass:
@@ -215,10 +236,15 @@ Recommended verdicts:
 - `semantic-concern`
 - `semantic-fail`
 
+Closure policy:
+- `semantic-pass` allows normal closure when `/verify` also passed
+- `semantic-fail` fails the task
+- `semantic-concern` is not normal done; it blocks closure or requires human review and follow-up before dependents can move forward
+
 Recommended place in the loop:
 - `/execute TASK-123`
 - `/verify TASK-123`
-- `/red-verify TASK-123` for risky tasks
+- `/red-verify TASK-123` for T2/T3 tasks
 - `/mb-sync`
 
 ### 5. Review and maintenance
@@ -248,6 +274,7 @@ Install only what you need:
 ```bash
 npx github:<owner>/<repo> --skill cold-start --global --yes
 npx github:<owner>/<repo> --skill mb-init --global --yes
+npx github:<owner>/<repo> --skill mb-analysis --global --yes
 npx github:<owner>/<repo> --skill mb-from-prd --global --yes
 ```
 
@@ -275,7 +302,7 @@ What happens during installation:
 
 In practice, most users start with:
 - `cold-start` for the all-in-one entry point
-- or `mb-init` plus `mb-from-prd` and `mb-map-codebase` for a modular workflow
+- or `mb-init` plus `mb-analysis`, `mb-from-prd`, and `mb-map-codebase` for a modular workflow
 
 ## Quick start
 
@@ -284,12 +311,45 @@ Run `cold-start`, then follow the normal loop:
 
 ```text
 /prd
+/clarify FT-001
 /prd-to-tasks FT-001
 /execute TASK-001
 /verify TASK-001
-/red-verify TASK-001   # optional, recommended for risky/cross-boundary changes
+/red-verify TASK-001   # required for T2/T3 tasks
 /mb-sync
 ```
+
+### Minimal flows
+Use only the path that matches your starting point:
+
+```text
+Idea-only:
+/analysis
+/brainstorm
+/brief
+/prd
+/clarify FT-001
+/prd-to-tasks FT-001
+
+Clear concept:
+/brief
+/prd
+/clarify FT-001
+/prd-to-tasks FT-001
+
+Existing PRD:
+/prd
+/clarify FT-001
+/prd-to-tasks FT-001
+
+Brownfield:
+/map-codebase
+/brief --delta or /prd --delta
+/clarify FT-001
+/prd-to-tasks FT-001
+```
+
+Analysis commands are optional and upstream of PRD. They do not create implementation task records and do not bypass feature clarification.
 
 If the JSON task queue / task records are already prepared and the repo is ready for batch execution:
 
@@ -301,6 +361,14 @@ If you want a full unattended run from PRD toward terminal state:
 
 ```text
 /autonomous
+```
+
+Use the deterministic readiness gates at the right phase:
+
+```bash
+node scripts/mb-lint.mjs
+node scripts/mb-doctor.mjs          # pre-queue / fresh skeleton health check
+node scripts/mb-doctor.mjs --strict # after /prd-to-tasks, before scheduler/autopilot execution
 ```
 
 ### Existing repository without a PRD
@@ -335,17 +403,20 @@ Use this when you want one run to continue until it reaches a clear terminal sta
 ## Clean-session task execution
 
 Each `TASK-*` can run in a fresh CLI session.
+The agent should read `AGENTS.md`, the indexed JSON task record, and the protocol path selected by `task.tier`:
+- `T0` / `T1`: compact `.protocols/TASK-123/run.md` may be used
+- `T2` / `T3`: full `.protocols/TASK-123/{context,plan,progress,verification,handoff}.md`
 
 ### Codex
 ```bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-123. Read AGENTS.md and .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement only scoped changes.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/tasks/TASK-123.task.json, and the tier-selected protocol path. Implement only scoped changes.'
 ```
 
 ### Claude
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  'TASK_ID=TASK-123. Read AGENTS.md and .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement only scoped changes.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/tasks/TASK-123.task.json, and the tier-selected protocol path. Implement only scoped changes.'
 ```
 
 Independent tasks may run in parallel. Tasks with dependencies or overlapping files should run sequentially.
@@ -355,7 +426,12 @@ Independent tasks may run in parallel. Tasks with dependencies or overlapping fi
 `memobank` includes a deterministic maintenance path:
 - `/mb-sync` to keep the Memory Bank aligned with completed work
 - `/mb-garden` to lint and clean Memory Bank structure
-- `skills/mb-garden/assets/mb-lint.mjs` for mechanical checks such as required files, frontmatter, metadata hygiene, and broken links
+- `skills/mb-garden/assets/mb-lint.mjs` for structure and mechanical hygiene: required files, frontmatter, metadata, task registry consistency, tier rules, protocol evidence, and broken links
+- `skills/mb-garden/assets/mb-doctor.mjs` for workflow and autonomous readiness: whether the JSON task queue, dependencies, tier policy, evidence, and obsolete artifact checks are safe enough to continue
+
+`mb-lint` answers "is the Memory Bank mechanically valid?" `mb-doctor` answers "is this repository ready for autonomous or autopilot execution?" Use default `mb-doctor` for pre-queue health checks and fresh skeletons. Run `mb-doctor --strict` only after the JSON task queue exists: after `/prd-to-tasks`, before scheduler execution inside `/autonomous`, or before `/autopilot` when the queue is already prepared.
+
+Task state is JSON-only. The supported registry is `.memory-bank/tasks/index.json` plus indexed `.memory-bank/tasks/TASK-*.task.json` records. `backlog.md`, markdown task cards, and the old `risk` / `risk.level` model are unsupported.
 
 The maintenance model is deliberately file-based and auditable.
 
@@ -372,6 +448,14 @@ This keeps top-level skills self-contained for `skills add` installs while prese
 
 In the source-only repository model, these vendored `shared-*` files are generated artifacts and should not be committed. CI generates them before package install smoke tests.
 
+Source-only hygiene check:
+
+```bash
+find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
+```
+
+The source tree should print `0`. If shared behavior must change, edit `skills/_shared/`, not generated package-local `shared-*` copies.
+
 ## Repository structure
 
 ```text
@@ -379,6 +463,7 @@ skills/
   _shared/
   cold-start/
   mb-init/
+  mb-analysis/
   mb-from-prd/
   mb-map-codebase/
   mb-execute/
@@ -388,9 +473,8 @@ skills/
   mb-garden/
   mb-harness/
 scripts/
+  install-framework.mjs
   vendor-shared.mjs
-.tmp.changes/
-  changes.md
 ```
 
 ## Bootstrap script usage
@@ -408,8 +492,9 @@ node skills/_shared/scripts/init-mb.js --sync
 - `skills/_shared/references/commands/*.md` - command specs used as the source of truth
 - `skills/_shared/scripts/init-mb.js` - bootstrap and sync logic
 - `skills/mb-garden/assets/mb-lint.mjs` - deterministic Memory Bank lint
+- `skills/mb-garden/assets/mb-doctor.mjs` - deterministic autonomous readiness check
+- `scripts/install-framework.mjs` - source-only installer wrapper
 - `scripts/vendor-shared.mjs` - vendoring pipeline for package skills
-- `.tmp.changes/changes.md` - high-level record of the additive architecture transition
 
 ## License
 

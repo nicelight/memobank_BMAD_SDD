@@ -37,7 +37,6 @@ status: active
 > - `.memory-bank/features/*`
 > - `.memory-bank/tasks/*.task.json` task records
 > - `.memory-bank/tasks/index.json` task links
-> - `.memory-bank/tasks/backlog.md` waves/tasks summary, кроме пустого router
 >
 > Маппинг = **as-is документация** по evidence, а не планирование.
 
@@ -47,5 +46,9 @@ status: active
 - раздели facts vs inferences
 
 5) Попроси у пользователя PRD delta (что хотим изменить).
+   - Если delta уже оформлена как PRD — дальше `/prd`.
+   - Если delta ясна, но PRD нет — сначала `/brief`, затем `/prd`.
+   - Если delta сырая / направление нестабильно — сначала `/analysis` или `/brainstorm`.
+   - Не переходи напрямую к `/prd-to-tasks`; после `/prd` требуется `/clarify FT-<NNN>`.
 6) Запусти `mb-review`.
 </process>

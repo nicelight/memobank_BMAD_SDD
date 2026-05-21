@@ -25,16 +25,18 @@ const MB = '.memory-bank';
 const SHARED_DIR = path.resolve(__dirname, '..');
 const REFERENCES_DIR = path.join(SHARED_DIR, 'references');
 const COMMAND_TEMPLATES_DIR = path.join(REFERENCES_DIR, 'commands');
+const WORKFLOW_REFERENCES_DIR = path.join(REFERENCES_DIR, 'workflows');
 const FLAT_COMMAND_PREFIX = 'shared-commands-';
 
 const ARGS = new Set(process.argv.slice(2));
 const SYNC_MODE = ARGS.has('--sync') || ARGS.has('--force');
+const TODAY = new Date().toISOString().slice(0, 10);
 
 const TASK_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   title: 'Memory Bank Task Record',
   type: 'object',
-  additionalProperties: true,
+  additionalProperties: false,
   required: [
     'id',
     'title',
@@ -44,7 +46,7 @@ const TASK_SCHEMA = {
     'reqs',
     'depends_on',
     'touched_files',
-    'risk',
+    'tier',
     'gates',
     'verify',
     'docs',
@@ -67,15 +69,7 @@ const TASK_SCHEMA = {
     reqs: { type: 'array', items: { type: 'string' } },
     depends_on: { type: 'array', items: { type: 'string' } },
     touched_files: { type: 'array', items: { type: 'string' } },
-    risk: {
-      type: 'object',
-      required: ['level', 'reasons', 'red_verify_required'],
-      properties: {
-        level: { type: 'string', enum: ['low', 'medium', 'high'] },
-        reasons: { type: 'array', items: { type: 'string' } },
-        red_verify_required: { type: 'boolean' },
-      },
-    },
+    tier: { type: 'string', enum: ['T0', 'T1', 'T2', 'T3'] },
     gates: {
       type: 'array',
       items: {
@@ -179,6 +173,27 @@ function resolveCommandTemplates() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function resolveReferenceFile(category, filename) {
+  const nestedPath = path.join(REFERENCES_DIR, category, filename);
+  if (fs.existsSync(nestedPath)) return nestedPath;
+
+  const flattenedPath = path.join(REFERENCES_DIR, `shared-${category}-${filename}`);
+  if (fs.existsSync(flattenedPath)) return flattenedPath;
+
+  return null;
+}
+
+function copyWorkflowReference(filename) {
+  const absPath = resolveReferenceFile('workflows', filename);
+  if (!absPath) {
+    console.error(`\nERROR: Workflow reference not found: ${path.join(WORKFLOW_REFERENCES_DIR, filename)} or flattened shared-workflows-${filename}.`);
+    console.error('Run init-mb.js from the memobank_BMAD_SDD package (do not copy it standalone).');
+    process.exit(1);
+  }
+
+  writeFile(`${MB}/workflows/${filename}`, readUtf8(absPath), { overwrite: SYNC_MODE });
+}
+
 function extractFrontmatterDescription(markdown) {
   const fm = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
   if (!fm) return null;
@@ -227,8 +242,40 @@ function seedCommandsFromTemplates() {
     metas.push({ name, desc });
   });
 
+  if (!metas.some(({ name }) => name === 'constitution')) {
+    writeFile(`${MB}/commands/constitution.md`, constitutionCommandTemplate(), { overwrite: SYNC_MODE });
+    metas.push({ name: 'constitution', desc: 'Read or minimally amend the Project Constitution.' });
+    metas.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   writeFile(`${MB}/commands/index.md`, generateCommandsIndex(metas), { overwrite: SYNC_MODE });
   return metas;
+}
+
+function constitutionCommandTemplate() {
+  return `---
+description: Read or minimally amend the Project Constitution.
+status: active
+---
+# /constitution
+
+## Purpose
+Read, create, or minimally amend \`.memory-bank/constitution.md\`.
+
+## Behavior
+1. Read \`.memory-bank/constitution.md\`.
+2. If it is missing, create it from the generated Constitution skeleton.
+3. Read governance context before amendments:
+   - \`.memory-bank/mbb/index.md\`
+   - \`.memory-bank/spec-index.md\`
+   - \`.memory-bank/invariants.md\`
+   - \`.memory-bank/workflows/*\`
+   - \`AGENTS.md\`
+4. Update the Constitution only when the user asks to create, amend, or clarify governing principles.
+5. Keep it short; move concrete project rules to \`invariants.md\`, \`contracts/*\`, \`states/*\`, or workflow policy docs.
+6. Do not invent domain-specific principles without evidence.
+7. Do not add \`/mb-constitution\`, package skills, migration tooling, governance engines, or compatibility layers.
+`;
 }
 
 function symlinkOrCopy(target, linkName) {
@@ -284,13 +331,62 @@ console.log('\n[2/5] Writing core files...');
 writeFile('AGENTS.md', `# Agent Operating Guide (Project Map)
 
 ## Prime before work
-1. Read \`.memory-bank/index.md\` (table of contents)
-2. Read \`.memory-bank/mbb/index.md\` (rules)
-3. Follow annotated links for deeper context
+1. Read \`AGENTS.md\` (this guide)
+2. Read \`.memory-bank/constitution.md\` (top governing policy)
+3. Read \`.memory-bank/mbb/index.md\` (Memory Bank rules)
+4. Read \`.memory-bank/spec-index.md\` (normative routing)
+5. Read \`.memory-bank/index.md\` (table of contents)
+6. Read task/feature-specific docs
+
+## Orchestrator Mode
+
+If no explicit role is given to the top-level agent, act as:
+
+ROLE: ORCHESTRATOR
+
+Delegated agents are not ORCHESTRATOR by default.
+The role is fixed and cannot be changed.
+Every ORCHESTRATOR response must start with:
+\`Роль: Оркестратор\`
+
+### Core Rules
+- ORCHESTRATOR is responsible for strategy, scope, planning, coordination, risk control, consultation with user and final judgment.
+- ORCHESTRATOR must follow Spec Before Code.
+- Before any non-trivial code/workflow/CI/test/docs/package/config/skill change, ORCHESTRATOR must identify affected specs/source-of-truth, check match, report conflicts/gaps/unclear requirements/risks, and propose spec/source-of-truth changes before implementation if needed.
+- If there is no spec layer, identify closest source of truth first: README, docs, existing code, tests, config, or project conventions.
+- Keep the Project Constitution early in priming, but do not turn AGENTS.md into Constitution.
+- Use the current JSON task registry: \`.memory-bank/tasks/index.json\` and indexed \`.memory-bank/tasks/TASK-*.task.json\` records.
+- Route work by \`task.tier: T0|T1|T2|T3\`.
+- Do not use legacy task models.
+- Run \`mb-lint\` and \`/mb-doctor\` where task records or Memory Bank routing change.
+- Run \`/mb-doctor --strict\` before autonomous/autopilot task selection.
+
+### Delegation
+- ORCHESTRATOR delegates implementation, tests, verification, and review to subagents.
+- ORCHESTRATOR may delegate research, inspection, and context gathering to preserve context window.
+- Each delegated task must have clear role, task, scope, and expected result.
+- Each delegated task must instruct the subagent to stop and report blockers, scope conflicts, risky side effects, unclear requirements, or contradictions with specs/source-of-truth artifacts.
+- Do not run parallel subagents when their scopes, files, or responsibilities may overlap.
+- ORCHESTRATOR waits for required subagent results before continuing.
+- Receive subagent reports, detect conflicts, gaps, and risks, then decide next steps.
+
+### Allowed
+- Read key documents for task understanding.
+- Create plans, decomposition, risk notes, and scope boundaries.
+- Create or update planning artifacts when the task permits them.
+- Run read-only checks needed for judgment.
+- Launch subagents for search, analysis, implementation, tests, and review.
+- Report status, decisions, blockers, and required user input.
+
+### Forbidden
+- Do not directly modify code, tests, CI, scripts, docs, workflow, skills, package files, or configs unless the user explicitly permits ORCHESTRATOR implementation.
+- Do not perform implementation work.
+- Do not silently fix reviewed work; delegate fixes back to an appropriate subagent.
+- Do not skip Spec Before Code for non-trivial changes.
 
 ## Preferred context routing
 - Start with \`.memory-bank/architecture/*\` and \`.memory-bank/guides/*\` for concept priming.
-- If present, prefer explicit normative docs such as \`.memory-bank/spec-index.md\`, \`.memory-bank/invariants.md\`, \`.memory-bank/glossary.md\`, \`.memory-bank/contracts/*\`, \`.memory-bank/states/*\`, \`.memory-bank/runbooks/*\`, and \`.memory-bank/testing/*\`.
+- If present, prefer explicit normative docs such as \`.memory-bank/constitution.md\`, \`.memory-bank/spec-index.md\`, \`.memory-bank/invariants.md\`, \`.memory-bank/glossary.md\`, \`.memory-bank/contracts/*\`, \`.memory-bank/states/*\`, \`.memory-bank/runbooks/*\`, and \`.memory-bank/testing/*\`.
 - Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
 
 ## Docs First
@@ -314,26 +410,31 @@ After finishing a meaningful unit of work:
 - Orchestrator reads only short summaries
 
 ## Clean context (recommended)
-- If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using \`.protocols/TASK-XXX/{context,plan,progress}\` as the primary state.
+- Route each \`TASK-XXX\` by \`task.tier\` and \`.memory-bank/workflows/tier-policy.md\`.
+- T0/T1 may use compact \`.protocols/TASK-XXX/run.md\`; compact evidence can be enough.
+- T2/T3 require full protocol state plus \`/verify\` PASS and \`/red-verify\` semantic-pass before done.
+- T3 also requires a human-aware checkpoint and rollback/recovery note.
+- If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using tier-appropriate \`.protocols/TASK-XXX/\` state.
 - If running in **Codex**: you can run each \`TASK-XXX\` in a fresh session via \`codex exec\` (see \`/execute\`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'\`
+- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 Claude (fresh session):
-- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'\`
+- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: run \`/prd\` → pick one \`FT-<NNN>\` → \`/prd-to-tasks FT-<NNN>\` → execute tasks one-by-one with \`/execute TASK-<ID>\` and review after each wave.
-- **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`, or \`/autopilot\` if backlog already exists. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
+- **Interactive**: run \`/prd\` → \`/clarify FT-<NNN>\` → \`/prd-to-tasks FT-<NNN>\` → execute tasks one-by-one with \`/execute TASK-<ID>\` and review after each wave.
+- **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`, or \`/autopilot\` if JSON task records already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
 
 Naming:
 - Folder: \`.tasks/TASK-<ID>/\`
 - Files: \`TASK-<ID>-S-<STAGE>-final-report-<code|docs>-<NN>.md\`
 
 ## Quality gates (before merge)
-- lint / typecheck / build
+- \`mb-lint\` / typecheck / build
+- \`/mb-doctor\` (strict before autonomous/autopilot task selection)
 - unit tests
 - e2e tests (if UI/flow)
 
@@ -341,7 +442,12 @@ Naming:
 - /cold-start → .memory-bank/commands/cold-start.md
 - /mb → .memory-bank/commands/mb.md
 - /mb-init → .memory-bank/commands/mb-init.md
+- /constitution → .memory-bank/commands/constitution.md
+- /analysis → .memory-bank/commands/analysis.md (optional idea discovery router)
+- /brainstorm → .memory-bank/commands/brainstorm.md (optional raw idea facilitation)
+- /brief → .memory-bank/commands/brief.md (optional product brief before PRD)
 - /prd → .memory-bank/commands/prd.md
+- /clarify → .memory-bank/commands/clarify.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /mb-from-prd → .memory-bank/commands/mb-from-prd.md (alias)
 - /mb-execute → .memory-bank/commands/mb-execute.md (alias)
@@ -350,6 +456,7 @@ Naming:
 - /mb-verify → .memory-bank/commands/mb-verify.md (alias)
 - /red-verify → .memory-bank/commands/red-verify.md
 - /mb-red-verify → .memory-bank/commands/mb-red-verify.md (alias)
+- /mb-doctor → .memory-bank/commands/mb-doctor.md
 - /autopilot → .memory-bank/commands/autopilot.md
 - /autonomous → .memory-bank/commands/autonomous.md
 - /map-codebase → .memory-bank/commands/map-codebase.md
@@ -373,14 +480,15 @@ status: active
 
 ## Навигация
 
+- [.memory-bank/constitution.md](constitution.md): Project Constitution — top governing policy for agents.
 - [.memory-bank/mbb/index.md](mbb/index.md): Правила ведения Memory Bank (MBB).
 - [.memory-bank/product.md](product.md): Продукт (C4 L1).
 - [.memory-bank/requirements.md](requirements.md): Требования + RTM.
 - [.memory-bank/epics/](epics/): Эпики (C4 L2).
 - [.memory-bank/features/](features/): Фичи (C4 L3).
 - [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
-- [.memory-bank/tasks/backlog.md](tasks/backlog.md): Human-readable backlog summary/router.
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
+- [.memory-bank/workflows/tier-policy.md](workflows/tier-policy.md): Tier policy for TASK routing and protocol depth.
 
 - [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
@@ -402,6 +510,10 @@ status: active
 ---
 # Memory Bank Bible (MBB)
 
+## Constitution precedence
+- [.memory-bank/constitution.md](../constitution.md) is the top governing policy for agent decisions.
+- MBB, spec-index, invariants, contracts, states, testing, and workflow docs refine the Constitution and MUST NOT contradict it.
+
 ## SSOT pyramid
 - **Code**: WHAT/HOW — implementation truth.
 - **Docstrings**: contracts + @docs pointers.
@@ -419,7 +531,7 @@ status: active
 9. Separate facts from interpretations: mark hypotheses explicitly ("предположительно", "требует проверки").
 10. After merge/rebase conflicts: re-check MB consistency.
 11. MB-SYNC after each wave/significant change (see \`workflows/mb-sync.md\`).
-12. When present, \`spec-index.md\`, \`glossary.md\`, \`invariants.md\`, \`contracts/*\`, \`states/*\`, \`runbooks/*\`, and \`testing/*\` act as an explicit normative layer and should be linked from relevant docs.
+12. When present, \`constitution.md\`, \`spec-index.md\`, \`glossary.md\`, \`invariants.md\`, \`contracts/*\`, \`states/*\`, \`runbooks/*\`, and \`testing/*\` act as an explicit normative layer and should be linked from relevant docs.
 
 ## Forbidden
 - Copy-paste implementation details / pseudocode
@@ -447,6 +559,9 @@ status: active
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 
+## Governance
+- [.memory-bank/constitution.md](constitution.md): Top governing policy for AI-first project decisions.
+
 ## Normative domains
 - [.memory-bank/contracts/](contracts/): Контракты интерфейсов и boundary specs.
 - [.memory-bank/states/](states/): Lifecycle/state rules.
@@ -456,6 +571,63 @@ status: active
 ## Compatibility note
 - Duo docs в \`architecture/\` и \`guides/\` остаются валидными.
 - Этот слой уточняет source-of-truth, а не отменяет duo docs.
+`);
+
+writeFile(`${MB}/constitution.md`, `---
+description: Project Constitution — governing principles for AI-first development.
+status: active
+version: 1
+ratified: ${TODAY}
+last_updated: ${TODAY}
+---
+# Project Constitution
+
+## Purpose
+
+This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
+
+## Core Principles
+
+### I. AI-First Spec-Driven Development
+
+Agents MUST derive implementation work from explicit product, requirement, feature, task, and workflow artifacts. Agents MUST NOT invent product scope without evidence or user instruction.
+
+### II. Memory Bank Is Durable Project Knowledge
+
+\`.memory-bank/\` is the durable source of project knowledge. Chat context is temporary. Agents MUST update Memory Bank after meaningful changes.
+
+### III. Schema-Backed Task Execution
+
+Tasks MUST use the current schema-backed JSON task record model. If the framework uses \`tier: T0|T1|T2|T3\`, agents MUST route execution and verification through that tier model.
+
+### IV. Minimal Verifiable Change
+
+Agents SHOULD prefer the smallest change that satisfies the task. Every completed task MUST have clear checks or evidence.
+
+### V. Evidence Before Done
+
+A task MUST NOT be marked done without verification evidence appropriate to its tier and scope.
+
+### VI. No Legacy Fallback and No Speculation
+
+Agents MUST NOT rely on deprecated task formats, old risk models, or undocumented assumptions. Unknowns MUST be recorded as blockers or explicit assumptions.
+
+### VII. Context Discipline
+
+Agents SHOULD read the smallest sufficient context for the task. Higher-tier or cross-cutting tasks MUST read relevant normative docs such as invariants, contracts, states, testing, and workflow policies.
+
+### VIII. Synchronization
+
+After meaningful changes, agents MUST synchronize affected Memory Bank docs, task state, changelog, and routing files.
+
+## Governance
+
+- Constitution has precedence over workflow habits and generated plans.
+- MBB, spec-index, invariants, contracts, states, testing, and workflow docs refine this Constitution; they must not contradict it.
+- Amendments must include rationale and update affected docs if needed.
+- Constitution should stay short. Put concrete project rules into \`invariants.md\`, \`contracts/*\`, \`states/*\`, or workflow policy docs.
+
+**Version**: 1 | **Ratified**: ${TODAY} | **Last updated**: ${TODAY}
 `);
 
 writeFile(`${MB}/glossary.md`, `---
@@ -529,34 +701,6 @@ status: draft
 | REQ-XXX | EP-XXX | FT-XXX | test:... | planned |
 `);
 
-writeFile(`${MB}/tasks/backlog.md`, `---
-description: Human-readable backlog summary/router; task state lives in JSON records.
-status: draft
----
-# Backlog
-
-> PRD-less rule: fresh bootstrap does not create runnable task records.
-> Source of truth: task state lives in \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records.
-> This file is only a readable summary/router for humans and must not contain markdown task cards.
-> Task records are created by \`/prd-to-tasks FT-<NNN>\` after PRD/features exist.
-
-## Task records
-- Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
-- Index: [.memory-bank/tasks/index.json](index.json)
-
-## Summary
-
-No task records exist yet. Run \`/prd\`, select a feature, then run \`/prd-to-tasks FT-<NNN>\` to create indexed \`*.task.json\` records.
-
-| Task | Status | Wave | Feature | Record |
-|---|---|---|---|---|
-
-## Update rule
-- \`/prd-to-tasks\` creates or updates \`*.task.json\` records and \`index.json\` first.
-- \`/execute\`, \`/verify\`, \`/autopilot\`, and \`/autonomous\` read/write JSON task records, not this markdown summary.
-- After JSON records change, refresh this table as a readable route only.
-`);
-
 writeFile(`${MB}/schemas/task.schema.json`, `${JSON.stringify(TASK_SCHEMA, null, 2)}\n`);
 
 writeFile(`${MB}/tasks/index.json`, `${JSON.stringify(TASK_INDEX, null, 2)}\n`);
@@ -594,12 +738,14 @@ status: active
 
 ## When to use
 - Bootstrap: cold-start / mb-init
+- Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
 - PRD → MB: mb-from-prd
 - Map codebase: mb-map-codebase
 - Execution: mb-execute
 - Verification (UAT): mb-verify
 - Semantic adversarial verification: mb-red-verify
 - Autonomous run: autonomous / autopilot
+- Readiness doctor: mb-doctor
 - Review: mb-review
 - Maintenance: mb-garden
 - Harness: mb-harness
@@ -611,9 +757,9 @@ status: active
 ---
 # Changelog
 
-## [${new Date().toISOString().slice(0, 10)}] Initial setup
+## [${TODAY}] Initial setup
 - Created Memory Bank skeleton
-- Seeded core docs (product, requirements, testing, backlog)
+- Seeded core docs (product, requirements, testing, task registry)
 `);
 
 writeFile(`${MB}/workflows/mb-sync.md`, `---
@@ -626,11 +772,13 @@ status: active
 - [ ] Optional normative docs, if present, are linked and do not contradict duo docs
 - [ ] RTM lifecycle up to date (requirements.md)
 - [ ] Feature/epic document \`status\` and implementation \`lifecycle\` are both updated
-- [ ] JSON task records updated; \`backlog.md\` summary refreshed
+- [ ] JSON task records and \`.memory-bank/tasks/index.json\` updated
 - [ ] Changelog entry added
 - [ ] index.md links valid
 - [ ] Lint passes (0 errors; blocking in autonomous mode)
 `);
+
+copyWorkflowReference('tier-policy.md');
 
 writeFile(`${MB}/workflows/autonomy-policy.md`, `---
 description: Guardrails and terminal states for unattended autonomous runs.
@@ -649,15 +797,19 @@ status: active
 
 ## Allowed assumptions
 - naming / wording / non-critical UX defaults
-- low-risk implementation details that can be verified later
+- low-impact implementation details that can be verified later
 
 Non-blocking gaps must be written as explicit assumptions in \`.protocols/AUTONOMOUS-RUN/decision-log.md\`.
 
 ## Required gates
 - latest \`/review\` verdict must be \`APPROVE\`
-- mandatory \`/verify\` per TASK
+- mandatory \`/mb-doctor --strict\` before autonomous/autopilot task selection, after \`/mb-sync\` before promotion, and before final success
+- tier-appropriate verification per TASK:
+  - T0/T1: compact evidence may be enough
+  - T2/T3: \`/verify\` PASS and \`/red-verify\` semantic-pass are required before done
+  - T3: human-aware checkpoint plus rollback/recovery note are required
 - mandatory \`/mb-sync\`
-- mandatory lint/link consistency before final success
+- mandatory lint/link consistency before final success, covered by \`mb-doctor\`
 
 ## Failure budgets
 - max_retries_per_task: 2
@@ -667,6 +819,7 @@ Non-blocking gaps must be written as explicit assumptions in \`.protocols/AUTONO
 ## Terminal states
 - \`SUCCESS\`
 - \`HALT_BLOCKING_QUESTIONS\`
+- \`HALT_CLARIFICATION_REQUIRED\`
 - \`HALT_REVIEW_REJECT\`
 - \`HALT_FAILURE_BUDGET\`
 - \`HALT_DEPENDENCY_DEADLOCK\`
@@ -683,55 +836,61 @@ status: active
 
 ## Principle: no task explosion
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
-- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\`.
+- Deep Questioning = PRD-level discovery. Clarification = feature-level ambiguity gate.
+- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/clarify FT-<NNN>\` is complete.
 
 ## Interactive mode (you stay)
 1) \`/prd\` (fills L1–L3; records open questions)
-2) Pick one top feature: \`FT-<NNN>\`
+2) Pick one top feature and run \`/clarify FT-<NNN>\`
 3) \`/prd-to-tasks FT-<NNN>\` (creates IMPL plan + TASK-* for this feature)
-4) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
-   - \`/execute TASK-<ID>\` → \`/verify\` → \`/mb-sync\`
-5) After each wave: \`/review\` (or \`mb-review\` fresh context)
+4) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
+5) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
+   - \`/execute TASK-<ID>\` → tier-appropriate verify → \`/red-verify\` if required → \`/mb-sync\`
+6) After each wave: \`/review\` (or \`mb-review\` fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) \`/autonomous\`
 2) command builds L1–L3, runs review gate, decomposes all FT, and then schedules ready TASKs
-3) each TASK runs in **fresh CLI sessions**
-4) after each wave: \`/review\`
-5) final success only if last review = \`APPROVE\` and no blocking tasks remain
+3) run \`/mb-doctor --strict\` before scheduler execution
+4) each TASK runs in **fresh CLI sessions**
+5) after each \`/mb-sync\`, run \`/mb-doctor --strict\` before promoting dependents
+6) after each wave: \`/review\`
+7) final success only if last review = \`APPROVE\`, \`/mb-doctor --strict\` passes, and no blocking tasks remain
 
 ## Autonomous executor only
 If JSON task records already exist and review gate already passed, use:
 - \`/autopilot\`
 
-Codex (implement then verify):
+\`/autopilot\` must run \`/mb-doctor --strict\` before each task selection pass and after each \`/mb-sync\` before promotion.
+
+Codex (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \\
-  'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement only scoped changes. Update progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \\
-  'TASK_ID=TASK-123. Read .protocols/TASK-123/{context,plan,progress}.md + acceptance criteria. Keep context.md updated. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL.'
+  'TASK_ID=TASK-123. For T2/T3 only: read task record + tier-policy + full protocol + acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL.'
 ~~~
 
-Claude (implement then verify):
+Claude (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
-  'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement only scoped changes. Update progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
-  'TASK_ID=TASK-123. Read .protocols/TASK-123/{context,plan,progress}.md + acceptance criteria. Keep context.md updated. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'
+  'TASK_ID=TASK-123. For T2/T3 only: read task record + tier-policy + full protocol + acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'
 ~~~
 
 ## Parallel vs sequential
 - Independent tasks (no shared files) MAY run in parallel (separate sessions).
-- Dependent or shared-file tasks MUST run sequentially: TASK-A (impl→verify→mb-sync) → TASK-B.
+- Dependent or shared-file tasks MUST run sequentially: TASK-A (execute→tier-appropriate verify→red-verify if required→mb-sync) → TASK-B.
 `);
 
 writeFile(`${MB}/adrs/ADR-000-template.md`, `---
 description: "ADR-000: Шаблон для архитектурных решений."
 status: active
 owner: architecture
-last_updated: ${new Date().toISOString().slice(0, 10)}
+last_updated: ${TODAY}
 source_of_truth:
   - .memory-bank/adrs/ADR-000-template.md
 ---

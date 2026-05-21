@@ -15,13 +15,16 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 # Agent Operating Guide (Project Map)
 
 ## Prime before work
-1. Read `.memory-bank/index.md` (table of contents)
-2. Read `.memory-bank/mbb/index.md` (rules)
-3. Follow annotated links for deeper context
+1. Read `AGENTS.md` (this guide)
+2. Read `.memory-bank/constitution.md` (top governing policy)
+3. Read `.memory-bank/mbb/index.md` (Memory Bank rules)
+4. Read `.memory-bank/spec-index.md` (normative routing)
+5. Read `.memory-bank/index.md` (table of contents)
+6. Read task/feature-specific docs
 
 ## Preferred context routing
 - Start with `.memory-bank/architecture/*` and `.memory-bank/guides/*` for concept priming.
-- If present, prefer explicit normative docs such as `.memory-bank/spec-index.md`, `.memory-bank/invariants.md`, `.memory-bank/glossary.md`, `.memory-bank/contracts/*`, `.memory-bank/states/*`, `.memory-bank/runbooks/*`, and `.memory-bank/testing/*`.
+- If present, prefer explicit normative docs such as `.memory-bank/constitution.md`, `.memory-bank/spec-index.md`, `.memory-bank/invariants.md`, `.memory-bank/glossary.md`, `.memory-bank/contracts/*`, `.memory-bank/states/*`, `.memory-bank/runbooks/*`, and `.memory-bank/testing/*`.
 - Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
 
 ## Docs First
@@ -41,19 +44,23 @@ When a task requires reading many files or producing long output:
 - orchestrator reads only short summaries
 
 ## Clean context (recommended)
-- If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using `.protocols/TASK-XXX/{context,plan,progress}` as the primary state.
+- Route each `TASK-XXX` by `task.tier` and `.memory-bank/workflows/tier-policy.md`.
+- T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
+- T2/T3 require full protocol state plus `/verify` PASS and `/red-verify` semantic-pass before done.
+- T3 also requires a human-aware checkpoint and rollback/recovery note.
+- If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'`
+- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 Claude (fresh session):
-- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + .protocols/TASK-123/{context,plan,progress}.md. Keep context.md updated. Implement. Update progress. Report → .tasks/TASK-123/…'`
+- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: run `/prd` → pick one `FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` and review after each wave.
-- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task queue / `tasks/index.json` records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
+- **Interactive**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → tier-appropriate verify → `/red-verify` if required → `/mb-sync`, then review after each wave.
+- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
 - Folder per process: `.tasks/TASK-<ID>/`
@@ -66,31 +73,17 @@ Claude (fresh session):
 - e2e tests (if UI/flow)
 
 ## Memory Bank entry points
-- `/cold-start` → `.memory-bank/commands/cold-start.md`
-- `/mb` → `.memory-bank/commands/mb.md`
-- `/mb-init` → `.memory-bank/commands/mb-init.md` *(alias; skeleton bootstrap)*
-- `/prd` → `.memory-bank/commands/prd.md`
-- `/mb-from-prd` → `.memory-bank/commands/mb-from-prd.md` *(alias to `/prd`)*
-- `/prd-to-tasks` → `.memory-bank/commands/prd-to-tasks.md`
-- `/mb-execute` → `.memory-bank/commands/mb-execute.md` *(alias to `/execute`)*
-- `/execute` → `.memory-bank/commands/execute.md`
-- `/verify` → `.memory-bank/commands/verify.md`
-- `/mb-verify` → `.memory-bank/commands/mb-verify.md` *(alias to `/verify`)*
-- `/red-verify` → `.memory-bank/commands/red-verify.md`
-- `/mb-red-verify` → `.memory-bank/commands/mb-red-verify.md` *(alias to `/red-verify`)*
-- `/autopilot` → `.memory-bank/commands/autopilot.md`
-- `/autonomous` → `.memory-bank/commands/autonomous.md`
-- `/map-codebase` → `.memory-bank/commands/map-codebase.md`
-- `/mb-map-codebase` → `.memory-bank/commands/mb-map-codebase.md` *(alias to `/map-codebase`)*
-- `/mb-sync` → `.memory-bank/commands/mb-sync.md`
-- `/discuss` → `.memory-bank/commands/discuss.md`
-- `/add-tests` → `.memory-bank/commands/add-tests.md`
-- `/review` → `.memory-bank/commands/review.md`
-- `/mb-review` → `.memory-bank/commands/mb-review.md` *(alias to `/review`)*
-- `/mb-garden` → `.memory-bank/commands/mb-garden.md`
-- `/mb-harness` → `.memory-bank/commands/mb-harness.md`
-- `/find-skills` → `.memory-bank/commands/find-skills.md`
-- `/find-skill` → `.memory-bank/commands/find-skill.md` *(alias)*
+Command specs live in `skills/_shared/references/commands/*.md`.
+`skills/_shared/scripts/init-mb.js` generates `.memory-bank/commands/*`, runtime proxy skills, and the current entrypoints in generated `AGENTS.md`.
+
+Representative commands:
+- `/analysis`
+- `/prd`
+- `/clarify`
+- `/prd-to-tasks`
+- `/autopilot`
+- `/mb-doctor`
+- `/constitution`
 
 > Keep this file small. Deep docs live under `.memory-bank/`.
 ```
@@ -142,13 +135,13 @@ status: active
 
 ## Навигация
 
+- [.memory-bank/constitution.md](constitution.md): Project Constitution — top governing policy for agents.
 - [.memory-bank/mbb/index.md](mbb/index.md): Правила ведения Memory Bank (MBB).
 - [.memory-bank/product.md](product.md): Продукт, аудитория, core value (C4 L1).
 - [.memory-bank/requirements.md](requirements.md): Требования (REQ-IDs) + RTM.
 - [.memory-bank/epics/](epics/): Эпики (C4 L2).
 - [.memory-bank/features/](features/): Фичи (C4 L3).
 - [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
-- [.memory-bank/tasks/backlog.md](tasks/backlog.md): Human-readable backlog summary/router.
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 
 - [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
@@ -180,6 +173,10 @@ status: active
 ---
 # Memory Bank Bible (MBB)
 
+## Constitution precedence
+- [.memory-bank/constitution.md](../constitution.md) is the top governing policy for agent decisions.
+- MBB, spec-index, invariants, contracts, states, testing, and workflow docs refine the Constitution and MUST NOT contradict it.
+
 ## SSOT pyramid
 - **Code**: WHAT/HOW — implementation truth.
 - **Docstrings**: contracts + `@docs` pointers.
@@ -197,7 +194,7 @@ status: active
 9. Separate facts from interpretations: mark hypotheses explicitly ("предположительно", "требует проверки").
 10. After merge/rebase conflicts: re-check MB consistency.
 11. MB-SYNC after each wave/significant change (see `workflows/mb-sync.md`).
-12. When present, `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*`, and `testing/*` act as an explicit normative layer and should be linked from relevant docs.
+12. When present, `constitution.md`, `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*`, and `testing/*` act as an explicit normative layer and should be linked from relevant docs.
 
 ## Forbidden
 - Copy-paste implementation details / pseudocode
@@ -230,6 +227,9 @@ status: active
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 
+## Governance
+- [.memory-bank/constitution.md](constitution.md): Top governing policy for AI-first project decisions.
+
 ## Normative domains
 - [.memory-bank/contracts/](contracts/): Контракты интерфейсов и boundary specs.
 - [.memory-bank/states/](states/): Lifecycle/state rules.
@@ -243,7 +243,69 @@ status: active
 
 ---
 
-## 3b) `.memory-bank/glossary.md`
+## 3b) `.memory-bank/constitution.md`
+
+```markdown
+---
+description: Project Constitution — governing principles for AI-first development.
+status: active
+version: 1
+ratified: YYYY-MM-DD
+last_updated: YYYY-MM-DD
+---
+# Project Constitution
+
+## Purpose
+
+This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
+
+## Core Principles
+
+### I. AI-First Spec-Driven Development
+
+Agents MUST derive implementation work from explicit product, requirement, feature, task, and workflow artifacts. Agents MUST NOT invent product scope without evidence or user instruction.
+
+### II. Memory Bank Is Durable Project Knowledge
+
+`.memory-bank/` is the durable source of project knowledge. Chat context is temporary. Agents MUST update Memory Bank after meaningful changes.
+
+### III. Schema-Backed Task Execution
+
+Tasks MUST use the current schema-backed JSON task record model. If the framework uses `tier: T0|T1|T2|T3`, agents MUST route execution and verification through that tier model.
+
+### IV. Minimal Verifiable Change
+
+Agents SHOULD prefer the smallest change that satisfies the task. Every completed task MUST have clear checks or evidence.
+
+### V. Evidence Before Done
+
+A task MUST NOT be marked done without verification evidence appropriate to its tier and scope.
+
+### VI. No Legacy Fallback and No Speculation
+
+Agents MUST NOT rely on deprecated task formats, old risk models, or undocumented assumptions. Unknowns MUST be recorded as blockers or explicit assumptions.
+
+### VII. Context Discipline
+
+Agents SHOULD read the smallest sufficient context for the task. Higher-tier or cross-cutting tasks MUST read relevant normative docs such as invariants, contracts, states, testing, and workflow policies.
+
+### VIII. Synchronization
+
+After meaningful changes, agents MUST synchronize affected Memory Bank docs, task state, changelog, and routing files.
+
+## Governance
+
+- Constitution has precedence over workflow habits and generated plans.
+- MBB, spec-index, invariants, contracts, states, testing, and workflow docs refine this Constitution; they must not contradict it.
+- Amendments must include rationale and update affected docs if needed.
+- Constitution should stay short. Put concrete project rules into `invariants.md`, `contracts/*`, `states/*`, or workflow policy docs.
+
+**Version**: 1 | **Ratified**: YYYY-MM-DD | **Last updated**: YYYY-MM-DD
+```
+
+---
+
+## 3c) `.memory-bank/glossary.md`
 
 ```markdown
 ---
@@ -261,7 +323,7 @@ status: draft
 
 ---
 
-## 3c) `.memory-bank/invariants.md`
+## 3d) `.memory-bank/invariants.md`
 
 ```markdown
 ---
@@ -337,47 +399,37 @@ status: draft
 
 ---
 
-## 6) `.memory-bank/tasks/backlog.md`
-
-```markdown
----
-description: Human-readable backlog summary/router; task state lives in JSON records.
-status: draft
----
-# Backlog
-
-> PRD-less rule: fresh bootstrap does not create runnable task records.
-> Source of truth: task state lives in `.memory-bank/tasks/index.json` and indexed `*.task.json` records.
-> This file is only a readable summary/router for humans and must not contain markdown task cards.
-> Task records are created by `/prd-to-tasks FT-<NNN>` after PRD/features exist.
-
-## Task records
-- Schema: [.memory-bank/schemas/task.schema.json](../schemas/task.schema.json)
-- Index: [.memory-bank/tasks/index.json](index.json)
-
-## Summary
-
-No task records exist yet. Run `/prd`, select a feature, then run `/prd-to-tasks FT-<NNN>` to create indexed `*.task.json` records.
-
-| Task | Status | Wave | Feature | Record |
-|---|---|---|---|---|
-
-## Update rule
-- `/prd-to-tasks` creates or updates `*.task.json` records and `index.json` first.
-- `/execute`, `/verify`, `/autopilot`, and `/autonomous` read/write JSON task records, not this markdown summary.
-- After JSON records change, refresh this table as a readable route only.
-```
-
-## 6a) `.memory-bank/schemas/task.schema.json`
+## 6) `.memory-bank/schemas/task.schema.json`
 
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Memory Bank Task Record",
   "type": "object",
-  "required": ["id", "title", "status", "wave", "feature", "reqs", "depends_on", "touched_files", "risk", "gates", "verify", "docs", "evidence_required", "source_artifacts", "normative_inputs", "constraints", "invariants", "verification_targets"],
+  "additionalProperties": false,
+  "required": ["id", "title", "status", "wave", "feature", "reqs", "depends_on", "touched_files", "tier", "gates", "verify", "docs", "evidence_required", "source_artifacts", "normative_inputs", "constraints", "invariants", "verification_targets"],
   "properties": {
-    "status": { "enum": ["planned", "ready", "in_progress", "blocked", "done", "failed"] },
+    "id": { "type": "string", "pattern": "^TASK-[0-9]{3,}$" },
+    "title": { "type": "string" },
+    "status": { "type": "string", "enum": ["planned", "ready", "in_progress", "blocked", "done", "failed"] },
+    "wave": { "type": "string" },
+    "feature": { "type": "string" },
+    "reqs": { "type": "array", "items": { "type": "string" } },
+    "depends_on": { "type": "array", "items": { "type": "string" } },
+    "touched_files": { "type": "array", "items": { "type": "string" } },
+    "tier": { "type": "string", "enum": ["T0", "T1", "T2", "T3"] },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "command", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "command": { "type": "string" },
+          "required": { "type": "boolean" }
+        }
+      }
+    },
     "verify": {
       "type": "array",
       "items": {
@@ -387,18 +439,18 @@ No task records exist yet. Run `/prd`, select a feature, then run `/prd-to-tasks
         ]
       }
     },
-    "risk": {
-      "type": "object",
-      "required": ["level", "reasons", "red_verify_required"],
-      "properties": {
-        "level": { "enum": ["low", "medium", "high"] }
-      }
-    }
+    "docs": { "type": "array", "items": { "type": "string" } },
+    "evidence_required": { "type": "array", "items": { "type": "string" } },
+    "source_artifacts": { "type": "array", "items": { "type": "string" } },
+    "normative_inputs": { "type": "array", "items": { "type": "string" } },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "invariants": { "type": "array", "items": { "type": "string" } },
+    "verification_targets": { "type": "array", "items": { "type": "string" } }
   }
 }
 ```
 
-## 6b) `.memory-bank/tasks/index.json`
+## 6a) `.memory-bank/tasks/index.json`
 
 ```json
 {
@@ -407,7 +459,7 @@ No task records exist yet. Run `/prd`, select a feature, then run `/prd-to-tasks
 }
 ```
 
-## 6c) Example task record template
+## 6b) Example task record template
 
 The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records when a feature is selected.
 
@@ -421,11 +473,7 @@ The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real 
   "reqs": ["REQ-001"],
   "depends_on": [],
   "touched_files": [],
-  "risk": {
-    "level": "low",
-    "reasons": [],
-    "red_verify_required": false
-  },
+  "tier": "T0",
   "gates": [
     {
       "name": "unit tests",
@@ -517,7 +565,7 @@ status: active
 
 ## [YYYY-MM-DD] Initial setup
 - Created Memory Bank skeleton
-- Seeded core docs (product, requirements, testing, backlog)
+- Seeded core docs (product, requirements, testing, task registry)
 ```
 
 ---
@@ -535,7 +583,7 @@ status: active
 - [ ] Optional normative docs, if present, are linked and do not contradict duo docs
 - [ ] RTM up to date (requirements.md)
 - [ ] Feature statuses updated
-- [ ] JSON task records updated; `backlog.md` summary refreshed
+- [ ] JSON task records and `.memory-bank/tasks/index.json` updated
 - [ ] Changelog entry added
 - [ ] index.md links valid
 - [ ] Lint passes (0 errors)

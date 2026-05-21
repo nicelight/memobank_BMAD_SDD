@@ -15,11 +15,12 @@ description: >
 Independent-ish verification so we don’t “trust without verify”.
 
 This is **not** the adversarial semantic pass.
-If a task may satisfy AC/REQ while still being wrong in substance, follow with `mb-red-verify`.
+If a task may satisfy AC/REQ while still being wrong in substance, follow with `/red-verify` / `mb-red-verify`.
 
 ## Inputs
 - `TASK_ID` (e.g. `TASK-123`)
 - Authoritative task record via `.memory-bank/tasks/index.json` and `.memory-bank/tasks/<TASK_ID>.task.json`
+- Mandatory `tier: T0|T1|T2|T3` in that task record
 - Links to acceptance criteria:
   - `.memory-bank/features/FT-*` and/or
   - `.memory-bank/requirements.md` (REQ IDs)
@@ -33,13 +34,16 @@ If present, also use:
 ## Preconditions
 - Implementation is done and gates were run (or failures recorded).
 - `.memory-bank/tasks/index.json` lists the target task record, and the indexed `.task.json` validates the requested `TASK_ID`.
+- Authoritative verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
 
 ## Required outputs
-- Update (or create) `.protocols/<TASK_ID>/verification.md` using:
+- `T0` / `T1`: verification may be recorded in compact `.protocols/<TASK_ID>/run.md`.
+- `T2` / `T3`: update (or create) `.protocols/<TASK_ID>/verification.md` using:
   - `./references/shared-protocols-verification-template.md`
 - Store evidence in `.tasks/<TASK_ID>/`:
   - logs, screenshots, videos, reproduction steps
 - Add completed evidence entries to the task record `verify` field; `evidence_required` and `verification_targets` remain requirements/targets, not proof by themselves.
+- Before any command sets `status: done`, the task record `verify` field must contain completed verification/evidence entries.
 
 ## Process
 
@@ -56,7 +60,7 @@ Before verifying, validate the authoritative task record:
 - the task is present in `.memory-bank/tasks/index.json`
 - the indexed record `id` matches `TASK_ID`
 - required fields for verification are present (`status`, `feature`, `reqs`, `depends_on`, `gates`, `verify`)
-- `.memory-bank/tasks/backlog.md` is only a readable summary/router and must not be used as authoritative task state
+- `tier` is present; if missing, stop
 
 If the authoritative task record is missing or invalid, stop and report the issue instead of verifying from protocol docs alone.
 
@@ -90,15 +94,18 @@ If anything fails:
 
 If all pass:
 - `VERDICT: PASS`
-- mark current task record as `done` and add completed verification/evidence entries in `verify`
+- add completed verification/evidence entries in `verify`
+- apply status by tier:
+  - `T0` / `T1`: may keep compact closure behavior and set `status: done` when local policy allows it
+  - `T2` / `T3`: do not set `status: done`; leave the task pending `/red-verify` / `mb-red-verify` with an explicit non-`done` state such as `in_progress`
+- for `T2` / `T3`, final closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
 ### 4) Sync statuses
 - Update RTM lifecycle in `.memory-bank/requirements.md` (if used)
 - If the feature/epic doc tracks `lifecycle`, sync it there too
-- Update task state in the authoritative `.task.json` record
-- Refresh `.memory-bank/tasks/backlog.md` only as a readable summary/router
+- Update task state in the authoritative `.task.json` record according to the tier policy above
 
 ## Definition of done
-- `verification.md` exists and is evidence-backed.
-- PASS tasks have updated RTM/task records/backlog summary.
+- Verification output exists and is evidence-backed: compact `run.md` for eligible `T0` / `T1`, full `verification.md` for `T2` / `T3`.
+- PASS verification has updated RTM/task evidence; `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
 - FAIL tasks have a bug doc and next steps.
