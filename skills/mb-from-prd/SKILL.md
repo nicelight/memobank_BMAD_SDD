@@ -9,20 +9,20 @@ description: >
 - **What it does:** converts a PRD into structured project knowledge and traceable planning artifacts.
 - **Use it when:** the project is greenfield and `prd.md` or equivalent requirements already exist.
 - **Input:** `prd.md` or user-provided PRD text plus an initialized `.memory-bank/`.
-- **Output:** product brief, RTM, epics, features, and concept docs ready for `/clarify FT-<NNN>` before `/prd-to-tasks`.
+- **Output:** product, RTM, epics, features, and concept docs ready for `/prd-to-tasks`.
 
 ## Preconditions
 - You are in the repo root.
-- `prd.md` exists (or the user provides PRD text).
+- `.memory-bank/prd.md` exists with `type: prd`, `clarification_status: complete`, and `constitution_checked: true`; otherwise run `/write-prd` first.
 - Optional Analysis artifacts such as a product brief may exist; use them as upstream PRD input, but do not require them.
 - `.memory-bank/` exists. If not, run `mb-init` first (or create the skeleton manually).
 
 ## Process
 
-### 1) Load and sanity-check PRD
-1. Read `prd.md`.
-2. If an Analysis product brief exists, use it as the primary upstream context for PRD interpretation.
-3. Identify missing information and contradictions.
+### 1) Load clarified PRD
+1. Read `.memory-bank/prd.md`.
+2. Confirm frontmatter has `type: prd`, `clarification_status: complete`, and `constitution_checked: true`.
+3. Stop if PRD contains unresolved `NEEDS CLARIFICATION` markers that affect decomposition.
 4. Start a task protocol folder:
    - `.protocols/PRD-BOOTSTRAP/`
    - `plan.md` (steps)
@@ -33,14 +33,9 @@ If the PRD mentions “use skills / tools / CLIs”:
 - run `/find-skills` (project-installed first; marketplace second)
 - propose a minimal set of relevant skills to use (do not install without confirmation)
 
-### 3) Deep Questioning (rounds)
-Use `./references/shared-deep-questioning.md`.
-- Ask questions in rounds of 3–5.
-- After each round: summarize, update `decision-log.md`, and ask the next round.
-- If user is temporarily unavailable: record `Open questions` in `decision-log.md` and **stop**. Do not proceed by inventing facts.
-
-Deep Questioning is PRD-level discovery. Clarification is the later feature-level ambiguity gate run with `/clarify FT-<NNN>`.
-Optional Analysis (`/analysis`, `/brainstorm`, `/brief`) is also PRD-level discovery. It improves PRD input and does not replace `/clarify`.
+### 3) No Deep Questioning here
+PRD-level ambiguity is handled by `/write-prd`. Do not ask Deep Questioning rounds in this skill.
+Optional Analysis (`/analysis`, `/brainstorm`, `/brief`) improves `/write-prd` input.
 
 If the target mode is **full autonomous**:
 - non-blocking gaps may be recorded as explicit `Assumptions`
@@ -68,7 +63,7 @@ For each feature:
 - Create `.memory-bank/features/FT-<NNN>-<slug>.md`
 - Use `references/feature-template.md`.
 - Ensure autonomy and explicit acceptance criteria.
-- Add clarification metadata starting as `clarification_status: pending`; `mb-from-prd` must not mark feature clarification complete.
+- Do not add clarification metadata by default. Add `clarification_status: pending|blocked` only when the PRD explicitly leaves a feature-level blocker that affects task decomposition.
 - Fill optional sections such as `Source artifacts`, `Normative inputs`, `Constraints / invariants`, and `Verification targets` only when they are grounded in evidence.
 - Default `status: draft` until acceptance criteria + verification plan are solid.
 
@@ -77,14 +72,13 @@ Do **not** generate a full task queue “в лоб” for all features in one pa
 
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist. A fresh skeleton may have `{ "version": 1, "tasks": [] }`.
-2) For each selected feature, run `/clarify FT-<NNN>` first; task planning starts only after that feature-level ambiguity gate is complete.
-3) Then run `/prd-to-tasks FT-<NNN>` to produce:
+2) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
 When enough structured evidence exists, those feature-level plans and task records may include optional richer fields such as `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, and `verification_targets`.
 Task routing is authoritative only through `task.tier`; the old `risk` / `risk.level` model is invalid.
-Canonical planning path is `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`; `/prd-to-tasks` must not run while clarification is pending or missing.
+Canonical planning path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`. Run `/clarify-feature FT-<NNN>` only when a feature is explicitly pending/blocked.
 
 This keeps planning accurate and avoids speculative task explosions.
 
@@ -122,5 +116,5 @@ If the goal is “PRD → done without more user interaction”:
 - Every REQ maps to an Epic/Feature in RTM.
 - Epics and features exist with acceptance criteria.
 - No schema-backed task records are required from `mb-from-prd` itself.
-- If task planning is explicitly continued after `/clarify FT-<NNN>` and `clarification_status: complete`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
+- If task planning is explicitly continued with `/prd-to-tasks FT-<NNN>`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
 - index.md is updated.

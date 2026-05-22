@@ -49,6 +49,6 @@ status: active
    - Если delta уже оформлена как PRD — дальше `/prd`.
    - Если delta ясна, но PRD нет — сначала `/brief`, затем `/prd`.
    - Если delta сырая / направление нестабильно — сначала `/analysis` или `/brainstorm`.
-   - Не переходи напрямую к `/prd-to-tasks`; после `/prd` требуется `/clarify FT-<NNN>`.
+   - Не переходи напрямую к `/prd-to-tasks`; для planning delta сначала нужен `/write-prd`, затем `/prd`.
 6) Запусти `mb-review`.
 </process>

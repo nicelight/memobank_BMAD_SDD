@@ -1,494 +1,421 @@
-﻿# memobank
+# memobank
 
-`memobank` — это набор skills для Codex CLI, Claude Code, OpenCode и похожих agent runtimes.
+`memobank` - source-only skill pack/framework для Codex CLI, Claude Code, OpenCode и совместимых agent runtimes.
 
-Он превращает репозиторий в рабочее пространство для AI-first разработки с тремя постоянными слоями:
-- `.memory-bank/` для долговременного знания о проекте
-- `.protocols/` для возобновляемых планов, прогресса и состояния верификации
-- `.tasks/` для runtime-артефактов, которые производят агенты и сабагенты
+Он устанавливает package skills в runtime, а затем bootstrap-ит целевой репозиторий в Memory Bank workspace: `.memory-bank/` для durable knowledge, `.protocols/` для возобновляемых протоколов, `.tasks/` для runtime evidence и reports. Цель - чтобы агент мог работать по файлам и проверяемым состояниям, а не по хрупкой истории чата.
 
-Практическая цель проста: агент должен уметь работать долго без потери контекста, а человек должен уметь понять, что произошло, по файлам, а не по истории чата.
+## Что важно знать сразу
 
-## Что изменилось в текущем проекте
+- Этот репозиторий сам является source-only pack: canonical shared source лежит в `skills/_shared/`.
+- Package-local `skills/*/{agents,references,scripts}/shared-*` не коммитятся.
+- Установка skills и CI smoke сначала делают временную vendored copy, где `shared-*` файлы генерируются, и только потом вызывают `skills add`.
+- Целевой репозиторий bootstrap-ится отдельным шагом через installed или source `shared-init-mb.js` / `init-mb.js`.
+- Task model теперь JSON-only: `.memory-bank/tasks/index.json` индексирует `.memory-bank/tasks/TASK-*.task.json`.
+- Каждый task record обязан иметь `tier: T0|T1|T2|T3`; старые `risk` и `risk.level` невалидны.
+- Fresh bootstrap создает пустой task index и не создает runnable task records.
 
-Текущий `memobank` больше не является только duo-doc системой вокруг `architecture/ + guides/`.
-Теперь он использует многослойную модель со строгим JSON task state:
-- классические duo docs остаются валидными и поддерживаемыми
-- `.memory-bank/constitution.md` задаёт короткие project governing principles для решений агентов
-- явный нормативный слой может быть задан через `spec-index.md`, `glossary.md`, `invariants.md`, `contracts/*`, `states/*`, `runbooks/*` и `testing/*`
-- более богатые planning и verification inputs поддерживаются, если они есть
-- task execution state хранится только в JSON: `tasks/index.json` плюс индексированные `TASK-*.task.json` records
-- каждый task record использует обязательное `tier: T0|T1|T2|T3`
+## Две разные стадии
 
-Модель документации остаётся additive. Модель задач намеренно строгая и machine-readable.
+### 1. Установка package skills
 
-## Базовая модель
-
-Текущая структура Memory Bank организована в три слоя.
-
-### Layer A: классические concept docs
-- `.memory-bank/architecture/` для WHAT и WHY
-- `.memory-bank/guides/` для HOW
-
-### Layer B: явные нормативные docs
-- `.memory-bank/constitution.md`
-- `.memory-bank/spec-index.md`
-- `.memory-bank/glossary.md`
-- `.memory-bank/invariants.md`
-- `.memory-bank/contracts/`
-- `.memory-bank/states/`
-- `.memory-bank/runbooks/`
-- `.memory-bank/testing/`
-
-### Layer C: planning и execution state
-- `.memory-bank/epics/`
-- `.memory-bank/features/`
-- `.memory-bank/tasks/index.json`
-- `.memory-bank/tasks/TASK-*.task.json`
-- `.protocols/`
-- `.tasks/`
-
-Ключевое правило простое: richer docs усиливают source-of-truth routing, но не делают рабочие duo docs невалидными.
-Constitution — это документ governing principles проекта. `/constitution` создаёт или обновляет его, агенты читают его рано во время priming, и он не заменяет `invariants.md`, `contracts/*` или `spec-index.md`.
-Сгенерированный `AGENTS.md` — это только bootstrap и command router для агентов. Он направляет агентов к Constitution и файлам Memory Bank; сам он не является Constitution.
-
-## Что входит в набор
-
-### Package skills
-- `cold-start` — all-in-one bootstrap для greenfield и brownfield репозиториев
-- `mb-init` — только skeleton и генерация команд
-- `mb-analysis` — optional upstream discovery: роутинг идеи, brainstorming и product brief перед PRD
-- `mb-from-prd` — PRD-driven planning в product, requirements, epics и features
-- `mb-map-codebase` — маппинг существующего репозитория в as-is docs Memory Bank
-- `mb-execute` — исполнение одной `TASK-*` через возобновляемый протокол
-- `mb-verify` — проверка одной `TASK-*` по acceptance criteria и evidence
-- `mb-red-verify` — adversarial semantic verification одной `TASK-*`
-- `mb-review` — fresh-context review со специализированными reviewer prompts
-- `mb-garden` — lint и сопровождение консистентности Memory Bank
-- `mb-harness` — документация для deterministic gates, worktrees и agent-safe workflows
-
-### Генерируемые project commands
-После запуска `cold-start` или `mb-init` внутри целевого репозитория `memobank` создаёт command specs в `.memory-bank/commands/` и публикует их через runtime-native proxy skills.
-
-Текущий набор команд:
-- `/cold-start`
-- `/mb`
-- `/mb-init`
-- `/analysis`
-- `/brainstorm`
-- `/brief`
-- `/constitution`
-- `/prd`
-- `/clarify`
-- `/prd-to-tasks`
-- `/execute`
-- `/verify`
-- `/red-verify`
-- `/review`
-- `/map-codebase`
-- `/mb-sync`
-- `/mb-garden`
-- `/mb-doctor`
-- `/mb-harness`
-- `/autopilot`
-- `/autonomous`
-- `/discuss`
-- `/add-tests`
-- `/find-skills`
-
-## Как это работает
-
-### 1. Bootstrap репозитория
-`skills/_shared/scripts/init-mb.js` инициализирует репозиторий и создаёт:
-- `.memory-bank/`
-- `.tasks/`
-- `.protocols/`
-- `AGENTS.md`
-- `CLAUDE.md` и `GEMINI.md` как symlink-or-copy companions
-- `.memory-bank/commands/*.md`
-- `.claude/skills/*` proxy skills
-- `.agents/skills/*` proxy skills
-
-Сгенерированный `AGENTS.md` содержит Orchestrator Mode. Если top-level агенту не задана другая явная роль, он действует как orchestrator: планирует, проверяет scope и риски, делегирует implementation и verification, и маршрутизирует работу через Memory Bank, а не через историю чата как source of truth.
-
-Сгенерированный skeleton Memory Bank включает текущую layered structure:
-- `architecture/`
-- `guides/`
-- `adrs/`
-- `tech-specs/`
-- `domains/`
-- `contracts/`
-- `states/`
-- `runbooks/`
-- `workflows/`
-- `quality/`
-- `testing/`
-- `skills/`
-- `epics/`
-- `features/`
-- `schemas/`
-- `tasks/`
-- `commands/`
-- `agents/`
-- `archive/`
-- `bugs/`
-
-Также создаются базовые routing files, такие как `.memory-bank/index.md`, `.memory-bank/constitution.md`, `.memory-bank/mbb/index.md`, `.memory-bank/spec-index.md`, `.memory-bank/glossary.md`, `.memory-bank/invariants.md`, `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/testing/index.md`, `.memory-bank/workflows/tier-policy.md`, `.memory-bank/schemas/task.schema.json` и `.memory-bank/tasks/index.json`.
-
-Fresh skeleton bootstrap не создает runnable task records. По умолчанию `.memory-bank/tasks/index.json` стартует как `{ "version": 1, "tasks": [] }`; `/prd-to-tasks` создает индексированные `.memory-bank/tasks/TASK-*.task.json` records после появления PRD/features.
-Markdown task list не генерируется: tooling читает JSON registry и task records напрямую.
-
-### 2. Роутинг в нужный workflow
-`cold-start` — главный entry point, который выбирает правильный путь:
-- Idea-only: при необходимости `/analysis`, затем `/brainstorm` и `/brief` перед `/prd`
-- Clear concept: при необходимости `/brief`, затем `/prd`
-- Existing PRD: старт от `prd.md` или requirements text и запуск `/prd`
-- Brownfield: сначала маппинг текущего codebase в as-is docs
-- Skeleton-only: инициализация структуры и остановка до следующего planning step
-
-Analysis — optional discovery перед PRD. Он помогает превратить сырую идею или понятный концепт в лучший вход для PRD, но не заменяет `/clarify`: после `/prd` каждая feature всё равно проходит `/clarify FT-<NNN>` перед `/prd-to-tasks FT-<NNN>`.
-
-### 3. Планирование по feature, а не гигантской task queue одним проходом
-Нормальный planning loop выглядит так:
-- `/prd`
-- `/clarify FT-001`
-- `/prd-to-tasks FT-001`
-- `/execute TASK-001`
-- `/verify TASK-001`
-- `/red-verify TASK-001` для задач T2/T3
-- `/mb-sync`
-- `/review` при необходимости
-
-Для существующих codebase brownfield entry выглядит так:
-- `/map-codebase`
-- затем PRD delta или change-planning work
-
-Планирование теперь богаче, но механически строгое:
-- если есть structured inputs, такие как source artifacts, normative inputs, constraints, invariants или verification targets, planner может их использовать
-- если их нет, классический минимальный feature и requirements flow остаётся валидным
-- task state хранится в schema-backed JSON records `.memory-bank/tasks/*.task.json`, индексированных через `.memory-bank/tasks/index.json`; fresh skeleton стартует с пустого индекса до создания records через `/prd-to-tasks`
-- каждый task record должен содержать `tier: T0|T1|T2|T3`; execution routing authoritative только через `task.tier`
-- `.memory-bank/tasks/backlog.md` и markdown task cards являются obsolete и не поддерживаются как workflow artifacts
-- старая модель `risk` / `risk.level` удалена и невалидна
-- `/prd` по-прежнему не должен бездумно выпускать всю implementation task queue за один проход
-- `/prd-to-tasks` остаётся шагом per-feature decomposition и отвечает за создание task records
-
-### 4. Исполнение через возобновляемые file protocols
-У каждой задачи может быть protocol folder вроде `.protocols/TASK-123/`, содержащий:
-- `context.md`
-- `plan.md`
-- `progress.md`
-- `verification.md`
-- `handoff.md`
-
-Это делает исполнение задач возобновляемым между fresh sessions, разными engines и review passes.
-T0/T1 задачи могут использовать compact `.protocols/TASK-123/run.md`; T2/T3 требуют полный protocol files. T3 также требует human-aware checkpoint и rollback/recovery note.
-
-Execution и verification теперь следуют явной fallback-модели:
-1. richer structured inputs, если они есть
-2. классическая база feature, requirements и RTM
-3. duo docs
-4. связанные normative docs, если нужно
-
-Это значит, что richer fields поддерживаются, но не становятся скрыто обязательными.
-Authoritative task state хранится в JSON task records, которые создаются через `/prd-to-tasks`, а не PRD-less bootstrap.
-
-### 4.1. Adversarial semantic verification
-Помимо обычного `/verify`, в `memobank` теперь есть отдельный semantic-pass:
-- `/red-verify TASK-123`
-- `/red-verify TASK-123`
-
-Его задача — не повторять process checks, а ловить случаи "формально всё прошло, но решение по существу неверно".
-
-Этот проход нужен, когда:
-- acceptance criteria можно закрыть узко и при этом промахнуться мимо реального intent
-- изменение задевает `contracts/*`, `states/*`, миграции, схемы, data behavior
-- задача пересекает feature/module boundaries
-- меняется runtime или API behavior
-- решение может быть локально корректным, но системно вредным
-- есть риск architectural drift или скрытой future maintenance cost
-
-Разделение ответственности:
-- `/verify` проверяет task completion по AC/REQ и evidence
-- `/review` проверяет Memory Bank, planning surface и fresh-context quality gate
-- `/red-verify` задаёт hostile вопрос: "это решение действительно правильно по существу?"
-
-`/red-verify` намеренно стартует не с полного spec surface, а с:
-1. task intent
-2. реального diff / code changes / behavior changes
-3. tests и runtime evidence
-4. только потом — reconciliation со specs
-
-Это снижает риск shallow confirmation, когда verifier слишком доверяет тем же assumptions, что и implementer.
-
-Результат semantic-pass фиксируется отдельно, обычно в:
-- `.protocols/TASK-123/red-verification.md`
-
-Рекомендуемые verdicts:
-- `semantic-pass`
-- `semantic-concern`
-- `semantic-fail`
-
-Политика закрытия:
-- `semantic-pass` разрешает обычное закрытие, если `/verify` тоже прошёл
-- `semantic-fail` переводит задачу в failed
-- `semantic-concern` не является normal done; он блокирует закрытие или требует human review и follow-up до продвижения dependents
-
-Практическое место в loop:
-- `/execute TASK-123`
-- `/verify TASK-123`
-- `/red-verify TASK-123` для задач T2/T3
-- `/mb-sync`
-
-### 5. Review и maintenance
-Текущая политика review и garden опирается на concept coverage, а не только на pair-only model.
-
-Концепт считается документированным приемлемо, если выполняется одно из условий:
-- у него есть классическая поддержка `architecture + guides`
-- у него есть эквивалентное покрытие через richer spec-driven layer
-- есть оба слоя одновременно
-
-Это важно, потому что `review`, `mb-sync` и `mb-garden` не должны отклонять репозиторий только из-за отсутствия строгой duo-only surface.
-
-## Поддерживаемые runtimes
-
-- Codex CLI читает project skills из `.agents/skills/`
-- Claude Code читает project skills из `.claude/skills/`
-- OpenCode может использовать оба варианта
-
-`.codex/` предназначен для project configuration Codex. Это не каталог skills.
-
-## Установка из source-only форка
-
-Важно: для этого форка не используй `npx skills add <repo>` напрямую. Репозиторий хранится в source-only виде, поэтому правильная точка входа — installer wrapper из этого пакета.
-
-Устанавливай только то, что нужно:
+Для этого source-only форка не используйте прямой:
 
 ```bash
-npx github:<owner>/<repo> --skill cold-start --global --yes
-npx github:<owner>/<repo> --skill mb-init --global --yes
-npx github:<owner>/<repo> --skill mb-analysis --global --yes
-npx github:<owner>/<repo> --skill mb-from-prd --global --yes
+npx skills add <repo>
 ```
 
-Установка полного набора:
+Правильная точка входа - wrapper:
 
 ```bash
-npx github:<owner>/<repo> --skill '*' --global --yes
+node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-Для локального клона:
+Можно передавать обычные options для `skills add`, например:
 
 ```bash
-node scripts/install-framework.mjs --skill '*' --global --yes
+node scripts/install-framework.mjs --skill cold-start --global --yes
 ```
 
-Инсталлятор сохраняет репозиторий source-only: он генерирует vendored `shared-*` файлы во временной копии и передает эту подготовленную копию в `skills add`.
+Что делает wrapper:
 
-Что происходит во время установки:
-- создаётся временная копия репозитория;
-- во временной копии запускается `scripts/vendor-shared.mjs`;
-- недостающие `agents/shared-*`, `references/shared-*`, `scripts/shared-*` раскладываются внутрь каждого package skill;
-- затем wrapper вызывает `npx -y skills add <prepared-temp-repo> ...`;
-- после установки временная копия удаляется;
-- рабочий репозиторий остаётся source-only, без закоммиченных generated `shared-*` файлов.
+1. Копирует текущий repo во временную директорию.
+2. Запускает там `scripts/vendor-shared.mjs`.
+3. Генерирует package-local `shared-*` assets для каждого installable skill.
+4. Вызывает `npx -y skills add <prepared-temp-repo> ...`.
+5. Удаляет temporary repo, если не задан `MEMOBANK_KEEP_INSTALL_TMP=1`.
 
-На практике большинство пользователей начинают с:
-- `cold-start` как all-in-one entry point
-- или `mb-init` плюс `mb-analysis`, `mb-from-prd` и `mb-map-codebase` для modular workflow
+### 2. Bootstrap целевого репозитория
 
-## Быстрый старт
+После установки package skills целевой repo инициализируется скриптом из installed skill:
 
-### Новый репозиторий с PRD
-Запусти `cold-start`, затем следуй обычному циклу:
+```bash
+node .agents/skills/mb-init/scripts/shared-init-mb.js
+```
+
+Если вы работаете прямо из source checkout этого проекта, можно bootstrap-ить target repo source script-ом:
+
+```bash
+node /path/to/memobank_BMAD_SDD/skills/_shared/scripts/init-mb.js
+```
+
+Для обновления generated command specs, proxy skills и runtime scripts в уже bootstrap-нутом target repo:
+
+```bash
+node .agents/skills/mb-init/scripts/shared-init-mb.js --sync
+```
+
+`--force` сейчас эквивалентен `--sync`.
+
+## Source-only packaging
+
+Canonical shared assets:
 
 ```text
-/prd
-/clarify FT-001
-/prd-to-tasks FT-001
-/execute TASK-001
-/verify TASK-001
-/red-verify TASK-001   # scheduler T2/T3 gate; manual /verify PASS может закрыть, /red-verify может reopen/block/fail
-/mb-sync
+skills/_shared/agents/*
+skills/_shared/references/commands/*
+skills/_shared/references/workflows/*
+skills/_shared/references/protocols/*
+skills/_shared/scripts/init-mb.js
 ```
 
-### Минимальные flows
-Используй только путь, который соответствует стартовой точке:
+Generated package-local assets:
 
 ```text
-Idea-only:
-/analysis
-/brainstorm
-/brief
-/prd
-/clarify FT-001
-/prd-to-tasks FT-001
-
-Clear concept:
-/brief
-/prd
-/clarify FT-001
-/prd-to-tasks FT-001
-
-Existing PRD:
-/prd
-/clarify FT-001
-/prd-to-tasks FT-001
-
-Brownfield:
-/map-codebase
-/brief --delta or /prd --delta
-/clarify FT-001
-/prd-to-tasks FT-001
+skills/<skill>/agents/shared-*
+skills/<skill>/references/shared-*
+skills/<skill>/scripts/shared-*
 ```
 
-Analysis-команды optional и находятся upstream от PRD. Они не создают implementation task records и не обходят feature clarification.
+В source tree generated `shared-*` отсутствуют намеренно. Если `SKILL.md` или command docs визуально ссылаются на `shared-*` файлы, в source-only tree эти ссылки могут казаться отсутствующими. Они становятся валидными после vendoring/install, когда wrapper подготовит временную installable copy.
 
-Если JSON task queue / task records уже подготовлены и репозиторий готов к batch execution:
+Правило для разработки framework:
 
-```text
-/autopilot
-```
-
-Если нужен полный unattended run от PRD до terminal state:
-
-```text
-/autonomous
-```
-
-Запускай deterministic readiness gates на правильной фазе:
-
-```bash
-node scripts/mb-lint.mjs
-node scripts/mb-doctor.mjs          # pre-queue / fresh skeleton health check
-node scripts/mb-doctor.mjs --strict # после /prd-to-tasks, перед scheduler/autopilot execution
-```
-
-### Существующий репозиторий без PRD
-Запусти `cold-start` и перейди в brownfield mapping:
-
-```text
-/map-codebase
-```
-
-Это сначала создаёт as-is Memory Bank documentation, а потом останавливается в правильной точке для PRD delta или change-request planning.
-
-## Interactive vs autonomous режимы
-
-### Interactive mode
-Используй этот режим, если нужны явные checkpoints:
-- по одной feature за раз
-- по одной task за раз
-- review между волнами
-
-### Autonomous mode
-Используй этот режим, если хочешь, чтобы один запуск продолжался до ясного terminal state.
-
-Ожидается, что `/autonomous`:
-- читает PRD
-- явно фиксирует assumptions и open questions
-- останавливается на blocking gaps
-- строит L1-L3 docs Memory Bank
-- декомпозирует работу в tasks
-- исполняет и верифицирует task waves
-- синхронизирует Memory Bank по мере выполнения
-
-## Clean-session task execution
-
-Каждая `TASK-*` может исполняться в свежей CLI session.
-Агент должен прочитать `AGENTS.md`, indexed JSON task record и protocol path, выбранный по `task.tier`:
-- `T0` / `T1`: можно использовать compact `.protocols/TASK-123/run.md`
-- `T2` / `T3`: полный `.protocols/TASK-123/{context,plan,progress,verification,handoff}.md`
-
-### Codex
-```bash
-codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/tasks/TASK-123.task.json, and the tier-selected protocol path. Implement only scoped changes.'
-```
-
-### Claude
-```bash
-claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/tasks/TASK-123.task.json, and the tier-selected protocol path. Implement only scoped changes.'
-```
-
-Независимые задачи можно запускать параллельно. Задачи с зависимостями или пересекающимися файлами должны идти последовательно.
-
-## Сопровождение Memory Bank
-
-`memobank` включает deterministic maintenance path:
-- `/mb-sync` для выравнивания Memory Bank с завершённой работой
-- `/mb-garden` для lint и cleanup структуры Memory Bank
-- `skills/mb-garden/assets/mb-lint.mjs` для структуры и mechanical hygiene: required files, frontmatter, metadata, task registry consistency, tier rules, protocol evidence и broken links
-- `skills/mb-garden/assets/mb-doctor.mjs` для workflow и autonomous readiness: можно ли продолжать по JSON task queue с учетом dependencies, tier policy, evidence и obsolete artifacts
-
-`mb-lint` отвечает на вопрос "Memory Bank механически валиден?" `mb-doctor` отвечает на вопрос "репозиторий готов к autonomous или autopilot execution?" Default `mb-doctor` подходит для pre-queue health checks и fresh skeletons. Запускай `mb-doctor --strict` только после появления JSON task queue: после `/prd-to-tasks`, перед scheduler execution внутри `/autonomous` или перед `/autopilot`, когда queue уже подготовлена.
-
-Task state является JSON-only. Поддерживаемый registry: `.memory-bank/tasks/index.json` плюс индексированные `.memory-bank/tasks/TASK-*.task.json` records. `backlog.md`, markdown task cards и старая модель `risk` / `risk.level` не поддерживаются.
-
-Модель сопровождения намеренно file-based и audit-friendly.
-
-## Shared assets и vendoring
-
-`skills/_shared/` — источник истины для shared prompts, references и scripts.
-
-Перед релизом `scripts/vendor-shared.mjs` вендорит эти shared assets в каждый installable package skill как плоские companion files, например:
-- `agents/shared-*.md`
-- `references/shared-*.md`
-- `scripts/shared-*.js`
-
-Это делает top-level skills self-contained для `skills add`, сохраняя единый shared source внутри репозитория.
-
-В source-only модели репозитория эти `shared-*` файлы считаются generated artifacts и не должны коммититься. CI генерирует их перед smoke-тестом установки package skills.
-
-Source-only hygiene check:
+- меняйте shared behavior только в `skills/_shared/`;
+- не редактируйте и не коммитьте generated package-local `shared-*`;
+- перед release/source check убедитесь, что source tree чистый:
 
 ```bash
 find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
 ```
 
-В source tree команда должна печатать `0`. Если нужно изменить общее поведение, редактируй `skills/_shared/`, а не generated package-local копии `shared-*`.
+Ожидаемый результат в source repo: `0`.
 
-## Структура репозитория
+## Что bootstrap создает в target repo
+
+`skills/_shared/scripts/init-mb.js` создает или обновляет Memory Bank workspace. По умолчанию он не перезаписывает существующие файлы; `--sync` обновляет generated command specs, proxy skills и runtime scripts.
+
+Фактически генерируемые артефакты:
 
 ```text
-skills/
-  _shared/
-  cold-start/
-  mb-init/
-  mb-analysis/
-  mb-from-prd/
-  mb-map-codebase/
-  mb-execute/
-  mb-verify/
-  mb-red-verify/
-  mb-review/
-  mb-garden/
-  mb-harness/
-scripts/
-  install-framework.mjs
-  vendor-shared.mjs
+.memory-bank/
+  adrs/ADR-000-template.md
+  agents/
+  archive/
+  architecture/
+  bugs/
+  commands/*.md
+  commands/index.md
+  constitution.md
+  contracts/
+  domains/
+  epics/
+  features/
+  glossary.md
+  guides/
+  index.md
+  invariants.md
+  mbb/index.md
+  product.md
+  quality/
+  requirements.md
+  runbooks/
+  schemas/task.schema.json
+  skills/index.md
+  spec-index.md
+  states/
+  tasks/index.json
+  tasks/plans/
+  tech-specs/
+  testing/index.md
+  workflows/autonomy-policy.md
+  workflows/execute-loop.md
+  workflows/mb-sync.md
+  workflows/tier-policy.md
+  changelog.md
+.tasks/
+.protocols/
+scripts/mb-lint.mjs
+scripts/mb-doctor.mjs
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/skills/<command>/SKILL.md
+.agents/skills/<command>/SKILL.md
 ```
 
-## Использование bootstrap script
+`.memory-bank/commands/*.md` - source of truth для generated slash commands. `.claude/skills/*` и `.agents/skills/*` - thin proxy skills, которые говорят runtime прочитать соответствующий command spec.
+
+## Package skills
+
+- `cold-start` - all-in-one bootstrap router для greenfield, idea-only и brownfield проектов.
+- `mb-init` - skeleton generation и command/proxy creation.
+- `mb-analysis` - optional discovery перед PRD: `/analysis`, `/brainstorm`, `/brief`.
+- `mb-from-prd` - clarified PRD -> product, requirements, epics, features.
+- `mb-map-codebase` - as-is mapping существующего codebase без roadmap speculation.
+- `mb-execute` - implementation handoff для одной `TASK-*`.
+- `mb-verify` - functional verification по AC/REQ и evidence.
+- `mb-red-verify` - adversarial semantic verification.
+- `mb-review` - fresh-context Memory Bank review.
+- `mb-garden` - lint, doctor и maintenance assets.
+- `mb-harness` - deterministic commands, clean sessions, worktree guidance.
+
+## Основные workflow
+
+### Idea/raw discovery
+
+Когда идея сырая или направление нестабильно:
+
+```text
+/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
+```
+
+`/analysis` только маршрутизирует. `/brainstorm` создает brainstorming report. `/brief` создает Product Brief как input contract для `/write-prd`. Ни один из этих шагов не создает task records.
+
+### Clear PRD или concept
+
+Если есть понятный concept, но нет PRD:
+
+```text
+/brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
+```
+
+Если есть внешний PRD или PRD-like text:
+
+```text
+/write-prd -> /prd -> /prd-to-tasks FT-<NNN>
+```
+
+`/write-prd` нормализует вход в `.memory-bank/prd.md` с `type: prd`, `clarification_status: complete` и `constitution_checked: true`. `/prd` decomposes PRD в L1-L3: product, requirements, epics, features. `/prd-to-tasks` создает tasks только после feature docs.
+
+### Brownfield
+
+Для существующего codebase сначала строится as-is baseline:
+
+```text
+/map-codebase -> /write-prd --delta -> /prd -> /prd-to-tasks FT-<NNN>
+```
+
+Можно использовать `/brief` для формирования delta input, но route не должен обходить `/write-prd`. Brownfield rule: без PRD/delta нельзя создавать roadmap epics, features или runnable task records. `/map-codebase` документирует существующую систему, а не придумывает план развития.
+
+### Manual task loop
+
+Интерактивный режим для одной задачи:
+
+```text
+/execute TASK-001 -> /verify TASK-001 -> optional /red-verify TASK-001 -> /mb-sync
+```
+
+`/red-verify` в manual mode опционален после `/verify PASS` и нужен для risky/substantive tasks. Если он находит semantic issue, он может reopen/block/fail задачу или создать bug/follow-up task.
+
+### `/autopilot`
+
+`/autopilot` - scheduler/executor только для уже существующей JSON task queue.
+
+Preconditions:
+
+- `.memory-bank/tasks/index.json` содержит indexed task records;
+- каждая task имеет mandatory `tier`;
+- последний `/review` дал `APPROVE`;
+- `node scripts/mb-doctor.mjs --strict` проходит;
+- нет pending/blocked feature clarification для task-linked features.
+
+`/autopilot` не запускает `/write-prd`, `/prd`, `/prd-to-tasks` и не создает task queue.
+
+### `/autonomous`
+
+`/autonomous` - full unattended flow:
+
+```text
+PRD/Product Brief/delta
+-> /write-prd
+-> /prd
+-> /review
+-> /prd-to-tasks --all
+-> task-planning review
+-> strict doctor
+-> scheduler loop
+-> wave reviews
+-> terminal state
+```
+
+Он строит L1-L3, создает all-feature JSON task queue, запускает scheduler loop, выполняет verification/red-verification по tier policy, делает `/mb-sync`, review gates и завершает явным terminal state: `SUCCESS`, `HALT_BLOCKING_QUESTIONS`, `HALT_CLARIFICATION_REQUIRED`, `HALT_REVIEW_REJECT`, `HALT_FAILURE_BUDGET`, `HALT_DEPENDENCY_DEADLOCK`, `HALT_POLICY_VIOLATION`, `HALT_QUALITY_GATES` или `HALT_BUDGET_EXCEEDED`.
+
+## Task model
+
+Task registry строго JSON-only:
+
+```text
+.memory-bank/tasks/index.json
+.memory-bank/tasks/TASK-001.task.json
+.memory-bank/schemas/task.schema.json
+```
+
+Fresh bootstrap:
+
+```json
+{
+  "version": 1,
+  "tasks": []
+}
+```
+
+Fresh bootstrap не создает `.memory-bank/tasks/TASK-001.task.json` и не создает runnable task records. Task records появляются через `/prd-to-tasks FT-<NNN>` или `/prd-to-tasks --all`.
+
+Минимальная форма task record:
+
+```json
+{
+  "id": "TASK-001",
+  "title": "Short task title",
+  "status": "planned",
+  "wave": "W1",
+  "feature": "FT-001",
+  "reqs": ["REQ-001"],
+  "depends_on": [],
+  "touched_files": [],
+  "tier": "T1",
+  "gates": [],
+  "verify": [],
+  "docs": [],
+  "evidence_required": [],
+  "source_artifacts": [],
+  "normative_inputs": [],
+  "constraints": [],
+  "invariants": [],
+  "verification_targets": []
+}
+```
+
+Allowed `status`: `planned`, `ready`, `in_progress`, `blocked`, `done`, `failed`.
+
+Allowed `tier`: `T0`, `T1`, `T2`, `T3`.
+
+Legacy `risk` и `risk.level` удалены. Execution, verification, red-verification, scheduler routing и doctor checks должны использовать только `task.tier`.
+
+## Manual mode vs scheduler mode
+
+Status ownership различается по режиму.
+
+Manual mode:
+
+- `/execute` реализует задачу и записывает evidence/handoff.
+- `/verify PASS` может закрыть задачу, включая T2/T3.
+- `/red-verify` после PASS optional и risk-based; он может reopen/block/fail, если решение неверно по существу.
+- `/mb-sync` синхронизирует Memory Bank, RTM, changelog и task records после explicit closure decision.
+
+Scheduler mode (`/autopilot`, `/autonomous`):
+
+- scheduler owns `planned -> ready`, `ready -> in_progress`, `in_progress -> done|failed`, dependent block/unblock и terminal state;
+- `/execute` не закрывает tasks;
+- `/verify` не закрывает, не fail-ит, не promotes dependents;
+- `/red-verify` не закрывает, не fail-ит, не promotes dependents;
+- `/mb-sync` только records/reconciles scheduler-provided decision и не принимает closure decision самостоятельно.
+
+Не смешивайте manual и scheduler mode внутри одного task run.
+
+## Tier policy
+
+| Tier | Когда использовать | Protocol | Verification | Scheduler closure |
+|---|---|---|---|---|
+| `T0` | typo, links, formatting, safe docs-only | compact `.protocols/TASK/run.md` allowed | separate `/verify` обычно не нужен | compact evidence / functional PASS достаточно |
+| `T1` | local code/local behavior с низким blast radius | compact allowed | local gates; `/verify` optional | compact evidence / functional PASS достаточно |
+| `T2` | API, contracts, schema/state/data/domain, cross-module | full protocol required | `/verify` required; `/red-verify` required in scheduler | `VERDICT: PASS` + `SEMANTIC_VERDICT: semantic-pass` |
+| `T3` | auth, security, secrets, prod/deploy, irreversible/data-loss, payments, compliance | full protocol required | `/verify` + `/red-verify` + human/recovery evidence | T2 requirements + exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` |
+
+Если scope вырос, поднимите tier до передачи задачи дальше. Если сомневаетесь между двумя tiers, выбирайте более высокий.
+
+## Generated command reference
+
+| Command | Purpose | Creates/updates | Does not do | Next step |
+|---|---|---|---|---|
+| `/cold-start` | Scenario router после skeleton creation | routing decision, next command recommendation | не создает EP/FT/TASK без PRD; не обходит `/write-prd` | `/analysis`, `/brief`, `/write-prd`, `/map-codebase` или stop |
+| `/mb` | Prime agent context from Memory Bank | usually no writes; may create `.protocols/<TASK>/plan.md` for unknowns | не выполняет implementation | выбранный task/workflow command |
+| `/mb-init` | Initialize Memory Bank skeleton | `.memory-bank/`, `.tasks/`, `.protocols/`, agent files, proxy skills | не планирует roadmap/tasks | `/cold-start` |
+| `/analysis` | Optional discovery router | `.memory-bank/analysis/index.md` | не создает brief, PRD, tasks, research | `/brainstorm`, `/brief`, `/write-prd`, `/map-codebase`, `/clarify-feature` |
+| `/brainstorm` | Facilitated ideation | `.memory-bank/analysis/brainstorming/BR-*.md`, analysis index | не создает PRD, Product Brief, tasks | `/brief` |
+| `/brief` | Product Brief input contract | `.memory-bank/analysis/product-brief.md`, analysis index | не создает features/tasks; не заменяет PRD | `/write-prd` |
+| `/constitution` | Create/read/minimally amend governing principles | `.memory-bank/constitution.md` | не добавляет governance engines или command aliases | `/write-prd`, `/prd-to-tasks` или текущий workflow |
+| `/write-prd` | Product Brief/context -> clarified PRD | `.memory-bank/prd.md` | не создает EP/FT/TASK; не bypass Constitution conflicts | `/prd` |
+| `/prd` | Clarified PRD -> L1-L3 Memory Bank | product, requirements, epics, features, testing/index | не создает full task queue blindly | `/clarify-feature` if blocked, else `/prd-to-tasks FT-*` |
+| `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/prd-to-tasks FT-*` |
+| `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не работает при pending blockers | `/execute` manually или `/review`/`/autopilot` |
+| `/execute` | Implement one scoped task | `.protocols/<TASK>/...`, `.tasks/<TASK>/...`, code/docs in task scope | не закрывает task; не запускает verify/red-verify/mb-sync | `/verify` |
+| `/verify` | Functional acceptance/evidence verification | verification protocol/evidence, task `verify` entries, possible bugs/follow-ups | в scheduler mode не закрывает/fail/promote | manual close or `/red-verify`/scheduler decision |
+| `/red-verify` | Adversarial semantic verification | `.protocols/<TASK>/red-verification.md`, `.tasks/<TASK>/...`, bugs/follow-ups if needed | не дублирует `/verify`; в scheduler mode не закрывает | `/mb-sync` or scheduler decision |
+| `/review` | Fresh-context Memory Bank/planning review | `.tasks/TASK-MB-REVIEW/*`, fix list/verdict | не является per-task semantic verification | fix issues, `/prd-to-tasks`, `/autopilot`, or continue |
+| `/map-codebase` | Brownfield as-is mapping | `.memory-bank/*` baseline docs, `.tasks/TASK-MB-MAP/*` | не создает roadmap/tasks без PRD | `/write-prd --delta` then `/prd` |
+| `/mb-sync` | Synchronize durable docs and task consistency | indexes, RTM/lifecycle, changelog, task consistency | не принимает scheduler closure/promotion decision | `mb-doctor`, review, next task |
+| `/mb-garden` | Maintain Memory Bank hygiene | lint findings, cleanup/archive recommendations | не меняет product scope | fix docs or rerun checks |
+| `/mb-doctor` | Deterministic readiness gate over `mb-lint` | report only; optional JSON output | не заменяет `/review`, `/verify`, `/red-verify`; no markdown task-card fallback | fix findings or proceed to scheduler |
+| `/mb-harness` | Setup deterministic agent-safe workflows | harness docs/config guidance, gates/worktree guidance | не реализует product tasks | run chosen workflow with gates |
+| `/autopilot` | Execute existing JSON task queue | task statuses, protocols, evidence, sync/review loop | не создает PRD/FT/TASK queue | terminal state or follow-up fixes |
+| `/autonomous` | Full unattended PRD -> done flow | PRD/L1-L3/tasks/protocols/reviews/status | не asks user mid-run except terminal halt; не bypass hard stops | terminal state |
+| `/discuss` | Clarify unknowns/contradictions before implementation | decision log/protocol notes when useful | не implements; не creates tasks by itself | resolved command such as `/write-prd`, `/execute` |
+| `/add-tests` | Add useful unit/integration/e2e coverage | tests, `.memory-bank/testing/index.md`, evidence under `.tasks/` | не adds decorative/flaky tests | run tests, `/mb-sync` |
+| `/find-skills` | Find relevant installed/marketplace skills | recommendation list | не installs marketplace skills without confirmation | use/install selected skills |
+
+## Checks
+
+Framework/source repo checks:
 
 ```bash
-node skills/_shared/scripts/init-mb.js
-node skills/_shared/scripts/init-mb.js --sync
+npm run check:syntax --silent
+find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
+node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-`--sync` обновляет сгенерированные command specs и proxy skills в уже инициализированном репозитории, не перезаписывая остальную часть Memory Bank.
+The `find` command should print `0`.
 
-## Полезные указатели по документации
+Optional installer debugging:
 
-- `skills/_shared/references/structure-template.md` - generated skeleton structure и core templates
-- `skills/_shared/references/commands/*.md` - command specs как source of truth
-- `skills/_shared/scripts/init-mb.js` - bootstrap и sync logic
-- `skills/mb-garden/assets/mb-lint.mjs` - deterministic Memory Bank lint
-- `skills/mb-garden/assets/mb-doctor.mjs` - deterministic autonomous readiness check
-- `scripts/install-framework.mjs` - source-only installer wrapper
-- `scripts/vendor-shared.mjs` - vendoring pipeline для package skills
+```bash
+MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes
+```
+
+Target repo checks after bootstrap:
+
+```bash
+node scripts/mb-lint.mjs
+node scripts/mb-doctor.mjs
+```
+
+Use strict doctor only after a real executable task queue exists:
+
+```bash
+node scripts/mb-doctor.mjs --strict
+```
+
+In a fresh skeleton, empty `.memory-bank/tasks/index.json` is valid in default doctor mode and invalid in strict mode because there is no executable queue.
+
+## Repository map for this framework
+
+```text
+skills/_shared/                 canonical shared source
+skills/*/SKILL.md               installable package skill entrypoints
+skills/*/assets|references      skill-specific non-shared assets
+scripts/install-framework.mjs   source-only installer wrapper
+scripts/vendor-shared.mjs       temp-copy shared asset vendoring
+.github/workflows/release-check.yml
+                                 source hygiene, syntax, install/bootstrap smoke
+README.ru.md / README.en.md     full documentation
+README.md                       short bilingual entrypoint
+PROJECT_MAP.md                  agent-facing repository map
+```
+
+## Documentation caveats
+
+`PROJECT_MAP.md` currently references `HANDOFF.md` and `Optimisation.md` as planning/context docs, but those files are absent in the current tree. This README intentionally does not link to them as existing documentation.
 
 ## License
 
-MIT - см. `LICENSE`.
+MIT

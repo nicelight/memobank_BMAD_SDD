@@ -44,7 +44,7 @@ Manual mode:
 - [ ] Если менялись governance/workflow/routing/agent instructions/tier policy, проверить consistency с `.memory-bank/constitution.md`
 - [ ] Обновить RTM/REQ lifecycle в `.memory-bank/requirements.md`
 - [ ] Если у EP/FT есть `lifecycle`, синхронизировать его отдельно от document `status`
-- [ ] Проверить, что task records ссылаются только на features с `clarification_status: complete`
+- [ ] Проверить, что task records не ссылаются на features с `clarification_status: pending|blocked`
 - [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write status only when supplied by the scheduler or explicit standalone closure decision
 - [ ] Записать changelog `.memory-bank/changelog.md`
 - [ ] Для `/autonomous` и `/autopilot`: `/mb-doctor --strict` после sync — blocking gate, не optional
@@ -60,7 +60,7 @@ Task synchronization rule:
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - RTM and changelog should be reconciled from JSON task records.
 - During sync, validate and report whether scheduler-owned promotions would be legal; do not write `planned -> ready` from `/mb-sync` alone.
-- Report tasks whose `feature` points to missing clarification metadata or `clarification_status: pending` as not promotion-eligible.
+- Report tasks whose `feature` points to `clarification_status: pending|blocked` as not promotion-eligible. Missing clarification metadata is allowed.
 - Report tasks with failed/blocked upstream dependencies, open blocking bugs, or unresolved semantic concern decisions as not promotion-eligible.
 - In scheduler mode, `T2` / `T3` tasks may close only when full protocol closure expectations are present. `T2` / `T3` require `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`; `T3` also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - In manual mode, `/verify PASS` may close, including `T2` / `T3`; later `/red-verify` may reopen/block/fail if semantic issues are found.

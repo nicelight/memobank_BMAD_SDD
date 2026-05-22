@@ -60,7 +60,7 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` later for risky tasks when user/agent chooses it; `/mb-sync` only when durable Memory Bank docs/state changed.
+- **Manual**: run `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
@@ -79,8 +79,9 @@ Command specs live in `skills/_shared/references/commands/*.md`.
 
 Representative commands:
 - `/analysis`
+- `/write-prd`
 - `/prd`
-- `/clarify`
+- `/clarify-feature`
 - `/prd-to-tasks`
 - `/autopilot`
 - `/mb-doctor`

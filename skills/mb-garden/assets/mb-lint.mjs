@@ -31,7 +31,8 @@ const REQUIRED = [
 
 const ALLOWED_STATUS = new Set(['draft', 'active', 'deprecated', 'archived']);
 const ALLOWED_LIFECYCLE = new Set(['planned', 'implemented', 'verified']);
-const ALLOWED_CLARIFICATION_STATUS = new Set(['pending', 'complete']);
+const ALLOWED_CLARIFICATION_STATUS = new Set(['pending', 'complete', 'blocked']);
+const ALLOWED_PRD_CLARIFICATION_STATUS = new Set(['pending', 'complete', 'blocked']);
 const ANALYSIS_DIR_REL = '.memory-bank/analysis';
 const ANALYSIS_PRODUCT_BRIEF_REL = '.memory-bank/analysis/product-brief.md';
 const ANALYSIS_PRD_SOURCE_MARKER = '.memory-bank/analysis/product-brief.md';
@@ -221,6 +222,10 @@ function isFeatureDoc(rel) {
   return n.startsWith('.memory-bank/features/') && path.basename(n).startsWith('FT-') && n.endsWith('.md');
 }
 
+function isPrdDoc(rel) {
+  return normalizeRel(rel) === '.memory-bank/prd.md';
+}
+
 function featureIdFromFile(filePath) {
   const base = path.basename(filePath, path.extname(filePath));
   const match = base.match(/^(FT-[0-9]{3,})(?:[-_].*)?$/);
@@ -357,6 +362,7 @@ function checkFrontmatter(filePath, text) {
   }
 
   checkFeatureClarificationMetadata(rel, text, fm);
+  checkPrdMetadata(rel, text, fm);
 }
 
 function checkFeatureClarificationMetadata(rel, text, fm) {
@@ -365,26 +371,22 @@ function checkFeatureClarificationMetadata(rel, text, fm) {
 
   let clarificationStatus;
   if (!hasOwn(fm, 'clarification_status')) {
-    errors.push(`${rel}: frontmatter must include 'clarification_status' (pending|complete)`);
+    return;
   } else {
     clarificationStatus = stripYamlQuotes(fm.clarification_status);
     if (!ALLOWED_CLARIFICATION_STATUS.has(clarificationStatus)) {
-      errors.push(`${rel}: invalid clarification_status '${clarificationStatus}' (allowed: pending|complete)`);
+      errors.push(`${rel}: invalid clarification_status '${clarificationStatus}' (allowed: pending|complete|blocked)`);
     }
   }
 
-  if (!hasOwn(fm, 'last_clarified')) {
-    errors.push(`${rel}: frontmatter must include 'last_clarified' (null or YYYY-MM-DD)`);
-  } else {
+  if (hasOwn(fm, 'last_clarified')) {
     const lastClarified = stripYamlQuotes(fm.last_clarified);
     if (lastClarified !== 'null' && !/^\d{4}-\d{2}-\d{2}$/.test(lastClarified)) {
       errors.push(`${rel}: invalid last_clarified '${lastClarified}' (expected null or YYYY-MM-DD)`);
     }
   }
 
-  if (!hasOwn(fm, 'clarification_questions')) {
-    errors.push(`${rel}: frontmatter must include 'clarification_questions' (integer >= 0)`);
-  } else {
+  if (hasOwn(fm, 'clarification_questions')) {
     const questionCount = stripYamlQuotes(fm.clarification_questions);
     if (!/^(0|[1-9][0-9]*)$/.test(questionCount)) {
       errors.push(`${rel}: invalid clarification_questions '${questionCount}' (expected integer >= 0)`);
@@ -395,6 +397,32 @@ function checkFeatureClarificationMetadata(rel, text, fm) {
     errors.push(
       `${rel}: clarification_status complete requires '## Clarifications' or 'Clarification: no critical ambiguity found'`
     );
+  }
+}
+
+function checkPrdMetadata(rel, text, fm) {
+  if (!isPrdDoc(rel)) return;
+  if (!fm) return;
+
+  if (stripYamlQuotes(fm.type) !== 'prd') {
+    errors.push(`${rel}: frontmatter must include 'type: prd'`);
+  }
+
+  if (!hasOwn(fm, 'constitution_checked') || stripYamlQuotes(fm.constitution_checked) !== 'true') {
+    errors.push(`${rel}: frontmatter must include 'constitution_checked: true'`);
+  }
+
+  if (!hasOwn(fm, 'clarification_status')) {
+    errors.push(`${rel}: frontmatter must include 'clarification_status' (pending|complete|blocked)`);
+  } else {
+    const status = stripYamlQuotes(fm.clarification_status);
+    if (!ALLOWED_PRD_CLARIFICATION_STATUS.has(status)) {
+      errors.push(`${rel}: invalid clarification_status '${status}' (allowed: pending|complete|blocked)`);
+    }
+  }
+
+  if (stripYamlQuotes(fm.clarification_status) === 'complete' && !hasSectionHeading(text, 'Clarifications')) {
+    errors.push(`${rel}: clarification_status complete requires a 'Clarifications' section`);
   }
 }
 
@@ -600,9 +628,9 @@ function checkTaskFeatureClarification(rel, task, featuresById) {
   if (!featureDocs?.length) return;
 
   for (const feature of featureDocs) {
-    if (feature.status !== 'pending') continue;
+    if (feature.status !== 'pending' && feature.status !== 'blocked') continue;
     errors.push(
-      `${rel}: indexed task '${task.id}' must not be generated from pending clarification feature ${featureId} (${feature.rel})`
+      `${rel}: indexed task '${task.id}' must not be generated from ${feature.status} clarification feature ${featureId} (${feature.rel})`
     );
   }
 }

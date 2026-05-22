@@ -1,7 +1,7 @@
 ---
 name: mb-analysis
 description: >
-  Optional Analysis and clarification gate before PRD: route vague ideas through
+  Optional Analysis before PRD: route vague ideas through
   facilitated brainstorming and a concise product brief without creating tasks.
 ---
 
@@ -13,17 +13,17 @@ description: >
 - **Use `/brief` when:** the concept is clear enough to produce a concise Product Brief, or after a brainstorming report exists.
 - **Output:** optional artifacts under `.memory-bank/analysis/`.
 
-Analysis is optional. Existing PRDs can go directly through `/prd`; brownfield projects should map the current codebase first with `/map-codebase` before planning deltas.
+Analysis is optional. Raw PRD text or an existing external PRD must be normalized and checked through `/write-prd` first, producing `.memory-bank/prd.md` with `type: prd`, `clarification_status: complete`, and `constitution_checked: true`; then `/prd` decomposes it. Brownfield projects should map the current codebase first with `/map-codebase` before planning deltas.
 
-`/brief` creates the Product Brief as the input contract for `/prd`. It is not a PRD, backlog, research report, or marketing document.
+`/brief` creates the Product Brief as the input contract for `/write-prd`. It is not a PRD, backlog, research report, or marketing document.
 
-After `/prd`, feature work still goes through the feature-level clarification gate:
+The normal planning path is:
 
 ```text
-/prd -> /clarify FT-<NNN> -> /prd-to-tasks FT-<NNN>
+/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
 ```
 
-Analysis never creates task records and never bypasses `/clarify`.
+Analysis never creates task records. `/clarify-feature FT-<NNN>` is optional and only for a specific feature that is explicitly pending/blocked or has decomposition-affecting unresolved markers.
 
 ## Artifacts
 

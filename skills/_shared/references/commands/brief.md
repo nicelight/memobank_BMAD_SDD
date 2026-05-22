@@ -5,9 +5,9 @@ status: active
 # /brief - Product Brief input contract
 
 <objective>
-Create or update `.memory-bank/analysis/product-brief.md` as a concise Product Brief before `/prd`.
+Create or update `.memory-bank/analysis/product-brief.md` as a concise Product Brief before `/write-prd`.
 
-Product Brief is the input contract for `/prd`. It is not a PRD, backlog, marketing document, research report, or task plan.
+Product Brief is the input contract for `/write-prd`. It is not a PRD, backlog, marketing document, research report, or task plan.
 </objective>
 
 <process>
@@ -105,22 +105,23 @@ KISS decision values:
 Do not add `no-go`.
 
 ## 3) Decision rules
-Set `Decision: proceed` only when the brief is clear enough for `/prd`.
+Set `Decision: proceed` only when the brief is clear enough for `/write-prd`.
 
 Set `Decision: blocked` when open questions block PRD quality. If blocked:
 - do not continue to `/prd` unless the user explicitly overrides
 - explain the blocking open questions
 
-If the user explicitly overrides a blocked brief, `/prd` may continue, but that override never bypasses feature clarification before task decomposition.
+If the user explicitly overrides a blocked brief, `/write-prd` may continue, but Constitution conflicts and PRD-level blockers still stop downstream decomposition.
 
-## 4) Clarification dependency
+## 4) Downstream path
 The next planning chain is:
 
 ```text
-/brief -> /prd -> /clarify FT-<NNN> -> /prd-to-tasks FT-<NNN>
+/brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
 ```
 
 Do not recommend `/prd-to-tasks` directly from `/brief`.
+Recommend `/clarify-feature FT-<NNN>` only when a specific feature is explicitly pending/blocked or has decomposition-affecting unresolved markers.
 
 ## 5) Update index and finish
 Update `.memory-bank/analysis/index.md` with:
@@ -130,6 +131,6 @@ Update `.memory-bank/analysis/index.md` with:
 - recommended next step
 
 Recommended next step:
-- if `Decision: proceed`: `/prd`, then `/clarify FT-<NNN>`
+- if `Decision: proceed`: `/write-prd`, then `/prd`
 - if `Decision: blocked`: answer blocking questions, then rerun `/brief`
 </process>

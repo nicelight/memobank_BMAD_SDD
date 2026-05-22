@@ -48,7 +48,7 @@ Analysis Quality checks are conditional:
 - If a product brief exists, check that PRD / requirements / epics / features are traceable to it or explicitly document deltas.
 - Check that the brief is not blocked / no-go / not ready with unresolved blocking questions unless `/prd` recorded an explicit user override.
 - If brainstorming artifacts exist without a product brief, report a warning unless an existing PRD was intentionally used as the upstream source.
-- Confirm there is no route from Analysis or PRD directly to `/prd-to-tasks` without `/clarify FT-<NNN>`.
+- Confirm there is no route from Analysis or Product Brief directly to `/prd-to-tasks` without `/write-prd` and `/prd`; `/clarify-feature` is optional and only for explicit feature blockers.
 
 Для `S-03` reviewer обязательно проверь:
 - `.memory-bank/tasks/index.json` содержит только ссылки на `.memory-bank/tasks/*.task.json`
@@ -72,7 +72,7 @@ codex exec --ephemeral --full-auto -m gpt-5.2-high \
   'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-01. Review .memory-bank/constitution.md, architecture (C4), duo docs or equivalent spec-driven support docs, dependencies, and missing ADR. Flag Constitution contradictions as blocking. Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-01-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-02. Review .memory-bank/constitution.md, .memory-bank/requirements.md RTM coverage REQ→EP→FT and missing links. If .memory-bank/analysis/product-brief.md exists, also do lightweight Analysis Quality checks: brief→PRD/REQ/EP/FT traceability, explicit deltas, blocked-brief override evidence, and no Analysis/PRD bypass to /prd-to-tasks without /clarify. Flag Constitution contradictions as blocking. Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-02-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
+  'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-02. Review .memory-bank/constitution.md, .memory-bank/prd.md, .memory-bank/requirements.md RTM coverage REQ→EP→FT and missing links. If .memory-bank/analysis/product-brief.md exists, also do lightweight Analysis Quality checks: brief→PRD/REQ/EP/FT traceability, explicit deltas, blocked-brief override evidence, and no Analysis/Product Brief bypass to /prd-to-tasks without /write-prd and /prd. Flag Constitution contradictions as blocking. Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-02-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
   'TASK_ID=TASK-MB-REVIEW. STAGE_ID=S-03. Review .memory-bank/constitution.md, .memory-bank/tasks/index.json, indexed .memory-bank/tasks/*.task.json records, mb-doctor readiness findings, and per-feature plans quality (waves, gates, touched files, verify, tier routing, normative_inputs). Flag Constitution contradictions as blocking. Write report to .tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-S-03-final-report-docs-01.md. VERDICT: APPROVE/REJECT.'

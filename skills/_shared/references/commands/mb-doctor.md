@@ -40,8 +40,8 @@ Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonom
 `mb-doctor` must check only readiness-critical conditions:
 
 - `mb-lint` passes first. A lint error is a doctor error.
-- Feature docs under `.memory-bank/features/FT-*.md` have clarification metadata: `clarification_status`, `last_clarified`, and `clarification_questions`.
-- Feature clarification is not pending before autonomous/autopilot readiness.
+- Feature docs under `.memory-bank/features/FT-*.md` may have optional clarification metadata: `clarification_status`, `last_clarified`, and `clarification_questions`.
+- Explicit `clarification_status: pending|blocked` is not allowed for autonomous/autopilot readiness or task-linked features.
 - Indexed task records do not exist for features that are pending, missing, or otherwise not clarified.
 - `.memory-bank/tasks/index.json` is valid JSON and has a valid task list.
 - Every indexed `.memory-bank/tasks/TASK-*.task.json` exists and is valid JSON.

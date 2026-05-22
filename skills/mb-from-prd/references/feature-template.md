@@ -5,9 +5,6 @@ lifecycle: planned
 feature_id: FT-XXX
 epic_id: EP-XXX
 req_ids: [REQ-XXX]
-clarification_status: pending
-last_clarified: null
-clarification_questions: 0
 ---
 # FT-XXX — <Feature name>
 
@@ -36,7 +33,7 @@ clarification_questions: 0
 - NEVER: ...
 
 ## Clarifications
-- No accepted clarification answers yet. Run `/clarify FT-XXX` before `/prd-to-tasks FT-XXX`.
+- Optional. Add dated Q/A here only if `/clarify-feature FT-XXX` is needed.
 
 ## Use cases
 - UC-01: ...

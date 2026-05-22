@@ -20,7 +20,7 @@ const SPEC_INDEX_REL = '.memory-bank/spec-index.md';
 const TASK_ID_RE = /^TASK-[0-9]{3,}$/;
 const VALID_STATUSES = new Set(['planned', 'ready', 'in_progress', 'blocked', 'done', 'failed']);
 const VALID_TIERS = new Set(['T0', 'T1', 'T2', 'T3']);
-const VALID_CLARIFICATION_STATUSES = new Set(['pending', 'complete']);
+const VALID_CLARIFICATION_STATUSES = new Set(['pending', 'complete', 'blocked']);
 const COMPACT_TIERS = new Set(['T0', 'T1']);
 const LINK_REQUIRED_TIERS = new Set(['T1', 'T2', 'T3']);
 const TERMINAL_STATUSES = new Set(['done', 'failed']);
@@ -212,7 +212,7 @@ function checkTaskReadiness() {
     addFinding(severity, 'TASK_INDEX_EMPTY', 'No task records yet. This is valid for a fresh skeleton.', {
       path: TASK_INDEX_REL,
       suggested_fix: options.strict
-        ? 'Create task records via /prd-to-tasks FT-XXX after /prd and /clarify FT-XXX.'
+        ? 'Create task records via /prd-to-tasks FT-XXX after /write-prd and /prd.'
         : undefined,
     });
     addQueueSummary([], []);
@@ -573,16 +573,16 @@ function checkFeatureClarificationReadiness() {
             issues: feature.metadataIssues,
           },
           suggested_fix:
-            'Set clarification_status: pending|complete, last_clarified: null or YYYY-MM-DD, and clarification_questions: integer >= 0.',
+            'If feature clarification metadata is present, set clarification_status: pending|complete|blocked, last_clarified: null or YYYY-MM-DD, and clarification_questions: integer >= 0.',
         }
       );
     }
 
-    if (feature.status === 'pending') {
-      addFinding(severity, 'FEATURE_CLARIFICATION_PENDING', `${feature.rel}: feature clarification is pending.`, {
+    if (feature.status === 'pending' || feature.status === 'blocked') {
+      addFinding(severity, 'FEATURE_CLARIFICATION_PENDING', `${feature.rel}: feature clarification is ${feature.status}.`, {
         path: feature.rel,
-        details: { feature: feature.id },
-        suggested_fix: `Run /clarify ${feature.id} until critical ambiguity is resolved before /prd-to-tasks.`,
+        details: { feature: feature.id, status: feature.status },
+        suggested_fix: `Run /clarify-feature ${feature.id} until critical ambiguity is resolved before /prd-to-tasks.`,
       });
     }
   }
@@ -606,11 +606,13 @@ function checkTasksFromUnclarifiedFeatures(records) {
     if (!featureDocs?.length) {
       reason = 'feature_doc_missing';
     } else {
-      const unreadyDocs = featureDocs.filter((feature) => !isClarifiedFeature(feature));
+      const unreadyDocs = featureDocs.filter((feature) => isBlockingFeatureClarification(feature));
       if (!unreadyDocs.length) continue;
 
       featurePaths = unreadyDocs.map((feature) => feature.rel);
-      if (unreadyDocs.some((feature) => feature.status === 'pending')) {
+      if (unreadyDocs.some((feature) => feature.status === 'blocked')) {
+        reason = 'clarification_blocked';
+      } else if (unreadyDocs.some((feature) => feature.status === 'pending')) {
         reason = 'clarification_pending';
       } else {
         reason = 'clarification_metadata_missing';
@@ -642,7 +644,7 @@ function checkTasksFromUnclarifiedFeatures(records) {
           feature_paths: group.featurePaths,
           tasks: group.tasks,
         },
-        suggested_fix: `Complete /clarify ${group.featureId} before generating or running task records for that feature.`,
+        suggested_fix: `Complete /clarify-feature ${group.featureId} before generating or running task records for that feature.`,
       }
     );
   }
@@ -963,24 +965,20 @@ function analyzeClarificationMetadata(fm, text) {
   }
 
   if (!hasOwn(fm, 'clarification_status')) {
-    metadataIssues.push('clarification_status_missing');
+    return { status, metadataIssues };
   } else {
     status = stripYamlQuotes(fm.clarification_status);
     if (!VALID_CLARIFICATION_STATUSES.has(status)) metadataIssues.push('clarification_status_invalid');
   }
 
-  if (!hasOwn(fm, 'last_clarified')) {
-    metadataIssues.push('last_clarified_missing');
-  } else {
+  if (hasOwn(fm, 'last_clarified')) {
     const lastClarified = stripYamlQuotes(fm.last_clarified);
     if (lastClarified !== 'null' && !/^\d{4}-\d{2}-\d{2}$/.test(lastClarified)) {
       metadataIssues.push('last_clarified_invalid');
     }
   }
 
-  if (!hasOwn(fm, 'clarification_questions')) {
-    metadataIssues.push('clarification_questions_missing');
-  } else {
+  if (hasOwn(fm, 'clarification_questions')) {
     const questionCount = stripYamlQuotes(fm.clarification_questions);
     if (!/^(0|[1-9][0-9]*)$/.test(questionCount)) metadataIssues.push('clarification_questions_invalid');
   }
@@ -994,6 +992,10 @@ function analyzeClarificationMetadata(fm, text) {
 
 function isClarifiedFeature(feature) {
   return feature.status === 'complete' && feature.metadataIssues.length === 0;
+}
+
+function isBlockingFeatureClarification(feature) {
+  return feature.status === 'pending' || feature.status === 'blocked';
 }
 
 function hasClarificationCompletionMarker(text) {

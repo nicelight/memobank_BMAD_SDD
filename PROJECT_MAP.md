@@ -93,6 +93,8 @@ For updates that change the JSON-only task registry or indexed task record model
 
 - `skills/_shared/scripts/init-mb.js`
 - `skills/_shared/references/structure-template.md`
+- `skills/_shared/references/commands/write-prd.md`
+- `skills/_shared/references/commands/clarify-feature.md`
 - `skills/_shared/references/commands/prd-to-tasks.md`
 - `skills/_shared/references/commands/autopilot.md`
 - `skills/_shared/references/commands/autonomous.md`

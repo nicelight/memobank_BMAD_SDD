@@ -22,7 +22,7 @@ status: active
   - `depends_on`
   - `touched_files`
   - `tier: T0|T1|T2|T3`
-- Every task `feature` points to a `.memory-bank/features/FT-<NNN>-*.md` file with `clarification_status: complete`.
+- Every task `feature` points to a `.memory-bank/features/FT-<NNN>-*.md` file that is not explicitly marked `clarification_status: pending|blocked`.
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - Нет unresolved blocking questions в `.protocols/AUTONOMOUS-RUN/status.md` или equivalent run protocol.
 - `/mb-doctor --strict` passes before the run starts.
@@ -31,9 +31,9 @@ If there are no JSON task records, stop with an explicit error:
 `HALT_DEPENDENCY_DEADLOCK: no schema-backed task records found in .memory-bank/tasks/index.json`.
 
 If any indexed task record is missing `tier`, stop with `HALT_POLICY_VIOLATION`.
-If any indexed task record is missing `feature`, references a missing feature file, or references a feature with missing/pending clarification metadata, stop with `HALT_CLARIFICATION_REQUIRED`.
+If any indexed task record is missing `feature`, references a missing feature file, or references a feature explicitly marked `clarification_status: pending|blocked`, stop with `HALT_CLARIFICATION_REQUIRED`.
 Read the task queue and task metadata only from JSON task records.
-Before task selection and before progression after a task closes, run `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat a missing doctor command/script, non-zero exit, or readiness error as `HALT_QUALITY_GATES`. Pending/missing feature clarification and tasks linked to unclarified features are readiness errors. `mb-doctor` runs `mb-lint` as its first gate; do not fall back to plain `mb-lint` for autonomous readiness.
+Before task selection and before progression after a task closes, run `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat a missing doctor command/script, non-zero exit, or readiness error as `HALT_QUALITY_GATES`. Explicit pending/blocked feature clarification and tasks linked to those features are readiness errors. `mb-doctor` runs `mb-lint` as its first gate; do not fall back to plain `mb-lint` for autonomous readiness.
 
 ## Протокол batch-run
 Если `.protocols/AUTONOMOUS-RUN/status.md` ещё нет:

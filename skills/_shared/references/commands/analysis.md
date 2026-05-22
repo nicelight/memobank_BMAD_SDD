@@ -1,5 +1,5 @@
 ---
-description: Optional Analysis router before PRD; recommends brainstorm, brief, PRD, mapping, or clarification.
+description: Optional Analysis router before PRD; recommends brainstorm, brief, write-prd, PRD decomposition, mapping, or feature clarification.
 status: active
 ---
 # /analysis - Analysis router
@@ -67,15 +67,17 @@ Use this table:
 
 | State | Next step |
 |---|---|
-| PRD exists, but feature docs are not created | `/prd` or current PRD ingestion flow |
-| Feature docs exist with `clarification_status: pending` | `/clarify FT-<NNN>` |
-| Feature docs exist with `clarification_status: complete` | `/prd-to-tasks FT-<NNN>` |
-| Approved product brief exists | `/prd`, then `/clarify FT-<NNN>` |
-| Draft product brief exists | finish `/brief`, then `/prd`, then `/clarify FT-<NNN>` |
+| Product brief exists, but `.memory-bank/prd.md` is missing | `/write-prd` |
+| `.memory-bank/prd.md` exists with `clarification_status: complete` and `constitution_checked: true`, but feature docs are not created | `/prd` |
+| `.memory-bank/prd.md` exists with `clarification_status: pending|blocked` | `/write-prd` |
+| Feature docs exist with `clarification_status: pending|blocked` | `/clarify-feature FT-<NNN>` |
+| Feature docs exist without blocking clarification metadata | `/prd-to-tasks FT-<NNN>` |
+| Approved product brief exists | `/write-prd`, then `/prd` |
+| Draft product brief exists | finish `/brief`, then `/write-prd`, then `/prd` |
 | Brainstorming report exists, but no brief exists | `/brief` |
 | Idea is raw or vague | `/brainstorm` |
 | Concept is understandable and no PRD exists | `/brief` |
-| Brownfield project without PRD | `/map-codebase`, then `/brief --delta` or `/prd --delta`, then `/clarify FT-<NNN>` |
+| Brownfield project without PRD | `/map-codebase`, then `/brief --delta` or `/write-prd --delta` |
 | Not enough data | create/update index and give one explicit next step |
 
 Brownfield rule:
@@ -84,17 +86,15 @@ Brownfield rule:
 Brownfield as-is mapping comes first. Do not invent roadmap from analysis before /map-codebase.
 ```
 
-## 4) Clarification dependency
-Never recommend `/prd-to-tasks` for a feature unless the feature frontmatter has:
+## 4) Decomposition dependency
+Do not recommend `/prd-to-tasks` for a feature when the feature has `clarification_status: pending|blocked` or unresolved blocking markers in behavior, acceptance, data, contracts, security, UX, operations, or verification sections.
 
-```yaml
-clarification_status: complete
-```
+Missing clarification metadata does not block task decomposition.
 
-If the feature has `clarification_status: pending`, missing clarification metadata, or unresolved blocking markers in behavior, acceptance, data, contracts, security, UX, operations, or verification sections, recommend:
+If feature-level clarification is explicitly pending or blocked, recommend:
 
 ```text
-/clarify FT-<NNN>
+/clarify-feature FT-<NNN>
 ```
 
 ## 5) Response

@@ -126,5 +126,5 @@ End with:
 Recommended next step: /brief
 ```
 
-Do not recommend `/prd-to-tasks`. If planning continues after `/prd`, remind that features must pass `/clarify FT-<NNN>` before `/prd-to-tasks FT-<NNN>`.
+Do not recommend `/prd-to-tasks`. If planning continues, route through `/brief`, `/write-prd`, `/prd`, then `/prd-to-tasks FT-<NNN>`. Recommend `/clarify-feature FT-<NNN>` only for a specific pending/blocked feature.
 </process>

@@ -22,20 +22,21 @@ status: active
 - interactive → попроси выбрать фичу
 - autonomous → используй `--all`
 
-## 1) Clarification preflight
-Перед созданием или обновлением implementation plan и JSON task records проверь clarification gate.
-`/prd-to-tasks` must not run for features with pending or missing clarification; canonical planning path is `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+## 1) Decomposition preflight
+Перед созданием или обновлением implementation plan и JSON task records проверь, что feature can be decomposed.
+`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`.
 
 Для `FT-<NNN>`:
 1. Найди `.memory-bank/features/FT-<NNN>-*.md`.
 2. Прочитай frontmatter.
-3. Требуй:
+3. Block only if the feature explicitly says clarification is not complete:
 
 ```yaml
-clarification_status: complete
+clarification_status: pending|blocked
 ```
 
-Missing clarification metadata blocks decomposition. Do not use fallback for old feature docs.
+Missing clarification metadata does not block decomposition.
+`clarification_status: complete` is allowed but not required.
 
 Block if relevant unresolved markers appear in behavior / acceptance / data / contracts / security / UX / operations / verification sections:
 - `NEEDS CLARIFICATION`
@@ -46,7 +47,7 @@ Block if relevant unresolved markers appear in behavior / acceptance / data / co
 Do not block on those words in unrelated notes, changelog-like text, or historical context unless they affect task decomposition or verification.
 
 If blocked:
-- interactive mode: report the feature and tell the user to run `/clarify FT-<NNN>`
+- interactive mode: report the feature and tell the user to run `/clarify-feature FT-<NNN>` or resolve the marker directly
 - autonomous mode: set terminal state `HALT_CLARIFICATION_REQUIRED`
 - stop immediately before decomposition
 - do not create or update implementation plans
@@ -54,16 +55,16 @@ If blocked:
 
 For `--all`:
 - resolve the full targeted feature set first
-- if any targeted feature is missing, lacks clarification metadata, has `clarification_status: pending`, or has blocking unresolved markers, halt before creating or updating task records for any feature
+- if any targeted feature is missing, has `clarification_status: pending|blocked`, or has blocking unresolved markers, halt before creating or updating task records for any feature
 - report all blocked feature IDs and their blockers
 
-`/clarify` does not assign tier. Tier remains mandatory here and is assigned during task decomposition.
+`/clarify-feature` does not assign tier. Tier remains mandatory here and is assigned during task decomposition.
 
 ## 2) Создай протокол фичи
 - `.protocols/FT-<NNN>/plan.md`
 - `.protocols/FT-<NNN>/decision-log.md`
 
-Do not remove the current `.protocols/FT-<NNN>/decision-log.md` behavior; the no-extra-protocol-files rule applies to `/clarify`.
+Do not remove the current `.protocols/FT-<NNN>/decision-log.md` behavior; the no-extra-protocol-files rule applies to `/clarify-feature`.
 
 ## 3) Прочитай контекст
 - `.memory-bank/features/FT-<NNN>-*.md`

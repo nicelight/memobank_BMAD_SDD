@@ -19,7 +19,7 @@ description: >
 
 Supported scenarios:
 - **Idea-only**: repo has a raw idea, but no stable PRD yet; optionally route through `/analysis`, `/brainstorm`, and `/brief`.
-- **Clear concept**: repo has enough direction for a product brief; optionally run `/brief` before `/prd`.
+- **Clear concept**: repo has enough direction for a product brief; optionally run `/brief` before `/write-prd`.
 - **Greenfield**: repo has `prd.md` or requirements text, but no code yet.
 - **Brownfield**: repo already contains code and needs **as-is** documentation before change planning.
 
@@ -173,7 +173,7 @@ If Codex is used, create `.codex/config.toml` with profiles:
 ### Decision rule
 - If repo has substantial code (`src/`, `package.json`, `go.mod`, `Cargo.toml`, etc.) → **Brownfield** (Step 3B).
 - If repo is mostly empty and you have `prd.md` → **Greenfield** (Step 3A).
-- If repo is mostly empty and you only have an idea or loose concept → optionally run **Analysis** first: `/analysis`, `/brainstorm` when the idea is raw, and `/brief` before `/prd`.
+- If repo is mostly empty and you only have an idea or loose concept → optionally run **Analysis** first: `/analysis`, `/brainstorm` when the idea is raw, and `/brief` before `/write-prd`.
 - If both exist: treat as **Brownfield + PRD delta** (Step 3B).
 - If repo is empty/new **and no `prd.md`** → **Skeleton-only** (Step 3C).
 
@@ -184,12 +184,10 @@ Record the scenario in:
 
 ## Step 3A — Greenfield workflow (PRD → Memory Bank)
 
-### 3A.1 Read PRD and do Deep Questioning
-- Read `prd.md`.
-- If gaps exist, run deep questioning **in rounds** (3–5 questions each). Use `./references/shared-deep-questioning.md`.
+### 3A.1 Write clarified PRD
+- Run `/write-prd` to turn Product Brief / PRD text + Constitution into `.memory-bank/prd.md`.
+- `/write-prd` handles PRD-level ambiguity with up to 5 targeted questions per pass.
 - If PRD mentions “use skills/tools/CLIs” — run `/find-skills` first (project-installed → marketplace).
-
-Deep Questioning is PRD-level discovery. Clarification is the later feature-level ambiguity gate run with `/clarify FT-<NNN>`.
 
 If user is temporarily unavailable (“запуск и ушёл”):
 - Record `Open questions` in `.protocols/PRD-BOOTSTRAP/decision-log.md`.
@@ -198,46 +196,43 @@ If user is temporarily unavailable (“запуск и ушёл”):
 If the user explicitly wants **autonomous mode**:
 - record non-blocking gaps as `Assumptions`
 - halt only on blocking gaps (security/compliance/external contract/data-loss risks)
-- after L1–L3 + review gate, continue with `/autonomous`
+- continue with `/autonomous` after `/write-prd` is complete
 
-### 3A.2 Write product brief (L1)
-Update `.memory-bank/product.md` using user’s wording.
+### 3A.2 Route PRD to L1–L3
+Run `/prd` to decompose `.memory-bank/prd.md` into product, requirements, epics, features, testing, and index updates.
 
-### 3A.3 Requirements + RTM
-Update `.memory-bank/requirements.md`:
+`/prd` owns:
+- `.memory-bank/product.md`
 - REQ-IDs
 - RTM table mapping REQ → Epic → Feature → Test
+- `.memory-bank/epics/EP-*.md`
+- `.memory-bank/features/FT-*.md`
 
-### 3A.4 Create epics and features
-Create:
-- `.memory-bank/epics/EP-001-<slug>.md`
-- `.memory-bank/features/FT-001-<slug>.md`
-
-Each feature MUST include:
+Each generated feature MUST include:
 - use cases
 - acceptance criteria
 - failure modes / edge cases
 - test strategy pointers
-- clarification metadata starting as `clarification_status: pending`
 
 Status policy:
 - Default EP/FT frontmatter to `status: draft` until `Open questions` are resolved.
 - Promote to `status: active` only when acceptance criteria + verification plan are stable.
-- `/prd` / `mb-from-prd` do not mark feature clarification complete; canonical planning path is `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+- `/prd` / `mb-from-prd` do not create tasks; canonical planning path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`.
+- Add feature `clarification_status: pending|blocked` only for explicit feature-level blockers.
 
-### 3A.5 Tasks planning (per-feature, no “everything at once”)
+### 3A.3 Tasks planning (per-feature, no “everything at once”)
 Do **not** generate a full task queue for all features in one pass.
 
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
-2) For each selected feature, run `/clarify FT-<NNN>` first; task planning starts only after that feature-level ambiguity gate is complete.
-3) Then run `/prd-to-tasks FT-<NNN>` to produce:
+2) For each selected feature, use `/clarify-feature FT-<NNN>` only if the feature is explicitly pending/blocked.
+3) Run `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
 Task routing is authoritative only through `task.tier`; the old `risk` / `risk.level` model is invalid.
 
-### 3A.6 Identify key concepts and create support docs
+### 3A.4 Identify key concepts and create support docs
 For every non-trivial concept, create support docs that make the concept cheap to reload later:
 - default / compatibility path:
   - `.memory-bank/architecture/<concept>.md` (WHAT/WHY)
@@ -253,7 +248,7 @@ Rules:
 - spec-driven docs are additive, not a replacement by default
 - if richer docs exist, route them from `.memory-bank/spec-index.md` and related concept docs
 
-### 3A.7 Update index
+### 3A.5 Update index
 Update `.memory-bank/index.md` with annotated links to all created docs.
 
 ---
@@ -302,7 +297,7 @@ Using the `.tasks/TASK-MB-MAP/` reports, fill:
 ### 3B.3 Ask user for PRD delta
 After baseline MB exists:
 - ask the user for `prd.md` describing **what to change/add**
-- run `/prd`, `/clarify FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
+- run `/write-prd`, `/prd`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
 
 ---
 
@@ -319,12 +314,12 @@ In PRD-less mode, `tasks/index.json` must be `{ "version": 1, "tasks": [] }` and
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
 
-> "Memory Bank skeleton created. To fill it with product details, epics, features, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/prd` when ready, then `/clarify FT-<NNN>` before `/prd-to-tasks FT-<NNN>`."
+> "Memory Bank skeleton created. To fill it with product details, epics, features, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/write-prd`, then `/prd`, then `/prd-to-tasks FT-<NNN>`."
 
 ### 3C.3 Wait or proceed
 - **If user provides PRD now** → continue to Step 3A (Greenfield workflow).
 - **If user defers** → stop here. The skeleton is valid and usable. The user can invoke `$mb-from-prd` or `/prd` later to fill the Memory Bank.
-- **If user provides partial info** → run deep questioning (`./references/shared-deep-questioning.md`) to extract enough for product.md, then stop and wait for full PRD.
+- **If user provides partial info** → route it through `/brief` and `/write-prd`; stop if PRD-level blockers remain.
 
 > **Note**: The skeleton-only state is a valid stopping point. `AGENTS.md` + `.memory-bank/index.md` + MBB rules are enough for agents to start navigating the repo.
 
@@ -369,7 +364,8 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and run `/clarify FT-<NNN>` for a selected feature first, then `/prd-to-tasks FT-<NNN>` only after `clarification_status: complete`.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and use `/prd-to-tasks FT-<NNN>` for a selected feature.
+   Use `/clarify-feature FT-<NNN>` first only if that feature is explicitly pending/blocked.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Route by `task.tier`: `T0`/`T1` may use compact verification in `run.md`; `T2`/`T3` require `mb-verify` and `mb-red-verify`.
 4. For `T3`, require human-aware checkpoint plus rollback/recovery note before closure.
@@ -404,7 +400,6 @@ You are done when:
 ## References in this skill
 
 - `./references/shared-structure-template.md`
-- `./references/shared-deep-questioning.md`
 - `./agents/shared-repo-scanner.md`
 - `./agents/shared-mb-reviewer.md`
 - `./agents/shared-review-architect.md`

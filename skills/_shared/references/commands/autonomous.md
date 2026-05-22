@@ -6,9 +6,9 @@ status: active
 
 <objective>
 Запустить **полный автономный цикл** без ожидания пользователя:
-- intake PRD / delta
+- intake Product Brief / PRD / delta
 - построение L1–L3
-- feature-level clarification gate
+- PRD-level ambiguity closure
 - декомпозиция всех FT в schema-backed JSON TASK records
 - execution + verification + MB-SYNC
 - промежуточные и финальные review-гейты
@@ -67,7 +67,8 @@ Default pre-queue health check:
    - запусти `/find-skills`
    - **автоиспользуй только уже установленные project skills**
    - отсутствующие skills только зафиксируй как рекомендацию
-2) Построй L1–L3 через `/prd`.
+2) Если `.memory-bank/prd.md` отсутствует или не имеет `clarification_status: complete` + `constitution_checked: true`, запусти `/write-prd`.
+3) Построй L1–L3 через `/prd`.
 3) Если есть пробелы:
    - **non-blocking** → зафиксируй в `.protocols/AUTONOMOUS-RUN/decision-log.md` как `Assumption`
    - **blocking** (security/compliance/payments/external contract/data loss) → поставь terminal state `HALT_BLOCKING_QUESTIONS` и остановись
@@ -80,24 +81,24 @@ Default pre-queue health check:
 - если после 2–3 циклов всё ещё `REJECT` → terminal state `HALT_REVIEW_REJECT`
 - batch execution разрешён **только после `APPROVE`**
 
-## 5) Clarification gate перед декомпозицией
-Перед `/prd-to-tasks --all` все targeted features должны иметь:
+## 5) Feature preflight перед декомпозицией
+Перед `/prd-to-tasks --all` проверь targeted features.
+Missing feature clarification metadata is valid and must not block decomposition by itself.
 
-```yaml
-clarification_status: complete
-```
-
-Для каждой feature с `clarification_status: pending` запусти `/clarify FT-<NNN>` в autonomous mode, используя только evidence из PRD, product, requirements, feature doc и явно linked relevant docs.
+Block `/prd-to-tasks --all` when any targeted feature has:
+- explicit `clarification_status: pending|blocked`
+- unresolved markers that affect decomposition, acceptance criteria, dependencies, verification, security/compliance, external contracts, data migration, or data-loss risk
 
 Правила:
 - не придумывай product decisions
-- не создавай task records для pending features
-- если `/clarify` требует ответа пользователя или находит blocking ambiguity, запиши blockers в `.protocols/AUTONOMOUS-RUN/status.md`, поставь terminal state `HALT_CLARIFICATION_REQUIRED` и остановись
-- если metadata отсутствует, treat as clarification blocker and halt with `HALT_CLARIFICATION_REQUIRED`
-- продолжай только когда все targeted features are `clarification_status: complete`
+- не создавай task records для pending/blocked features or features with decomposition-affecting unresolved markers
+- if feature blocker preflight finds blockers, record them in `.protocols/AUTONOMOUS-RUN/status.md`, set terminal state `HALT_CLARIFICATION_REQUIRED`, and stop
+- never invoke `/clarify-feature` automatically in autonomous mode; it is a manual or explicit follow-up command for feature blockers
+- missing clarification metadata is not a blocker
+- продолжай только когда no targeted feature is explicitly pending/blocked and no unresolved marker blocks decomposition
 
 ## 6) Декомпозиция всех фич
-После clarification gate запусти:
+После feature preflight запусти:
 - `/prd-to-tasks --all`
 
 Требование:
@@ -135,7 +136,7 @@ clarification_status: complete
 - strict doctor is a post-queue gate: запускай его только после того, как `/prd-to-tasks --all` создал `.memory-bank/tasks/index.json` и indexed task records
 - если doctor command/script отсутствует, падает, или возвращает readiness errors → terminal state `HALT_QUALITY_GATES`
 - after task queue exists, required ordering is `node scripts/mb-lint.mjs` + `mb-doctor --strict`; do not replace strict doctor with plain lint
-- pending/missing feature clarification or tasks linked to unclarified features are readiness errors
+- explicit pending/blocked feature clarification or tasks linked to such features are readiness errors
 - strict doctor должен быть зелёным до первого task selection pass
 
 ## 7) Scheduler loop

@@ -9,7 +9,7 @@ status: active
 - определяет сценарий (greenfield / brownfield / skeleton-only)
 - запускает правильный следующий шаг
 - не генерирует EP/FT/TASK без PRD
-- не обходит feature clarification перед task decomposition
+  - не обходит PRD-level clarification перед task decomposition
 </objective>
 
 <process>
@@ -28,10 +28,10 @@ status: active
 
 Выбор:
 - **Если есть код** → это **brownfield** → сначала запусти `/map-codebase` для as-is baseline.
-- **Если есть и код, и PRD / product brief / clear delta** → сначала `/map-codebase`, потом `/prd` как delta.
-- **Если кода почти нет и есть PRD** → это **greenfield with existing PRD** → запусти `/prd` напрямую.
-- **Если кода почти нет и есть `.memory-bank/analysis/product-brief.md`** → запусти `/prd`, используя brief как primary upstream source.
-- **Если кода почти нет и концепт ясен, но PRD нет** → запусти `/brief`, затем `/prd`.
+- **Если есть и код, и PRD / product brief / clear delta** → сначала `/map-codebase`, потом `/write-prd` и `/prd` как delta.
+- **Если кода почти нет и есть PRD** → это **greenfield with existing PRD** → перенеси/нормализуй PRD через `/write-prd`, затем запусти `/prd`.
+- **Если кода почти нет и есть `.memory-bank/analysis/product-brief.md`** → запусти `/write-prd`, затем `/prd`.
+- **Если кода почти нет и концепт ясен, но PRD нет** → запусти `/brief`, затем `/write-prd`, затем `/prd`.
 - **Если кода почти нет и идея сырая / направление нестабильно** → запусти `/analysis`; `/analysis` должен направить в `/brainstorm` или `/brief`.
 - **Если есть brainstorming artifact, но нет product brief и PRD** → запусти `/brief` перед `/prd`.
 - **Если нет кода и нет PRD / clear concept / analysis artifacts** → это **skeleton-only**: попроси пользователя предоставить PRD, product brief или хотя бы требования текстом и остановись.
@@ -50,13 +50,13 @@ status: active
   - **останавливайся и жди** (не выдумывай факты).
 - Analysis artifacts живут в `.memory-bank/analysis/` и являются durable Memory Bank artifacts, но Analysis не обязателен для каждого проекта.
 - Product Brief — upstream input contract для `/prd`, а не PRD, backlog или task plan.
-- `/cold-start` никогда не рекомендует `/prd-to-tasks` напрямую. Канонический downstream после `/prd`: `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
-- `/prd-to-tasks` must not run while clarification is pending or missing.
+- `/cold-start` никогда не рекомендует `/prd-to-tasks` напрямую. Канонический downstream: `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`.
+- `/prd-to-tasks` must not run while PRD clarification is pending/blocked or a targeted feature is explicitly pending/blocked.
 
 ## 3) После запуска флоу
 После `/prd` или `/map-codebase`:
 - запусти `/review` (fresh context)
-- interactive: выбери фичу, пройди `/clarify FT-<NNN>`, затем `/prd-to-tasks FT-<NNN>` и выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача рискованная по существу) → `/mb-sync`
+- interactive: выбери фичу, при необходимости пройди `/clarify-feature FT-<NNN>`, затем `/prd-to-tasks FT-<NNN>` и выполняй задачи через `/execute` → `/verify` → `/red-verify` (если задача T2/T3) → `/mb-sync`
 - JSON task queue unattended: используй `/autopilot`
 - full unattended (`PRD → done`): используй `/autonomous`
 </process>

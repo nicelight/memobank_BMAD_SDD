@@ -599,7 +599,8 @@ Claude (fresh session):
 - \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: run \`/prd\` → \`/clarify FT-<NNN>\` → \`/prd-to-tasks FT-<NNN>\` → execute tasks one-by-one with \`/execute TASK-<ID>\` and review after each wave.
+- **Interactive**: target chain is \`/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`.
+- Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
 - **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`, or \`/autopilot\` if JSON task records already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
 
 Naming:
@@ -620,8 +621,9 @@ Naming:
 - /analysis → .memory-bank/commands/analysis.md (optional idea discovery router)
 - /brainstorm → .memory-bank/commands/brainstorm.md (optional raw idea facilitation)
 - /brief → .memory-bank/commands/brief.md (optional product brief before PRD)
+- /write-prd → .memory-bank/commands/write-prd.md
 - /prd → .memory-bank/commands/prd.md
-- /clarify → .memory-bank/commands/clarify.md
+- /clarify-feature → .memory-bank/commands/clarify-feature.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /execute → .memory-bank/commands/execute.md
 - /verify → .memory-bank/commands/verify.md
@@ -905,7 +907,7 @@ status: active
 ## When to use
 - Bootstrap: cold-start / mb-init
 - Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
-- PRD → MB: /prd, then /clarify and /prd-to-tasks
+- PRD → MB: /write-prd, then /prd and /prd-to-tasks
 - Map codebase: /map-codebase
 - Execution: /execute
 - Verification (UAT): /verify
@@ -1003,17 +1005,19 @@ status: active
 
 ## Principle: no task explosion
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
-- Deep Questioning = PRD-level discovery. Clarification = feature-level ambiguity gate.
-- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/clarify FT-<NNN>\` is complete.
+- \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
+- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs.
 
 ## Interactive mode (you stay)
-1) \`/prd\` (fills L1–L3; records open questions)
-2) Pick one top feature and run \`/clarify FT-<NNN>\`
-3) \`/prd-to-tasks FT-<NNN>\` (creates IMPL plan + TASK-* for this feature)
-4) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
-5) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
-   - \`/execute TASK-<ID>\` → tier-appropriate verify → \`/red-verify\` if required → \`/mb-sync\`
-6) After each wave: \`/review\` (fresh context)
+1) \`/analysis -> /brainstorm -> /brief\` when idea discovery is needed
+2) \`/write-prd\` (creates clarified .memory-bank/prd.md)
+3) \`/prd\` (fills L1–L3)
+4) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
+5) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
+6) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
+7) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
+   - \`/execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`
+8) After each wave: \`/review\` (fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) \`/autonomous\`

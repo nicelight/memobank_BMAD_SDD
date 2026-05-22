@@ -80,8 +80,10 @@ jobs:
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
+            test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/prd.md
-            test -f .memory-bank/commands/clarify.md
+            test -f .memory-bank/commands/clarify-feature.md
+            test ! -e .memory-bank/commands/clarify.md
             test -f .memory-bank/commands/autonomous.md
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
@@ -94,6 +96,8 @@ jobs:
             node -e 'const fs = require("node:fs"); const schema = JSON.parse(fs.readFileSync(".memory-bank/schemas/task.schema.json", "utf8")); const required = schema.required || []; const tier = schema.properties?.tier; if (!required.includes("tier")) throw new Error("task schema must require tier"); if (!tier || tier.type !== "string") throw new Error("task schema tier must be a string"); const expected = ["T0", "T1", "T2", "T3"]; if (JSON.stringify(tier.enum) !== JSON.stringify(expected)) throw new Error("task schema tier enum must be T0/T1/T2/T3"); if (JSON.stringify(schema).includes("risk")) throw new Error("task schema must not contain risk");'
             node -e 'const fs = require("node:fs"); const index = JSON.parse(fs.readFileSync(".memory-bank/tasks/index.json", "utf8")); if (!Array.isArray(index.tasks)) throw new Error("tasks/index.json tasks must be an array"); if (index.tasks.length !== 0) throw new Error("fresh bootstrap must start with an empty task index"); if (fs.existsSync(".memory-bank/tasks/TASK-001.task.json")) throw new Error("fresh bootstrap must not create TASK-001.task.json");'
             test -f .claude/skills/prd/SKILL.md
+            test -f .claude/skills/write-prd/SKILL.md
+            test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/constitution/SKILL.md
             test -f .claude/skills/analysis/SKILL.md
             test -f .claude/skills/brainstorm/SKILL.md
@@ -103,15 +107,20 @@ jobs:
             test -f .agents/skills/analysis/SKILL.md
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
+            test -f .agents/skills/write-prd/SKILL.md
+            test -f .agents/skills/clarify-feature/SKILL.md
             test ! -e .claude/skills/mb-lint/SKILL.md
+            test ! -e .claude/skills/clarify/SKILL.md
             test ! -e .agents/skills/mb-lint/SKILL.md
+            test ! -e .agents/skills/clarify/SKILL.md
             test -f AGENTS.md
             for command in \
               /analysis \
               /brainstorm \
               /brief \
+              /write-prd \
               /prd \
-              /clarify \
+              /clarify-feature \
               /prd-to-tasks \
               /execute \
               /verify \
@@ -146,8 +155,10 @@ jobs:
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
+            test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/autonomous.md
-            test -f .memory-bank/commands/clarify.md
+            test -f .memory-bank/commands/clarify-feature.md
+            test ! -e .memory-bank/commands/clarify.md
             test -f .memory-bank/workflows/autonomy-policy.md
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
@@ -164,22 +175,29 @@ jobs:
             test -f .claude/skills/analysis/SKILL.md
             test -f .claude/skills/brainstorm/SKILL.md
             test -f .claude/skills/brief/SKILL.md
+            test -f .claude/skills/write-prd/SKILL.md
+            test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/autonomous/SKILL.md
             test -f .agents/skills/cold-start/SKILL.md
             test -f .agents/skills/constitution/SKILL.md
             test -f .agents/skills/analysis/SKILL.md
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
+            test -f .agents/skills/write-prd/SKILL.md
+            test -f .agents/skills/clarify-feature/SKILL.md
             test -f .agents/skills/autonomous/SKILL.md
             test ! -e .claude/skills/mb-lint/SKILL.md
+            test ! -e .claude/skills/clarify/SKILL.md
             test ! -e .agents/skills/mb-lint/SKILL.md
+            test ! -e .agents/skills/clarify/SKILL.md
             test -f AGENTS.md
             for command in \
               /analysis \
               /brainstorm \
               /brief \
+              /write-prd \
               /prd \
-              /clarify \
+              /clarify-feature \
               /prd-to-tasks \
               /execute \
               /verify \
@@ -236,10 +254,17 @@ EOF
 ---
 description: CI smoke PRD.
 status: draft
+type: prd
+clarification_status: complete
+constitution_checked: true
 ---
 # PRD
 
 Source: .memory-bank/analysis/product-brief.md
+
+## Clarifications
+
+Clarification: no critical ambiguity found
 EOF
             node scripts/mb-lint.mjs
 

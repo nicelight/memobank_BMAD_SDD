@@ -106,7 +106,9 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` and review after each wave.
+- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
+- Run `/clarify-feature FT-001` only for explicit feature blockers before `/prd-to-tasks`.
+- Execute tasks one-by-one and review after each wave.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 Naming:
@@ -127,8 +129,9 @@ Naming:
 - /analysis → .memory-bank/commands/analysis.md (optional idea discovery router)
 - /brainstorm → .memory-bank/commands/brainstorm.md (optional raw idea facilitation)
 - /brief → .memory-bank/commands/brief.md (optional product brief before PRD)
+- /write-prd → .memory-bank/commands/write-prd.md
 - /prd → .memory-bank/commands/prd.md
-- /clarify → .memory-bank/commands/clarify.md
+- /clarify-feature → .memory-bank/commands/clarify-feature.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /execute → .memory-bank/commands/execute.md
 - /verify → .memory-bank/commands/verify.md

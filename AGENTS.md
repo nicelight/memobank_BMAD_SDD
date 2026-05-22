@@ -60,7 +60,7 @@ Do not overengineer. Придерживайся KISS. Лучшнее враг х
 - `skills/_shared/` — единственный canonical source для общих prompts, references и scripts.
 - В рабочем дереве намеренно нет package-local файлов `skills/*/{agents,references,scripts}/shared-*`.
 - При установке фреймворка эти файлы разворачиваются автоматически во временной копии репозитория.
-- Ожидаемый масштаб разворота: 490 generated `shared-*` файлов.
+- Ожидаемый масштаб разворота: 550 generated `shared-*` файлов.
 - Разворот выполняется цепочкой `scripts/install-framework.mjs` → временная копия repo → `scripts/vendor-shared.mjs` → `npx -y skills add <prepared-temp-repo> ...`.
 - Прямой `npx skills add <repo>` для source-only форка использовать нельзя, если перед этим не был запущен vendoring.
 
@@ -82,7 +82,7 @@ find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | w
 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-Если нужно посмотреть временно развернутые 490 файлов, запускай:
+Если нужно посмотреть временно развернутые 550 файлов, запускай:
 
 ```bash
 MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes
