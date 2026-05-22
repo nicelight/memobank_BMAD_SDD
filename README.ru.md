@@ -1,5 +1,7 @@
 # memobank
 
+![Схема MEMOFLOW](MEMOFLOW.png)
+
 `memobank` - это набор skills и workflow для агентной разработки в Codex CLI, Claude Code, OpenCode и совместимых runtimes.
 
 ## 📌 Что это
@@ -146,16 +148,16 @@ Memory Bank помогает вести разработку как повтор
 В этом форке используйте installer wrapper. Прямой `npx skills add <repo>` для source-only дерева не подходит.
 
 ```bash
-node scripts/install-framework.mjs --skill '*' --yes
+node scripts/install-framework.mjs
 ```
 
-После установки в целевом репозитории создайте skeleton Memory Bank:
+Интерактивный installer позволит выбрать папку проекта из списка, установит
+команды memobank и создаст или синхронизирует skeleton Memory Bank в выбранном
+репозитории.
 
-```text
-/mb-init
-```
+Подробная механика установки и сценарии автоматизации описаны в [howItWorks.md](howItWorks.md).
 
-Если project command proxies еще недоступны, можно запустить bootstrap script из установленного skill package:
+Если нужно вручную запустить bootstrap из уже установленного skill package:
 
 ```bash
 node .agents/skills/mb-init/scripts/shared-init-mb.js

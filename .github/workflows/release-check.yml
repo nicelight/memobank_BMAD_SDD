@@ -138,6 +138,26 @@ jobs:
             node scripts/mb-doctor.mjs
           )
 
+      - name: One-command bootstrap smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+
+          TARGET="$TMP_DIR/target-repo"
+          node "$GITHUB_WORKSPACE/scripts/install-framework.mjs" --bootstrap --target "$TARGET" --yes
+
+          test -f "$TARGET/.memory-bank/tasks/index.json"
+          test -f "$TARGET/AGENTS.md"
+          test -f "$TARGET/.memory-bank/commands/cold-start.md"
+          test -f "$TARGET/scripts/mb-lint.mjs"
+          (
+            cd "$TARGET"
+            node scripts/mb-lint.mjs
+            node scripts/mb-doctor.mjs
+          )
+
       - name: Dry bootstrap + sync smoke test
         shell: bash
         run: |

@@ -60,14 +60,14 @@ Automation is available, but it works best after the manual loop is familiar.
 For this source-only fork, use the installer wrapper:
 
 ```bash
-node scripts/install-framework.mjs --skill '*' --yes
+node scripts/install-framework.mjs
 ```
 
-In the target repository, bootstrap the Memory Bank:
+The interactive installer lets you choose the target project folder from a list,
+installs the memobank commands, and bootstraps or syncs the target repository.
 
-```bash
-node .agents/skills/mb-init/scripts/shared-init-mb.js
-```
+Detailed installation mechanics and automation scenarios are documented in
+[howItWorks.md](howItWorks.md).
 
 Then run:
 

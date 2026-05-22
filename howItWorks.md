@@ -56,27 +56,35 @@ find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | w
 
 Ожидаемый результат для source tree: `0`.
 
-## 3. Двухэтапная установка и bootstrap
+## 3. Установка и bootstrap
 
-Есть два отдельных этапа.
-
-### Этап A: установка package skills
+Основной путь - интерактивный installer:
 
 Запускайте из репозитория framework:
+
+```bash
+node scripts/install-framework.mjs
+```
+
+Wrapper:
+
+1. Показывает folder picker: можно открыть папку по номеру, подняться вверх, выбрать открытую папку, ввести путь вручную или создать новую папку внутри открытой.
+2. Проверяет target: существует ли директория, writable ли она, git status, наличие `.memory-bank/` и `AGENTS.md`.
+3. Показывает предупреждения и один общий confirmation; если `.memory-bank/` уже есть, после подтверждения запускается sync/update generated assets.
+4. Копирует текущий репозиторий во временную директорию.
+5. Запускает `scripts/vendor-shared.mjs` внутри этой копии.
+6. Генерирует package-local assets `shared-*` для каждого installable skill.
+7. Вызывает `npx -y skills add <prepared-temp-repo> --skill '*' --yes` из target repo.
+8. Запускает bootstrap script из prepared temp repo с `cwd=target`.
+9. Удаляет временный репозиторий, если не задан `MEMOBANK_KEEP_INSTALL_TMP=1`.
+
+Старый explicit install-only flow остается рабочим и не открывает interactive UI:
 
 ```bash
 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-Wrapper:
-
-1. Копирует текущий репозиторий во временную директорию.
-2. Запускает `scripts/vendor-shared.mjs` внутри этой копии.
-3. Генерирует package-local assets `shared-*` для каждого installable skill.
-4. Вызывает `npx -y skills add <prepared-temp-repo> ...`.
-5. Удаляет временный репозиторий, если не задан `MEMOBANK_KEEP_INSTALL_TMP=1`.
-
-Обычные опции `skills add` можно передавать дальше, например:
+Обычные опции `skills add` можно передавать дальше:
 
 ```bash
 node scripts/install-framework.mjs --skill cold-start --global --yes
@@ -88,9 +96,9 @@ node scripts/install-framework.mjs --skill cold-start --global --yes
 MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-### Этап B: bootstrap целевого репозитория
+### Bootstrap целевого репозитория вручную
 
-После установки package skills инициализируйте целевой репозиторий через установленный skill script:
+Если package skills уже установлены, целевой репозиторий можно инициализировать через установленный skill script:
 
 ```bash
 node .agents/skills/mb-init/scripts/shared-init-mb.js
@@ -109,6 +117,14 @@ node .agents/skills/mb-init/scripts/shared-init-mb.js --sync
 ```
 
 `--force` сейчас эквивалентен `--sync`.
+
+Для CI/smoke без interactive UI installer поддерживает non-interactive bootstrap:
+
+```bash
+node scripts/install-framework.mjs --bootstrap --target /path/to/project --yes
+```
+
+Этот режим использует тот же source-only путь: temp copy -> `scripts/vendor-shared.mjs` -> `npx -y skills add <prepared-temp-repo> ...` -> bootstrap из prepared temp repo.
 
 ## 4. Generated bootstrap artifacts
 
@@ -391,6 +407,7 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 npm run check:syntax --silent
 find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
 node scripts/install-framework.mjs --skill '*' --yes
+tmpdir="$(mktemp -d)"; node scripts/install-framework.mjs --bootstrap --target "$tmpdir" --yes
 ```
 
 Команда `find` должна вывести `0`.

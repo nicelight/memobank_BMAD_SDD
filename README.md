@@ -12,10 +12,10 @@ Generated Memory Banks include `.memory-bank/constitution.md` for short project 
 Install this source-only fork through its wrapper, not through `npx skills add` directly:
 
 ```bash
-npx github:<owner>/<repo> --skill '*' --global --yes
+npx github:<owner>/<repo>
 ```
 
-During installation the wrapper prepares a temporary copy, generates the missing `shared-*` package files there, runs `skills add` against that prepared copy, and leaves this repository source-only.
+The wrapper starts an interactive installer. It prepares a temporary copy, generates the missing `shared-*` package files there, runs `skills add` against that prepared copy, bootstraps the target repository, and leaves this repository source-only.
 
 [Full documentation here](README.en.md)
 
@@ -35,9 +35,9 @@ During installation the wrapper prepares a temporary copy, generates the missing
 Устанавливай этот source-only форк через wrapper, а не через прямой `npx skills add`:
 
 ```bash
-npx github:<owner>/<repo> --skill '*' --global --yes
+npx github:<owner>/<repo>
 ```
 
-Во время установки wrapper создаёт временную копию, генерирует в ней недостающие package-файлы `shared-*`, запускает `skills add` по подготовленной копии и оставляет этот репозиторий source-only.
+Wrapper запускает интерактивный installer. Во время установки он создаёт временную копию, генерирует в ней недостающие package-файлы `shared-*`, запускает `skills add` по подготовленной копии, bootstrap-ит целевой репозиторий и оставляет этот репозиторий source-only.
 
 [Полная документация тут](README.ru.md)

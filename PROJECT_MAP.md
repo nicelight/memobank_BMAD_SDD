@@ -49,7 +49,7 @@ Root documentation:
 Packaging and install:
 
 - `package.json`: package bin and scripts.
-- `scripts/install-framework.mjs`: correct installer for this fork; prepares a temporary vendored repo and calls `skills add`.
+- `scripts/install-framework.mjs`: correct installer for this fork; no args starts the interactive one-command install/bootstrap flow, explicit `--skill ... --yes` preserves legacy install-only behavior, and every path prepares a temporary vendored repo before `skills add`.
 - `scripts/vendor-shared.mjs`: generator that copies `skills/_shared` files into every installable skill package.
 - `.github/workflows/release-check.yml`: CI source-only hygiene, syntax checks, install smoke, bootstrap smoke.
 
@@ -122,6 +122,14 @@ Install smoke without mutating the working repository:
 
 ```bash
 node scripts/install-framework.mjs --skill '*' --yes
+```
+
+One-command bootstrap smoke:
+
+```bash
+tmpdir="$(mktemp -d)"; node scripts/install-framework.mjs --bootstrap --target "$tmpdir" --yes
+test -f "$tmpdir/.memory-bank/tasks/index.json"
+test -f "$tmpdir/AGENTS.md"
 ```
 
 To inspect the generated temporary package tree during installer debugging:
