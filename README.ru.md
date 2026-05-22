@@ -38,7 +38,7 @@ Memory Bank помогает вести разработку как повтор
 
   -> Brainstorming       Интервью -> brief.md
   -> PRD
-  -> features
+  -> features            + проработка /clarify
   -> JSON tasks          с градацией сложности и риска 
   -> execute             можно все сразу в авторежиме
   -> verify              + red-verify
