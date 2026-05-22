@@ -43,7 +43,6 @@ Root documentation:
 
 - `README.md`: short bilingual entrypoint and install warning.
 - `README.en.md`, `README.ru.md`: full user documentation.
-- `HANDOFF.md`: source-only packaging handoff and verified install flow.
 - `PROJECT_MAP.md`: this file, intended as agent priming.
 - `Optimisation.md`: future task-schema plan context, not standing instructions.
 
