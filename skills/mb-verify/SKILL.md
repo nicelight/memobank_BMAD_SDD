@@ -17,6 +17,30 @@ Independent-ish verification so we don’t “trust without verify”.
 This is **not** the adversarial semantic pass.
 If a task may satisfy AC/REQ while still being wrong in substance, follow with `/red-verify` / `mb-red-verify`.
 
+## Status Transition Modes
+
+Status transitions have two modes.
+
+Scheduler mode:
+- `/autopilot` and `/autonomous` own task status transitions.
+- Scheduler decides closure/failure/blocking eligibility.
+- `/execute` returns scoped implementation handoff; it does not close tasks.
+- `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
+- `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
+- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
+- T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
+- T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+
+Manual mode:
+- Expected simple flow: `/execute -> /verify`.
+- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
+- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
+- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
+- Do not mix scheduler mode and manual mode inside one task run.
+- No persisted `mode` field is used.
+
 ## Inputs
 - `TASK_ID` (e.g. `TASK-123`)
 - Authoritative task record via `.memory-bank/tasks/index.json` and `.memory-bank/tasks/<TASK_ID>.task.json`
@@ -49,8 +73,8 @@ If present, also use:
 
 - `mb-verify` owns verification evidence and `VERDICT: PASS|FAIL|NEEDS-CLARIFICATION`.
 - When invoked by `/autopilot` or `/autonomous`, it must not close the task, set `status: done`, set `status: failed`, block dependents, or promote dependents. It reports a recommended next status to the scheduler.
-- In standalone/manual mode, it may state the recommended next status. It may only set `status: done` for explicitly compact `T0` / `T1` local closure.
-- `T2` / `T3` are never closed by `mb-verify`; PASS only makes them eligible for `mb-red-verify`.
+- In standalone/manual mode, it may mark a task `done` after functional `VERDICT: PASS`, including `T2` / `T3`.
+- For risky manual tasks, `mb-red-verify` is a user/agent decision after `mb-verify`, not a universal precondition for `done`.
 
 ## Process
 
@@ -103,9 +127,9 @@ If all pass:
 - `VERDICT: PASS`
 - add completed verification/evidence entries in `verify`
 - apply status by tier:
-  - `T0` / `T1`: may keep compact closure behavior and set `status: done` only when explicit standalone compact closure allows it
-  - `T2` / `T3`: do not set `status: done`; leave the task pending `/red-verify` / `mb-red-verify` with an explicit non-`done` state such as `in_progress`
-- for `T2` / `T3`, final closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
+  - scheduler mode: recommend the scheduler decision; do not close/fail/block/promote
+  - manual mode: may set `status: done` after functional `VERDICT: PASS`, including `T2` / `T3`
+- in scheduler mode, final `T2` / `T3` closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
 ### 4) Sync recommendations
 - Record RTM/feature lifecycle recommendations for `/mb-sync`
@@ -113,5 +137,5 @@ If all pass:
 
 ## Definition of done
 - Verification output exists and is evidence-backed: compact `run.md` for eligible `T0` / `T1`, full `verification.md` for `T2` / `T3`.
-- PASS verification has updated RTM/task evidence; `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
+- PASS verification has updated RTM/task evidence; scheduler-mode `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
 - FAIL tasks have a bug doc and next steps.

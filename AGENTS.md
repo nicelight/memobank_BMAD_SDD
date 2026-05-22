@@ -12,7 +12,7 @@
 
 Важно:
 
-- `.memory-bank/`, `.protocols/`, `.tasks/`, `skills/`, `scripts/`, `.github/`, `README*`, `PROJECT_MAP.md`, `HANDOFF.md` и другие файлы репозитория — это не личная память текущего агента.
+- `.memory-bank/`, `.protocols/`, `.tasks/`, `skills/`, `scripts/`, `.github/`, `README*`, `PROJECT_MAP.md` и другие файлы репозитория — это не личная память текущего агента.
 - Их нельзя использовать как scratchpad, temporary notes или внутреннюю память агента без явного разрешения пользователя или без того, что это прямо входит в задачу.
 - Если задача просит изменить framework, workflow, skills, scripts, docs или generated skeleton behavior, изменения этих файлов являются изменениями продукта.
 - Planning artifacts для текущей работы можно создавать только там, где это явно разрешено ролью и задачей, например `.protocols/<TASK-ID>/plan.md` или согласованный planning файл.

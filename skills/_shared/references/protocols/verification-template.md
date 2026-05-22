@@ -32,7 +32,8 @@ status: active
 - integration/e2e: ...
 
 ## Verdict
-VERDICT: PASS | FAIL | NEEDS-CLARIFICATION
+Replace the placeholder with one exact standalone marker:
+VERDICT: <PASS|FAIL|NEEDS-CLARIFICATION>
 
 ## If FAIL
 - Bug filed: `.memory-bank/bugs/BUG-...md`

@@ -30,9 +30,11 @@ If the repository exposes another documented wrapper for the same script, use th
 - Strict mode: post-queue autonomous/autopilot readiness gate. Empty `.memory-bank/tasks/index.json` is an error because there is no executable task queue.
 - JSON mode: machine-readable report for schedulers and agents.
 
-Default mode may emit warnings for incomplete readiness evidence that should be fixed before unattended execution. Strict mode promotes those readiness gaps to errors where autonomous/autopilot progression would be unsafe.
+Default mode may emit warnings for incomplete scheduler readiness evidence that should be fixed before unattended execution. These warnings do not invalidate KISS manual closure. Strict mode promotes those readiness gaps to errors where autonomous/autopilot progression would be unsafe.
 
 Use `--strict` before `/autopilot` or the scheduler phase of `/autonomous`, before each task-selection pass, and after each `/mb-sync` before promoting dependents or declaring success.
+
+Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonomous` own closure/failure/blocking decisions, T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass`, and T3 scheduler closure also requires exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`. In manual mode, `/verify PASS` may close, including T2/T3; later `/red-verify` may reopen/block/fail.
 
 ## Required checks
 `mb-doctor` must check only readiness-critical conditions:
@@ -51,8 +53,8 @@ Use `--strict` before `/autopilot` or the scheduler phase of `/autonomous`, befo
 - `T2` / `T3` `planned` / `ready` tasks do not require protocol files yet.
 - `T2` / `T3` `in_progress` tasks have full protocol files: `context.md`, `plan.md`, `progress.md`, `verification.md`, and `handoff.md`.
 - `T0` / `T1` `done` tasks have compact `.protocols/<TASK_ID>/run.md` evidence appropriate for their tier.
-- `T2` / `T3` `done` tasks have full protocol files, `PASS` verification evidence/verdict in `task.verify` or protocol/artifacts, and closure-eligible red-verify evidence with `SEMANTIC_VERDICT: semantic-pass`.
-- `T3` `done` tasks also have exact standalone marker lines: `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+- In `--strict`, `T2` / `T3` `done` tasks have full protocol files, `PASS` verification evidence/verdict in `task.verify` or protocol/artifacts, and closure-eligible red-verify evidence with `SEMANTIC_VERDICT: semantic-pass`.
+- In `--strict`, `T3` `done` tasks also have exact standalone marker lines: `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - `T2` / `T3` `failed` tasks have full protocol files and `FAIL` / `error` evidence/verdict in `task.verify` or protocol/artifacts.
 - Other `done` / `failed` tasks have the minimum evidence/protocol basis required by their tier and mode.
 - `failed` tasks have either a bug doc in `.memory-bank/bugs/` mentioning the task id or an indexed follow-up task depending on/referencing the failed task.

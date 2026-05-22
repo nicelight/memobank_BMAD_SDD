@@ -53,12 +53,27 @@ Before task selection and before progression after a task closes, run `/mb-docto
 
 ## Status ownership
 
+Status transitions have two modes.
+
+Scheduler mode:
 - `/autopilot` is the scheduler for an already prepared JSON task queue.
 - `/autopilot` owns `planned -> ready`, `ready -> in_progress`, `in_progress -> done`, `in_progress -> failed`, dependent block/unblock decisions, and terminal queue state.
-- `/execute` returns implementation artifacts, gates, progress, and handoff evidence; it does not close or promote tasks in scheduler mode.
-- `/verify` writes verification evidence/verdict and recommended next status; it does not close tasks or block/promote dependents in scheduler mode.
-- `/red-verify` writes semantic evidence/verdict and recommended next status; it does not independently close tasks in scheduler mode.
-- `/mb-sync` records the scheduler-provided closure/failure/blocking decision and consistency updates; it does not independently advance dependents.
+- `/execute` returns scoped implementation handoff; it does not close tasks.
+- `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
+- `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
+- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
+- T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
+- T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+
+Manual mode:
+- Expected simple flow: `/execute -> /verify`.
+- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
+- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
+- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
+- Do not mix scheduler mode and manual mode inside one task run.
+- No persisted `mode` field is used.
 
 ## Selection rule
 На каждой итерации reread `.memory-bank/tasks/index.json` and indexed `.task.json` records.
@@ -74,7 +89,7 @@ Before task selection and before progression after a task closes, run `/mb-docto
 - нет blocking bug / blocked upstream
 
 Если после promotion pass `ready` пусто:
-- и JSON task queue полностью закрыт → `SUCCESS`
+- и JSON task queue полностью закрыт → запусти финальный `/review`; `SUCCESS` разрешён только если final `/review` вернул `APPROVE`
 - и остались `planned` / `blocked` → `HALT_DEPENDENCY_DEADLOCK`
 
 ## TASK loop
@@ -83,12 +98,12 @@ Before task selection and before progression after a task closes, run `/mb-docto
 2) перечитай `task.tier` из JSON record and route only by that value
 3) выполни `/execute TASK-<ID>`
 4) verification by tier:
-   - `T0` / `T1`: compact path is allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
-   - `T2` / `T3`: full path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before closure
+   - `T0` / `T1`: compact allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
+   - `T2` / `T3`: full path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before the scheduler marks `done`
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
 5) scheduler closure decision:
-   - `T0` / `T1`: normal `done` allowed after verification `PASS`
-   - `T2` / `T3`: `done` allowed only after `/verify` `PASS` evidence and `/red-verify` `semantic-pass`
+   - `T0` / `T1`: normal `done` allowed after compact evidence / functional `VERDICT: PASS`
+   - `T2` / `T3`: `done` allowed only after `/verify` `VERDICT: PASS` evidence and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
 6) run `/mb-sync` to sync the scheduler decision; `/mb-sync` must not promote dependents by itself
 7) apply scheduler-owned closure:
    - `status: done` in the task record

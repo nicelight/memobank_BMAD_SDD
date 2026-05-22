@@ -2,11 +2,9 @@
 
 ## Read First
 
-Before changing this repository, read:
+Before changing this repository, reaad:
 
-- `HANDOFF.md`
-- `README.md`
-- `README.en.md` or `README.ru.md`
+- `README.en.md`
 - `package.json`
 - `scripts/install-framework.mjs`
 - `scripts/vendor-shared.mjs`

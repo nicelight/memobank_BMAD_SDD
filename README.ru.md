@@ -308,7 +308,7 @@ node scripts/install-framework.mjs --skill '*' --global --yes
 /prd-to-tasks FT-001
 /execute TASK-001
 /verify TASK-001
-/red-verify TASK-001   # обязательно для задач T2/T3
+/red-verify TASK-001   # scheduler T2/T3 gate; manual /verify PASS может закрыть, /red-verify может reopen/block/fail
 /mb-sync
 ```
 

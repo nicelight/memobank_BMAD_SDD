@@ -45,29 +45,12 @@ const INDEX_TASK_ENTRY_KEYS = new Set(['id', 'file']);
 const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const GATE_KEYS = new Set(['name', 'command', 'required']);
 const LEGACY_TASK_RISK_KEYS = new Set(['risk', 'risk.level', 'risk_level', 'riskLevel']);
-const DONE_VERIFY_OBJECT_KEYS = new Set([
-  'evidence',
-  'result',
-  'verdict',
-  'command',
-  'path',
-  'paths',
-  'file',
-  'files',
-  'log',
-  'logs',
-  'artifact',
-  'artifacts',
-  'report',
-  'reports',
-]);
 const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
 const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
-const PASS_EVIDENCE_RE = /\bverdict\s*:?\s*pass\b|\bpass(?:ed)?\b/i;
+const PASS_EVIDENCE_RE = /^\s*VERDICT: PASS\s*$/im;
 const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
-const RED_VERIFY_PASS_RE = /^\s*"?SEMANTIC_VERDICT"?\s*:\s*"?semantic-pass"?\s*,?\s*$/im;
-const T3_HUMAN_CHECKPOINT_MARKER = 'HUMAN_CHECKPOINT: done';
-const T3_ROLLBACK_RECOVERY_MARKER = 'ROLLBACK_RECOVERY_NOTE: present';
+const COMPACT_EVIDENCE_RE =
+  /^(?:[-*]\s*)?(?:evidence|checks?|result|output|log|artifact|report)\s*:\s*(?!n\/a\b|none\b|tbd\b|todo\b|\.{3}$).+/im;
 const REQUIRED_TASK_FIELDS = [
   'id',
   'title',
@@ -476,33 +459,19 @@ function checkFileSize(filePath, text) {
   }
 }
 
-function hasPathLikeMarker(value) {
-  const text = String(value ?? '').trim();
-  if (!text) return false;
-  return (
-    /(?:^|[\s"`'])(?:\.{1,2}\/|\/|[A-Za-z]:\\)[^\s"`']+/.test(text) ||
-    /\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.\/-]+\b/.test(text) ||
-    /\b[\w.-]+\.(?:md|txt|log|json|xml|html|htm|png|jpg|jpeg|webm|mp4)\b/i.test(text)
-  );
-}
-
 function hasDoneVerifyTextMarker(value) {
   const text = String(value ?? '').trim();
   if (!text) return false;
-  return (
-    /\b(evidence|result|verdict|pass|passed|fail|failed|output|log|artifact|report)\b/i.test(text) ||
-    hasPathLikeMarker(text)
-  );
+  return PASS_EVIDENCE_RE.test(text);
 }
 
 function hasDoneVerifyObjectMarker(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   return Object.entries(value).some(([key, raw]) => {
-    const normalizedKey = key.toLowerCase().replace(/[-\s]/g, '_');
     const values = Array.isArray(raw) ? raw : [raw];
     const hasNonEmptyValue = values.some((item) => String(item ?? '').trim());
     if (!hasNonEmptyValue) return false;
-    return DONE_VERIFY_OBJECT_KEYS.has(normalizedKey) || values.some((item) => hasPathLikeMarker(item));
+    return PASS_EVIDENCE_RE.test(key) || values.some((item) => hasDoneVerifyTextMarker(item));
   });
 }
 
@@ -541,10 +510,7 @@ function hasCompactRunEvidence(id) {
   if (!hasFile(runPath)) return false;
 
   const text = readText(runPath).replace(/\r\n/g, '\n');
-  return (
-    (/\bverdict\b/i.test(text) && /\bpass(?:ed)?\b/i.test(text)) ||
-    /\bchecks\s*\/\s*evidence\b/i.test(text)
-  );
+  return PASS_EVIDENCE_RE.test(text) || COMPACT_EVIDENCE_RE.test(text);
 }
 
 function checkDoneEvidence(rel, task) {
@@ -717,31 +683,8 @@ function hasCompactOnlyProtocol(id) {
   return missingFullProtocolFiles(id).length > 0;
 }
 
-function hasRedVerificationEvidence(id) {
-  return redVerificationFiles(id).some((file) => {
-    try {
-      return RED_VERIFY_PASS_RE.test(readText(file).replace(/\r\n/g, '\n'));
-    } catch {
-      return false;
-    }
-  });
-}
-
-function redVerificationFiles(id) {
-  const protocolFile = path.join(protocolDirForTask(id), 'red-verification.md');
-  const files = hasFile(protocolFile) ? [protocolFile] : [];
-  return [
-    ...files,
-    ...listFilesRecursive(taskArtifactDirForTask(id)).filter((file) => isRedVerificationFile(file)),
-  ];
-}
-
 function isRedVerificationFile(file) {
   return /red/i.test(path.basename(file));
-}
-
-function hasExactMarker(text, marker) {
-  return text.replace(/\r\n/g, '\n').split('\n').some((line) => line.trim() === marker);
 }
 
 function hasProtocolOrArtifactStatusEvidence(id, status) {
@@ -758,23 +701,6 @@ function hasProtocolOrArtifactStatusEvidence(id, status) {
       return false;
     }
   });
-}
-
-function protocolAndArtifactText(id) {
-  const files = [
-    ...listFilesRecursive(protocolDirForTask(id)).filter((file) => file.endsWith('.md')),
-    ...listFilesRecursive(taskArtifactDirForTask(id)).filter((file) => /\.(md|txt|log|json)$/i.test(file)),
-  ];
-
-  return files
-    .map((file) => {
-      try {
-        return readText(file);
-      } catch {
-        return '';
-      }
-    })
-    .join('\n');
 }
 
 function checkTierProtocolRequirements(rel, task) {
@@ -800,22 +726,6 @@ function checkTierProtocolRequirements(rel, task) {
     errors.push(
       `${rel}: ${task.tier} done task must have PASS verification evidence/verdict in task.verify, .protocols/${task.id}/, or .tasks/${task.id}/`
     );
-  }
-
-  if (task.status === 'done' && !hasRedVerificationEvidence(task.id)) {
-    errors.push(
-      `${rel}: ${task.tier} done task must have red-verification evidence with SEMANTIC_VERDICT: semantic-pass (.protocols/${task.id}/red-verification.md or .tasks/${task.id}/*RED* artifact)`
-    );
-  }
-
-  if (task.status === 'done' && task.tier === 'T3') {
-    const text = protocolAndArtifactText(task.id);
-    if (!hasExactMarker(text, T3_HUMAN_CHECKPOINT_MARKER)) {
-      errors.push(`${rel}: T3 done task must include exact marker '${T3_HUMAN_CHECKPOINT_MARKER}'`);
-    }
-    if (!hasExactMarker(text, T3_ROLLBACK_RECOVERY_MARKER)) {
-      errors.push(`${rel}: T3 done task must include exact marker '${T3_ROLLBACK_RECOVERY_MARKER}'`);
-    }
   }
 
   if (task.status === 'failed' && !hasStatusEvidence) {

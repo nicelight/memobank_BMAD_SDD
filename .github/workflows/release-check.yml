@@ -86,6 +86,8 @@ jobs:
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
             test -f .memory-bank/tasks/index.json
+            test -f scripts/mb-lint.mjs
+            test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md
             test ! -e .specify
@@ -101,6 +103,8 @@ jobs:
             test -f .agents/skills/analysis/SKILL.md
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
+            test ! -e .claude/skills/mb-lint/SKILL.md
+            test ! -e .agents/skills/mb-lint/SKILL.md
             test -f AGENTS.md
             for command in \
               /analysis \
@@ -121,9 +125,6 @@ jobs:
               grep -q -- "- $command " AGENTS.md
             done
 
-            mkdir -p scripts
-            cp ../.agents/skills/mb-garden/assets/mb-lint.mjs scripts/mb-lint.mjs
-            cp ../.agents/skills/mb-garden/assets/mb-doctor.mjs scripts/mb-doctor.mjs
             node scripts/mb-lint.mjs
             node scripts/mb-doctor.mjs
           )
@@ -151,6 +152,8 @@ jobs:
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
             test -f .memory-bank/tasks/index.json
+            test -f scripts/mb-lint.mjs
+            test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md
             test ! -e .specify
@@ -168,6 +171,8 @@ jobs:
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
             test -f .agents/skills/autonomous/SKILL.md
+            test ! -e .claude/skills/mb-lint/SKILL.md
+            test ! -e .agents/skills/mb-lint/SKILL.md
             test -f AGENTS.md
             for command in \
               /analysis \
@@ -188,9 +193,6 @@ jobs:
               grep -q -- "- $command " AGENTS.md
             done
 
-            mkdir -p scripts
-            cp "$GITHUB_WORKSPACE/skills/mb-garden/assets/mb-lint.mjs" scripts/mb-lint.mjs
-            cp "$GITHUB_WORKSPACE/skills/mb-garden/assets/mb-doctor.mjs" scripts/mb-doctor.mjs
             node scripts/mb-lint.mjs
             node scripts/mb-doctor.mjs
 
@@ -317,8 +319,17 @@ EOF
 
             mkdir -p .protocols/TASK-999
             printf '## Verdict\n\nPASS\n' > .protocols/TASK-999/run.md
+            expect_lint_failure generic-compact-verdict
+            grep -q "done task must include completed evidence in 'verify' or compact" "$TMP_DIR/generic-compact-verdict.out"
+
+            printf '## Verdict\n\nVERDICT: PASS\n' > .protocols/TASK-999/run.md
             node scripts/mb-lint.mjs
 
             write_smoke_task done '[{"name":"lint","command":"node scripts/mb-lint.mjs","required":true}]' '[{"command":"node scripts/mb-lint.mjs","result":"passed","path":".tasks/TASK-999/lint.log"}]'
+            expect_lint_failure generic-verify-object
+            grep -q "done task must include completed evidence in 'verify' or compact" "$TMP_DIR/generic-verify-object.out"
+
+            mkdir -p .protocols/TASK-999
+            printf '## Verdict\n\nVERDICT: PASS\n' > .protocols/TASK-999/run.md
             node scripts/mb-lint.mjs
           )

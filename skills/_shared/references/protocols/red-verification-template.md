@@ -42,7 +42,8 @@ status: active
 - ...
 
 ## Verdict
-SEMANTIC_VERDICT: semantic-pass | semantic-concern | semantic-fail
+Replace the placeholder with one exact standalone marker:
+SEMANTIC_VERDICT: <semantic-pass|semantic-concern|semantic-fail>
 
 ## Required actions
 - Bug filed: `.memory-bank/bugs/BUG-...md` | n/a
@@ -52,4 +53,3 @@ SEMANTIC_VERDICT: semantic-pass | semantic-concern | semantic-fail
 
 ## Notes
 - ...
-

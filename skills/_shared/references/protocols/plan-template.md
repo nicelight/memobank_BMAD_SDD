@@ -1,5 +1,5 @@
 ---
-description: Template for .protocols/TASK-XXX/plan.md (execution plan + MB-SYNC).
+description: Template for .protocols/TASK-XXX/plan.md (execution plan + MB-SYNC handoff).
 status: active
 ---
 # Plan — <TASK_ID>
@@ -49,15 +49,17 @@ status: active
 - Worker A: scope ...
 - Worker B: scope ...
 
-## MB-SYNC (required)
-Follow: `.memory-bank/workflows/mb-sync.md`
+## MB-SYNC handoff / owner
+Scheduler or explicit standalone owner performs sync after verification/status
+decision. `/execute` only records handoff notes.
 
 Checklist:
-- [ ] Update `.memory-bank/` docs (WHY/WHERE, no pseudocode)
-- [ ] Update `.memory-bank/index.md` routers (if needed)
-- [ ] Update RTM in `.memory-bank/requirements.md`
-- [ ] Update task record and `.memory-bank/tasks/index.json` if task state changed
-- [ ] Append entry to `.memory-bank/changelog.md`
+- [ ] Owner identified: scheduler | explicit standalone owner | human
+- [ ] `.memory-bank/` docs needing update (WHY/WHERE, no pseudocode): ...
+- [ ] `.memory-bank/index.md` router update needed: yes | no
+- [ ] RTM update in `.memory-bank/requirements.md` needed: yes | no
+- [ ] Task registry/status update owner: ...
+- [ ] Changelog update owner: ...
 
 ## Definition of done
 - ...

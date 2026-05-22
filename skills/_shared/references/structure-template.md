@@ -46,8 +46,9 @@ When a task requires reading many files or producing long output:
 ## Clean context (recommended)
 - Route each `TASK-XXX` by `task.tier` and `.memory-bank/workflows/tier-policy.md`.
 - T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
-- T2/T3 require full protocol state plus `/verify` PASS and `/red-verify` semantic-pass before done.
-- T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+- Scheduler mode: T2/T3 require full protocol state plus `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
+- Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+- Manual mode: expected simple flow is `/execute -> /verify`; `/verify PASS` may close, including T2/T3, and later `/red-verify` may reopen/block/fail.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
@@ -58,8 +59,8 @@ Codex (fresh session):
 Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
-## Two modes (interactive vs autonomous)
-- **Interactive**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → tier-appropriate verify → `/red-verify` if required → `/mb-sync`, then review after each wave.
+## Two modes (manual vs scheduler)
+- **Manual**: run `/prd` → `/clarify FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` later for risky tasks when user/agent chooses it; `/mb-sync` only when durable Memory Bank docs/state changed.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:

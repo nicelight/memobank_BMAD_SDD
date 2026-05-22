@@ -308,7 +308,7 @@ Run `cold-start`, then follow the normal loop:
 /prd-to-tasks FT-001
 /execute TASK-001
 /verify TASK-001
-/red-verify TASK-001   # required for T2/T3 tasks
+/red-verify TASK-001   # scheduler T2/T3 gate; manual /verify PASS may close, /red-verify can reopen/block/fail
 /mb-sync
 ```
 

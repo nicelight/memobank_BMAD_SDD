@@ -27,6 +27,10 @@ const REFERENCES_DIR = path.join(SHARED_DIR, 'references');
 const COMMAND_TEMPLATES_DIR = path.join(REFERENCES_DIR, 'commands');
 const WORKFLOW_REFERENCES_DIR = path.join(REFERENCES_DIR, 'workflows');
 const FLAT_COMMAND_PREFIX = 'shared-commands-';
+const RUNTIME_SCRIPT_ASSETS = [
+  { asset: 'mb-lint.mjs', target: 'scripts/mb-lint.mjs' },
+  { asset: 'mb-doctor.mjs', target: 'scripts/mb-doctor.mjs' },
+];
 
 const ARGS = new Set(process.argv.slice(2));
 const SYNC_MODE = ARGS.has('--sync') || ARGS.has('--force');
@@ -129,7 +133,7 @@ Usage:
 }
 
 if (SYNC_MODE) {
-  console.log('\n[Mode] SYNC: updating generated commands/proxy skills and removing obsolete generated runtime artifacts.');
+  console.log('\n[Mode] SYNC: updating generated commands/proxy skills/runtime scripts; obsolete unmarked artifacts are warned only.');
 }
 
 function ensureDir(rel) {
@@ -202,6 +206,32 @@ function resolveReferenceFile(category, filename) {
   if (fs.existsSync(flattenedPath)) return flattenedPath;
 
   return null;
+}
+
+function resolveRuntimeAsset(filename) {
+  const candidates = [
+    // Source layout: skills/_shared/scripts/init-mb.js -> skills/mb-garden/assets
+    // Installed layout: .agents/skills/mb-init/scripts/shared-init-mb.js -> sibling mb-garden/assets
+    path.join(SHARED_DIR, '..', 'mb-garden', 'assets', filename),
+    path.join(SHARED_DIR, 'assets', filename),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function copyRuntimeScript(asset, target) {
+  const absPath = resolveRuntimeAsset(asset);
+  if (!absPath) {
+    console.error(`\nERROR: Runtime script asset not found: ${asset}`);
+    console.error('Run init-mb.js from the memobank_BMAD_SDD package with mb-garden installed alongside mb-init.');
+    process.exit(1);
+  }
+
+  writeFile(target, readUtf8(absPath), { overwrite: SYNC_MODE });
+}
+
+function copyRuntimeScripts() {
+  RUNTIME_SCRIPT_ASSETS.forEach(({ asset, target }) => copyRuntimeScript(asset, target));
 }
 
 function copyWorkflowReference(filename) {
@@ -294,12 +324,13 @@ function cleanupGeneratedCommandSpecs(expectedFilenames) {
 
     const rel = `${relDir}/${filename}`;
     const content = readUtf8(path.join(absDir, filename));
-    if (hasGeneratedMarker(content) || isLegacyAliasCommandSpec(filename, content)) {
+    if (hasGeneratedMarker(content)) {
       removePath(rel);
       return;
     }
 
-    console.log(`  ! ${rel} is obsolete but not marked as generated; left unchanged`);
+    const legacyNote = isLegacyAliasCommandSpec(filename, content) ? ' legacy alias' : '';
+    console.log(`  ! ${rel} is obsolete${legacyNote} but not marked as generated; left unchanged`);
   });
 }
 
@@ -322,12 +353,14 @@ function cleanupGeneratedProxySkills(runtimeRoot, expectedNames) {
         return;
       }
 
-      if (isGeneratedProxySkill(readUtf8(absSkillFile), entry.name)) {
+      const skillContent = readUtf8(absSkillFile);
+      if (hasGeneratedMarker(skillContent)) {
         removePath(relSkill);
         return;
       }
 
-      console.log(`  ! ${relSkill} is obsolete but not recognized as generated; left unchanged`);
+      const proxyNote = isGeneratedProxySkill(skillContent, entry.name) ? ' generated-looking proxy' : '';
+      console.log(`  ! ${relSkill} is obsolete${proxyNote} but not marked as generated; left unchanged`);
     });
 }
 
@@ -450,6 +483,7 @@ console.log('\n[1/5] Creating directories...');
   `${MB}/agents`,
   `${MB}/archive`,
   `${MB}/bugs`,
+  'scripts',
   '.tasks',
   '.protocols',
 ].forEach(ensureDir);
@@ -487,7 +521,7 @@ Every ORCHESTRATOR response must start with:
 - Use the current JSON task registry: \`.memory-bank/tasks/index.json\` and indexed \`.memory-bank/tasks/TASK-*.task.json\` records.
 - Route work by \`task.tier: T0|T1|T2|T3\`.
 - Do not use legacy task models.
-- Run \`mb-lint\` and \`/mb-doctor\` where task records or Memory Bank routing change.
+- Run \`node scripts/mb-lint.mjs\` and \`/mb-doctor\` where task records or Memory Bank routing change.
 - Run \`/mb-doctor --strict\` before autonomous/autopilot task selection.
 
 ### Delegation
@@ -551,7 +585,8 @@ After finishing a meaningful unit of work:
 ## Clean context (recommended)
 - Route each \`TASK-XXX\` by \`task.tier\` and \`.memory-bank/workflows/tier-policy.md\`.
 - T0/T1 may use compact \`.protocols/TASK-XXX/run.md\`; compact evidence can be enough.
-- T2/T3 require full protocol state plus \`/verify\` PASS and \`/red-verify\` semantic-pass before done.
+- Scheduler mode: T2/T3 require full protocol state plus \`/verify\` PASS and \`/red-verify\` semantic-pass before scheduler marks done.
+- Manual mode: \`/verify\` PASS may close; \`/red-verify\` may run later and reopen/block/fail.
 - T3 also requires a human-aware checkpoint and rollback/recovery note.
 - If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using tier-appropriate \`.protocols/TASK-XXX/\` state.
 - If running in **Codex**: you can run each \`TASK-XXX\` in a fresh session via \`codex exec\` (see \`/execute\`).
@@ -572,7 +607,7 @@ Naming:
 - Files: \`TASK-<ID>-S-<STAGE>-final-report-<code|docs>-<NN>.md\`
 
 ## Quality gates (before merge)
-- \`mb-lint\` / typecheck / build
+- \`node scripts/mb-lint.mjs\` / typecheck / build
 - \`/mb-doctor\` (strict before autonomous/autopilot task selection)
 - unit tests
 - e2e tests (if UI/flow)
@@ -937,7 +972,8 @@ Non-blocking gaps must be written as explicit assumptions in \`.protocols/AUTONO
 - mandatory \`/mb-doctor --strict\` before autonomous/autopilot task selection, after \`/mb-sync\` before promotion, and before final success
 - tier-appropriate verification per TASK:
   - T0/T1: compact evidence may be enough
-  - T2/T3: \`/verify\` PASS and \`/red-verify\` semantic-pass are required before done
+  - Scheduler mode T2/T3: \`/verify\` PASS and \`/red-verify\` semantic-pass are required before scheduler marks done
+  - Manual mode: \`/verify\` PASS may close; \`/red-verify\` may run later and reopen/block/fail
   - T3: human-aware checkpoint plus rollback/recovery note are required
 - mandatory \`/mb-sync\`
 - mandatory lint/link consistency before final success, covered by \`mb-doctor\`
@@ -1044,7 +1080,8 @@ accepted
 console.log('\n[3/5] Writing command specs (SSOT templates)...');
 const commandMetas = seedCommandsFromTemplates();
 
-console.log('\n[4/5] Creating symlinks...');
+console.log('\n[4/5] Writing runtime scripts and creating symlinks...');
+copyRuntimeScripts();
 symlinkOrCopy('AGENTS.md', 'CLAUDE.md');
 symlinkOrCopy('AGENTS.md', 'GEMINI.md');
 

@@ -29,10 +29,10 @@ const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
 const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const REQ_ID_RE = /^REQ-[0-9]{3,}$/;
 const FT_ID_RE = /^FT-[0-9]{3,}$/;
-const EVIDENCE_WORD_RE = /\b(evidence|result|verdict|pass|passed|fail|failed|error|output|log|artifact|report)\b/i;
-const PASS_EVIDENCE_RE = /\bverdict\s*:?\s*pass\b|\bpass(?:ed)?\b/i;
+const EVIDENCE_WORD_RE = /\b(evidence|result|fail|failed|error|output|log|artifact|report)\b/i;
+const PASS_EVIDENCE_RE = /^\s*VERDICT: PASS\s*$/im;
 const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
-const RED_VERIFY_PASS_RE = /^\s*"?SEMANTIC_VERDICT"?\s*:\s*"?semantic-pass"?\s*,?\s*$/im;
+const RED_VERIFY_PASS_RE = /^\s*SEMANTIC_VERDICT: semantic-pass\s*$/im;
 const T3_HUMAN_CHECKPOINT_MARKER = 'HUMAN_CHECKPOINT: done';
 const T3_ROLLBACK_RECOVERY_MARKER = 'ROLLBACK_RECOVERY_NOTE: present';
 const PATH_MARKER_RE =
@@ -467,7 +467,9 @@ function checkCompactDoneProtocol(record) {
     return;
   }
 
-  if (options.strict && !hasPassingVerdict(text)) {
+  const hasCompactPassVerdict = hasPassingVerdict(text);
+
+  if (options.strict && !hasCompactPassVerdict) {
     addFinding('error', 'TASK_COMPACT_VERDICT_MISSING', `${runRel}: strict mode requires VERDICT: PASS for a done ${task.tier} task.`, {
       path: runRel,
       task_id: id,
@@ -475,7 +477,7 @@ function checkCompactDoneProtocol(record) {
     });
   }
 
-  if (!hasEvidenceContent(text) && !hasTaskEvidence(task)) {
+  if (!hasCompactPassVerdict && !hasEvidenceContent(text) && !hasTaskEvidence(task)) {
     const severity = options.strict ? 'error' : 'warning';
     addFinding(severity, 'TASK_COMPACT_EVIDENCE_MISSING', `${runRel}: compact protocol has no concrete evidence marker.`, {
       path: runRel,
@@ -770,7 +772,7 @@ function hasTaskStatusEvidence(task, status) {
 }
 
 function hasPassingVerdict(text) {
-  return /\bverdict\s*:\s*pass\b/i.test(text) || /\bVERDICT\s+PASS\b/i.test(text);
+  return PASS_EVIDENCE_RE.test(String(text ?? '').replace(/\r\n/g, '\n'));
 }
 
 function hasEvidenceContent(text) {
@@ -783,7 +785,7 @@ function hasEvidenceContent(text) {
     if (/^(?:[-*]\s*)?(?:evidence|checks?|result|output|log|artifact|report)\s*:\s*(?!n\/a\b|none\b|tbd\b|todo\b|\.{3}$).+/i.test(line)) {
       return true;
     }
-    return /\b(pass(?:ed)?|fail(?:ed)?|error|output|log|artifact|report|result)\b/i.test(line);
+    return /\b(fail(?:ed)?|error|output|log|artifact|report|result)\b/i.test(line);
   });
 }
 
@@ -1062,7 +1064,7 @@ function hasProtocolOrArtifactEvidence(taskId, status) {
 
   if (!files.length) return false;
 
-  const statusRe = status === 'done' ? /\bpass(?:ed)?\b|\bverdict\s*:\s*pass\b/i : /\bfail(?:ed)?\b|\berror\b|\bverdict\s*:\s*fail\b/i;
+  const statusRe = status === 'done' ? PASS_EVIDENCE_RE : /\bfail(?:ed)?\b|\berror\b|\bverdict\s*:\s*fail\b/i;
   return files.some((file) => {
     try {
       const text = fs.readFileSync(file, 'utf8');

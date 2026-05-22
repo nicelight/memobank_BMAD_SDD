@@ -49,7 +49,7 @@ status: active
 - есть policy-гейт: `.memory-bank/workflows/autonomy-policy.md`
 
 Default pre-queue health check:
-- до создания executable JSON task queue запусти `/mb-lint`, затем plain `/mb-doctor` using the repository's documented command or `node scripts/mb-doctor.mjs`
+- до создания executable JSON task queue запусти `node scripts/mb-lint.mjs`, затем plain `/mb-doctor` using the repository's documented command or `node scripts/mb-doctor.mjs`
 - pre-queue `/mb-doctor` is a health check only and must not require executable task records / ready queue
 - не запускай `/mb-doctor --strict` до того, как `/prd-to-tasks --all` создаст queue
 
@@ -129,12 +129,12 @@ clarification_status: complete
 - scheduler execution разрешён только после `APPROVE` или после явного решения, что оставшиеся non-blocking замечания не мешают запуску
 
 ## 6.2) Readiness gate
-Перед scheduler execution запусти `/mb-lint`, затем `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`.
+Перед scheduler execution запусти `node scripts/mb-lint.mjs`, затем `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`.
 
 Правило:
 - strict doctor is a post-queue gate: запускай его только после того, как `/prd-to-tasks --all` создал `.memory-bank/tasks/index.json` и indexed task records
 - если doctor command/script отсутствует, падает, или возвращает readiness errors → terminal state `HALT_QUALITY_GATES`
-- after task queue exists, required ordering is `mb-lint` + `mb-doctor --strict`; do not replace strict doctor with plain `mb-lint`
+- after task queue exists, required ordering is `node scripts/mb-lint.mjs` + `mb-doctor --strict`; do not replace strict doctor with plain lint
 - pending/missing feature clarification or tasks linked to unclarified features are readiness errors
 - strict doctor должен быть зелёным до первого task selection pass
 
@@ -143,16 +143,31 @@ clarification_status: complete
 If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_DEADLOCK` with reason `no schema-backed task records`.
 If any indexed task record is missing `tier`, set terminal state `HALT_POLICY_VIOLATION` and stop.
 Read the task queue and task metadata only from JSON task records.
-Before task selection and before progression after each closed task, run `/mb-lint`, then `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat doctor absence, non-zero exit, or readiness errors as `HALT_QUALITY_GATES`.
+Before task selection and before progression after each closed task, run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat doctor absence, non-zero exit, or readiness errors as `HALT_QUALITY_GATES`.
 
 ### Status ownership
 
+Status transitions have two modes.
+
+Scheduler mode:
 - `/autonomous` is the scheduler for the end-to-end run.
 - `/autonomous` owns `planned -> ready`, `ready -> in_progress`, `in_progress -> done`, `in_progress -> failed`, dependent block/unblock decisions, terminal queue state, and final run status.
-- `/execute` owns implementation, local gates, progress, and handoff evidence only; it must not close/promote/block tasks in scheduler mode.
-- `/verify` owns verification evidence/verdict only; it must not close tasks or block/promote dependents in scheduler mode.
-- `/red-verify` owns semantic evidence/verdict only; it must not independently close tasks in scheduler mode.
-- `/mb-sync` syncs the scheduler-provided closure/failure/blocking decision after verification; it must not independently advance dependents.
+- `/execute` returns scoped implementation handoff; it does not close tasks.
+- `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
+- `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
+- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
+- T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
+- T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
+
+Manual mode:
+- Expected simple flow: `/execute -> /verify`.
+- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
+- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
+- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
+- Do not mix scheduler mode and manual mode inside one task run.
+- No persisted `mode` field is used.
 
 Перед каждым selection pass выполни promotion pass:
 - `planned -> ready`, если все `depends_on` уже `done` и нет blockers / blocking review rejects / unresolved semantic-concern
@@ -178,19 +193,19 @@ Before task selection and before progression after each closed task, run `/mb-li
 1) scheduler writes `ready -> in_progress`
 2) `/execute TASK-<ID>`
 3) verify by `task.tier` from the JSON record:
-   - `T0` / `T1`: compact path is allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
+   - `T0` / `T1`: compact allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
    - `T2` / `T3`: full protocol path is required; run `/verify TASK-<ID>`
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
 4) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
 5) scheduler records the closure/failure/blocking decision from verification verdicts, then runs `/mb-sync` to synchronize that decision
 6) scheduler writes final closure/failure/blocking status and dependent block/unblock decisions
-7) run `/mb-lint`, then `/mb-doctor --strict` before promoting dependents
+7) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict` before promoting dependents
 
 After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → `/mb-sync` → scheduler closure.
 
 Переходы состояния:
 - `ready -> in_progress`
-- `in_progress -> done` for `T0` / `T1` при verification `VERDICT: PASS`
+- `in_progress -> done` for `T0` / `T1` при compact evidence / functional `VERDICT: PASS`
 - `in_progress -> done` for `T2` / `T3` only after `/verify` `VERDICT: PASS` evidence and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
 - `in_progress -> failed` при `VERDICT: FAIL` или `SEMANTIC_VERDICT: semantic-fail`
 - `SEMANTIC_VERDICT: semantic-concern` is never normal `done`: set the task/dependents to `blocked` or require human review, and record owner/reason/follow-up evidence
@@ -203,7 +218,7 @@ After `ready -> in_progress`, command order is exactly: `/execute` → `/verify`
 После завершения каждой wave:
 - убедись, что все `semantic-concern` этой wave имеют явное решение (blocked status, human review required, or follow-up); без subsequent `semantic-pass` affected tasks are not closed
 - обнови `.protocols/AUTONOMOUS-RUN/status.md`
-- запусти `/mb-lint`, затем `/mb-doctor --strict`; если gate падает, не закрывай wave и не переходи к следующей wave
+- запусти `node scripts/mb-lint.mjs`, затем `/mb-doctor --strict`; если gate падает, не закрывай wave и не переходи к следующей wave
 - запусти `/review`
 
 Если доступны **оба** движка:
@@ -244,5 +259,5 @@ After `ready -> in_progress`, command order is exactly: `/execute` → `/verify`
 - все обязательные REQ/AC имеют `Lifecycle: verified`
 - нет открытых blocking bugs / blockers
 - latest `/review` = `APPROVE`
-- latest `/mb-lint` + `/mb-doctor --strict` pass without readiness errors
+- latest `node scripts/mb-lint.mjs` + `/mb-doctor --strict` pass without readiness errors
 </process>

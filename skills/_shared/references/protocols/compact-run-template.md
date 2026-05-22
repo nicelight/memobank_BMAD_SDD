@@ -9,7 +9,8 @@ status: active
 - tier: T0 | T1
 - started:
 - finished:
-- verdict: PASS | FAIL | BLOCKED
+- local evidence verdict: <PASS|FAIL|BLOCKED>
+- closure owner: scheduler | explicit standalone owner | human
 
 ## Goal
 - ...
@@ -31,10 +32,19 @@ status: active
 - result:
 - evidence:
 
-## MB-SYNC Decision
-- required: yes | no
+## Evidence Verdict
+This marker records local evidence only. It is not task closure and does not set
+final task status.
+
+Replace the placeholder with one exact marker:
+VERDICT: PASS
+VERDICT: FAIL
+VERDICT: BLOCKED
+
+## MB-SYNC Handoff
+- owner: scheduler | explicit standalone owner | human
 - reason:
-- updated files:
+- files/docs likely needing sync:
   - ...
 
 ## Notes / Follow-ups
