@@ -36,14 +36,14 @@ Memory Bank помогает вести разработку как повтор
 ```text
 идея
 
-  -> Brainstorming + Интервью -> brief.md
+  -> Brainstorming       Интервью -> brief.md
   -> PRD
   -> features
-  -> JSON tasks
-  -> execute (man or auto)
-  -> verify + red-verify
+  -> JSON tasks          с градацией сложности и риска 
+  -> execute             можно все сразу в авторежиме
+  -> verify              + red-verify
   -> sync
-  -> следующая feature/task
+  -> следующая task
 ```
 
 1. `/analysis` или `/brief`
