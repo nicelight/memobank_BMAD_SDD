@@ -204,53 +204,60 @@ GEMINI.md
 ```text
 idea / rough draft
   -> /analysis или /brief, если направление нужно прояснить
+  -> /constitution, если project principles еще не ratified|partial
   -> /write-prd
+  -> /spec-init
   -> /prd
+  -> /spec-design FT-001
   -> /prd-to-tasks FT-001
   -> /execute TASK-001
   -> /verify TASK-001
-  -> optional /red-verify TASK-001 для сложной или рискованной работы
+  -> /red-verify TASK-001 для T2/T3
   -> /mb-sync
   -> повторять feature/task loop
 ```
 
-`/analysis` маршрутизирует discovery. `/brainstorm` может создать brainstorming report. `/brief` создает Product Brief как вход для `/write-prd`. Ни один из этих discovery-шагов не создает runnable task records.
+`/analysis` маршрутизирует discovery. `/brainstorm` может создать brainstorming report. `/brief` создает Product Brief как вход для `/constitution` и `/write-prd`. Ни один из этих discovery-шагов не создает runnable task records.
 
-`/write-prd` нормализует вход в `.memory-bank/prd.md` с `type: prd`, `clarification_status: complete` и `constitution_checked: true`. `/prd` декомпозирует PRD в L1-L3 docs Memory Bank: product, requirements, epics и features. `/prd-to-tasks` создает JSON task records только после появления feature docs.
+`/constitution` читает Product Brief, если он есть, и проводит короткое contextual interview по project principles, Definition of Done, автономности агентов, human checkpoints и non-negotiables. Это нормальный шаг перед `/write-prd`, когда principles еще не `ratified|partial`, но не hard-blocker: если пользователь явно пропускает его, flow продолжает идти с `project_principles: framework-default|skipped`, а Constitution можно ratify позже.
+
+`/write-prd` нормализует вход в `.memory-bank/prd.md` с `type: prd`, `clarification_status: complete` и `constitution_checked: true`. `/spec-init` обновляет `.memory-bank/spec-index.md` как SDD Design Specs Index без раннего выдумывания authoritative specs. `/prd` декомпозирует PRD в L1-L3 docs Memory Bank: product, requirements, epics и features. `/spec-design FT-001` завершает минимально нужный feature-level design или ставит `not_required` для простого T0/T1-like scope. `/prd-to-tasks` создает JSON task records только после появления feature docs и прохождения SDD design gate.
 
 ### Понятный PRD или concept
 
 Если есть понятный concept, но нет PRD:
 
 ```text
-/brief -> /write-prd -> /prd -> /prd-to-tasks FT-001
+/brief -> /constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
 ```
 
 Если уже есть внешний PRD или PRD-like text:
 
 ```text
-/write-prd -> /prd -> /prd-to-tasks FT-001
+/constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
 ```
+
+Если project principles уже `ratified` или `partial`, можно сразу продолжать с `/write-prd`.
 
 ### Brownfield
 
 Для существующего codebase сначала соберите as-is baseline:
 
 ```text
-/map-codebase -> /write-prd --delta -> /prd -> /prd-to-tasks FT-001
+/map-codebase -> /constitution if principles are not ratified|partial -> /write-prd --delta -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
 ```
 
-Можно использовать `/brief`, чтобы сформировать delta input, но route не должен обходить `/write-prd`. Brownfield rule: без PRD/delta нельзя создавать roadmap epics, features или runnable task records. `/map-codebase` документирует текущую систему; он не придумывает план.
+Можно использовать `/brief`, чтобы сформировать delta input, но route не должен обходить `/write-prd`; перед `/write-prd --delta` запускайте `/constitution`, если project principles еще не `ratified|partial`. Brownfield rule: без PRD/delta нельзя создавать roadmap epics, features или runnable task records. `/map-codebase` документирует текущую систему; он не придумывает план.
 
 ### Manual task loop
 
 Interactive mode для одной задачи:
 
 ```text
-/execute TASK-001 -> /verify TASK-001 -> optional /red-verify TASK-001 -> /mb-sync
+/execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync
 ```
 
-В manual mode `/red-verify` опционален после `/verify PASS` и используется для рискованных или содержательных задач. Если он находит semantic issue, он может reopen, block, fail или создать bug/follow-up task.
+В manual mode T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence. Для T2/T3 `/verify PASS` не является финальным done: перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`; для T3 сохраняются human/recovery markers.
 
 ### Scheduler mode: `/autopilot`
 
@@ -272,8 +279,11 @@ Preconditions:
 
 ```text
 PRD/Product Brief/delta
+-> inspect constitution; use ratified|partial principles or record framework-default/skipped assumption
 -> /write-prd
+-> /spec-auto --init
 -> /prd
+-> /spec-auto --all
 -> /review
 -> /prd-to-tasks --all
 -> task-planning review
@@ -283,7 +293,7 @@ PRD/Product Brief/delta
 -> terminal state
 ```
 
-Он строит L1-L3, создает JSON task queue по всем features, запускает scheduler loop, выполняет verification/red-verification по tier policy, запускает `/mb-sync`, проходит review gates и заканчивает явным terminal state: `SUCCESS`, `HALT_BLOCKING_QUESTIONS`, `HALT_CLARIFICATION_REQUIRED`, `HALT_REVIEW_REJECT`, `HALT_FAILURE_BUDGET`, `HALT_DEPENDENCY_DEADLOCK`, `HALT_POLICY_VIOLATION`, `HALT_QUALITY_GATES` или `HALT_BUDGET_EXCEEDED`.
+Он строит SDD route map, L1-L3, feature-level design, JSON task queue по всем features, запускает scheduler loop, выполняет verification/red-verification по tier policy, запускает `/mb-sync`, проходит review gates и заканчивает явным terminal state: `SUCCESS`, `HALT_BLOCKING_QUESTIONS`, `HALT_CLARIFICATION_REQUIRED`, `HALT_REVIEW_REJECT`, `HALT_FAILURE_BUDGET`, `HALT_DEPENDENCY_DEADLOCK`, `HALT_POLICY_VIOLATION`, `HALT_QUALITY_GATES` или `HALT_BUDGET_EXCEEDED`.
 
 ## 7. Task model
 
@@ -304,7 +314,7 @@ Fresh bootstrap создает:
 }
 ```
 
-Fresh bootstrap не создает `.memory-bank/tasks/TASK-001.task.json` и не создает runnable task records. Task records появляются через `/prd-to-tasks FT-001` или `/prd-to-tasks --all`.
+Fresh bootstrap не создает `.memory-bank/tasks/TASK-001.task.json` и не создает runnable task records. Task records появляются через `/spec-design FT-001` + `/prd-to-tasks FT-001` или `/spec-auto --all` + `/prd-to-tasks --all`.
 
 Минимальная форма task record:
 
@@ -344,9 +354,9 @@ Legacy `risk` и `risk.level` удалены. Execution, verification, red-verif
 Manual mode:
 
 - `/execute` реализует task и записывает evidence/handoff;
-- `/verify PASS` может закрыть task, включая T2/T3;
-- `/red-verify` после PASS опционален и risk-based;
-- `/mb-sync` синхронизирует Memory Bank, RTM, changelog и task records после явного closure decision.
+- T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence;
+- T2/T3 task нельзя считать финально `done` по одному `/verify PASS`; перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`;
+- `/mb-sync` синхронизирует Memory Bank, RTM, changelog и task records после уже записанного closure/failure/blocking decision; сам sync не выводит решение о закрытии.
 
 Scheduler mode (`/autopilot`, `/autonomous`):
 
@@ -354,7 +364,9 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 - `/execute` не закрывает tasks;
 - `/verify` не закрывает, не fail-ит и не promote-ит dependents;
 - `/red-verify` не закрывает, не fail-ит и не promote-ит dependents;
-- `/mb-sync` только записывает или reconciles scheduler-provided decision и не принимает closure decision сам.
+- scheduler записывает closure/failure/blocking decision, final status и evidence links в authoritative `.task.json` до `/mb-sync`;
+- `/mb-sync` только synchronizes/reconciles already-written task state и не принимает closure/promotion decisions сам;
+- после `/mb-sync` и strict doctor scheduler выполняет отдельный promotion/dependent blocking pass.
 
 Не смешивайте manual и scheduler mode внутри одного task run.
 
@@ -373,17 +385,20 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 
 | Command | Purpose | Creates/updates | Does not do | Next step |
 |---|---|---|---|---|
-| `/cold-start` | Scenario router после skeleton creation | routing decision, next command recommendation | не создает EP/FT/TASK без PRD; не обходит `/write-prd` | `/analysis`, `/brief`, `/write-prd`, `/map-codebase` или stop |
+| `/cold-start` | Scenario router после skeleton creation | routing decision, next command recommendation | не создает EP/FT/TASK без PRD; не обходит `/write-prd` | `/analysis`, `/brief`, `/constitution`, `/write-prd`, `/map-codebase` или stop |
 | `/mb` | Prime agent context из Memory Bank | обычно без writes; может создать `.protocols/<TASK>/plan.md` для unknowns | не реализует | выбранная task/workflow command |
 | `/mb-init` | Initialize Memory Bank skeleton | `.memory-bank/`, `.tasks/`, `.protocols/`, agent files, proxy skills | не планирует roadmap/tasks | `/cold-start` |
-| `/analysis` | Optional discovery router | `.memory-bank/analysis/index.md` | не создает brief, PRD, tasks, research | `/brainstorm`, `/brief`, `/write-prd`, `/map-codebase`, `/clarify-feature` |
+| `/analysis` | Optional discovery router | `.memory-bank/analysis/index.md` | не создает brief, PRD, tasks, research | `/brainstorm`, `/brief`, `/constitution`, `/write-prd`, `/map-codebase`, `/clarify-feature` |
 | `/brainstorm` | Facilitated ideation | `.memory-bank/analysis/brainstorming/BR-*.md`, analysis index | не создает PRD, Product Brief, tasks | `/brief` |
-| `/brief` | Product Brief input contract | `.memory-bank/analysis/product-brief.md`, analysis index | не создает features/tasks; не заменяет PRD | `/write-prd` |
-| `/constitution` | Create/read/minimally amend governing principles | `.memory-bank/constitution.md` | не добавляет governance engines или command aliases | `/write-prd`, `/prd-to-tasks` или current workflow |
-| `/write-prd` | Product Brief/context -> clarified PRD | `.memory-bank/prd.md` | не создает EP/FT/TASK; не обходит Constitution conflicts | `/prd` |
-| `/prd` | Clarified PRD -> L1-L3 Memory Bank | product, requirements, epics, features, testing/index | не создает всю task queue вслепую | `/clarify-feature` если blocked, иначе `/prd-to-tasks FT-*` |
-| `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/prd-to-tasks FT-*` |
-| `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не проходит pending blockers | `/execute` вручную или `/review`/`/autopilot` |
+| `/brief` | Product Brief input contract | `.memory-bank/analysis/product-brief.md`, analysis index | не создает features/tasks; не заменяет PRD | `/write-prd` если principles `ratified|partial`; иначе `/constitution`, затем `/write-prd` |
+| `/constitution` | Contextual interview for governing principles | `.memory-bank/constitution.md` | не добавляет Spec Kit hooks, governance engines или command aliases; не заменяет PRD | `/write-prd` или current workflow |
+| `/write-prd` | Product Brief/context -> clarified PRD | `.memory-bank/prd.md` | не создает EP/FT/TASK; не обходит Constitution conflicts | `/spec-init` |
+| `/spec-init` | Initialize SDD Design Specs Index | `.memory-bank/spec-index.md` route map | не создает authoritative specs без evidence | `/prd` |
+| `/prd` | Clarified PRD -> L1-L3 Memory Bank | product, requirements, epics, features, testing/index | не создает всю task queue вслепую | `/clarify-feature` если blocked, затем `/spec-design FT-*` |
+| `/spec-design` | Feature-level SDD design | needed tech-specs/architecture/contracts/domains/states/ADR/testing links, feature `spec_design_status` | не дублирует existing specs; не выдумывает decisions | `/prd-to-tasks FT-*` |
+| `/spec-auto` | Autonomous SDD init/design | spec-index, feature design status, assumptions/blockers | не спрашивает пользователя; не игнорирует unsafe ambiguity | `/prd` или `/prd-to-tasks --all` |
+| `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/spec-design FT-*` |
+| `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не проходит pending blockers or missing T2/T3 SDD specs | `/execute` вручную или `/review`/`/autopilot` |
 | `/execute` | Implement one scoped task | `.protocols/<TASK>/...`, `.tasks/<TASK>/...`, code/docs в task scope | не закрывает task; не запускает verify/red-verify/mb-sync | `/verify` |
 | `/verify` | Functional acceptance/evidence verification | verification protocol/evidence, task `verify` entries, possible bugs/follow-ups | в scheduler mode не закрывает/fail-ит/promote-ит | manual close или `/red-verify`/scheduler decision |
 | `/red-verify` | Adversarial semantic verification | `.protocols/<TASK>/red-verification.md`, `.tasks/<TASK>/...`, bugs/follow-ups при необходимости | не дублирует `/verify`; в scheduler mode не закрывает | `/mb-sync` или scheduler decision |

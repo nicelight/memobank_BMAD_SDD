@@ -24,7 +24,7 @@ status: active
 
 ## 1) Decomposition preflight
 Перед созданием или обновлением implementation plan и JSON task records проверь, что feature can be decomposed.
-`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`.
+`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
 
 Для `FT-<NNN>`:
 1. Найди `.memory-bank/features/FT-<NNN>-*.md`.
@@ -60,6 +60,35 @@ For `--all`:
 
 `/clarify-feature` does not assign tier. Tier remains mandatory here and is assigned during task decomposition.
 
+## 1.1) SDD design preflight
+Before decomposition, read `.memory-bank/spec-index.md` and the target feature doc.
+
+Feature frontmatter may include:
+
+```yaml
+spec_design_status: complete|not_required|blocked
+spec_design_links:
+  - .memory-bank/tech-specs/FT-<NNN>-<slug>.md
+```
+
+Rules:
+- `spec_design_status: blocked` always blocks task decomposition.
+- `spec_design_status: not_required` is allowed only for simple T0/T1-like features with a concise rationale in the feature doc.
+- `spec_design_status: complete` requires at least one concrete linked spec when the feature implies T2/T3 work.
+- missing or incomplete `spec_design_status` does not always block immediately; first estimate the likely task tiers from feature scope.
+- If decomposition reveals any T2/T3 task would be needed and `spec_design_status` is missing, `blocked`, `not_required`, or `complete` without linked specs, stop and route to `/spec-design FT-<NNN>` (or `/spec-auto FT-<NNN>` in autonomous flow).
+- Do not create new specs here. This command only consumes the design surface and routes to `/spec-design` when needed.
+
+T2/T3 indicators include:
+- cross-module behavior
+- API/contract/schema/state/data/domain model changes
+- migrations or persistence behavior
+- security/auth/secrets/compliance/payments
+- deploy/runtime/production impact
+- changes where tests can pass while the substance is wrong
+
+For `--all`, resolve the full targeted feature set first. If any targeted feature would need T2/T3 tasks without complete linked SDD specs, halt before creating or updating task records for any feature and report all blocked features.
+
 ## 2) Создай протокол фичи
 - `.protocols/FT-<NNN>/plan.md`
 - `.protocols/FT-<NNN>/decision-log.md`
@@ -71,6 +100,8 @@ Do not remove the current `.protocols/FT-<NNN>/decision-log.md` behavior; the no
 - соответствующий epic
 - requirements RTM
 - `.memory-bank/constitution.md`, если есть
+- `.memory-bank/spec-index.md`, если есть
+- linked SDD design specs from the feature and spec-index, if any
 - `.memory-bank/workflows/tier-policy.md`, если есть
 
 ## 4) Напиши Implementation Plan
@@ -89,6 +120,7 @@ Do not remove the current `.protocols/FT-<NNN>/decision-log.md` behavior; the no
 - `Constraints`
 - `Invariants`
 - `Verification Targets`
+- `spec_design_links`
 
 Если этих секций нет:
 - не считай это ошибкой
@@ -177,6 +209,8 @@ Tier assignment:
 Важно:
 - ключи обязательны, но значения могут быть пустыми массивами, если evidence нет
 - не выдумывай содержимое без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
+- for `T2` / `T3`, include relevant linked SDD specs from `spec_design_links` and `spec-index.md` in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
+- if a planned `T2` / `T3` task has no relevant linked SDD spec to include, stop and route back to `/spec-design FT-<NNN>` instead of creating a weak task record
 
 Обнови `.memory-bank/tasks/index.json` только ссылками:
 ```json

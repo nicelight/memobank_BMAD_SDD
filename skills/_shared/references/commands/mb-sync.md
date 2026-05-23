@@ -25,10 +25,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -37,7 +39,8 @@ Manual mode:
 - `/mb-sync` does not independently decide task closure, failure, blocking, promotion, `planned -> ready`, dependent unblock, or dependent block.
 - In `/autopilot` / `/autonomous`, the scheduler owns task status transitions, closure, failure handling, and dependent block/unblock. `/mb-sync` records already-written scheduler decisions and reports consistency problems.
 - If a closure/failure/blocking decision is only present in the current agent/scheduler context and is not written to the indexed `.task.json`, `/mb-sync` must report a consistency gap and stop for an explicit scheduler or standalone owner decision.
-- In standalone/manual mode, `/mb-sync` may record an explicit user/direct-command closure decision, but it must not silently claim scheduler ownership or advance dependents on its own.
+- In standalone/manual mode, `/mb-sync` may sync a manual closure only if the explicit owner decision is already recorded in the task record or supplied as a direct instruction for this sync. Otherwise it must report a consistency gap and must not infer closure.
+- `/mb-sync` must not silently claim scheduler ownership, become the closure owner, or advance dependents on its own.
 
 Минимальный чеклист:
 - [ ] Обновить релевантные `.memory-bank/*` (WHY/WHERE, без псевдокода)
@@ -47,7 +50,7 @@ Manual mode:
 - [ ] Обновить RTM/REQ lifecycle в `.memory-bank/requirements.md`
 - [ ] Если у EP/FT есть `lifecycle`, синхронизировать его отдельно от document `status`
 - [ ] Проверить, что task records не ссылаются на features с `clarification_status: pending|blocked`
-- [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write status only when an explicit standalone owner decision is supplied, or synchronize status already written by the scheduler
+- [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write/sync status only when an explicit standalone owner decision is already recorded or supplied as a direct instruction, or synchronize status already written by the scheduler
 - [ ] Записать changelog `.memory-bank/changelog.md`
 - [ ] Для `/autonomous` и `/autopilot`: `/mb-doctor --strict` после sync — blocking gate, не optional
 
@@ -65,5 +68,5 @@ Task synchronization rule:
 - Report tasks whose `feature` points to `clarification_status: pending|blocked` as not promotion-eligible. Missing clarification metadata is allowed.
 - Report tasks with failed/blocked upstream dependencies, open blocking bugs, or unresolved semantic concern decisions as not promotion-eligible.
 - In scheduler mode, `T2` / `T3` tasks may close only when full protocol closure expectations are present. `T2` / `T3` require `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`; `T3` also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
-- In manual mode, `/verify PASS` may close, including `T2` / `T3`; later `/red-verify` may reopen/block/fail if semantic issues are found.
+- In manual mode, `/verify PASS` may close only `T0` / `T1` with explicit closure ownership; `T2` / `T3` require `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
 - `mb-doctor` is the readiness gate over `mb-lint`; in autonomous/autopilot runs, the scheduler may promote dependents only after strict doctor passes.

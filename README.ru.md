@@ -39,8 +39,11 @@ Memory Bank помогает вести разработку как повтор
 идея
 
   -> Brainstorming       Интервью -> brief.md
+  -> Constitution         Принципы проекта и non-negotiables
   -> PRD
+  -> SDD spec index       Карта design specs
   -> features            + проработка /clarify
+  -> feature design       /spec-design перед tasks
   -> JSON tasks          с градацией сложности и риска 
   -> execute             можно все сразу в авторежиме
   -> verify              + red-verify
@@ -52,35 +55,59 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** если входная идея сырая, противоречивая или еще не готова для PRD.
 
-   **Создает/обновляет:** analysis artifacts в `.memory-bank/analysis/`, обычно product brief как вход для PRD.
+   **Создает/обновляет:** analysis artifacts в `.memory-bank/analysis/`, обычно product brief как вход для `/constitution` и PRD.
 
-   **Дальше:** перейти к `/write-prd`, когда достаточно понятно, что нужно строить.
+   **Дальше:** перейти к `/constitution`, когда достаточно понятно, что нужно строить.
 
-2. `/write-prd`
+2. `/constitution`
+
+   **Когда:** после product brief или existing PRD context, перед `/write-prd`.
+
+   **Создает/обновляет:** `.memory-bank/constitution.md` с governing principles, Definition of Done, автономностью агентов, human checkpoints и критичными non-negotiables.
+
+   **Дальше:** перейти к `/write-prd`. Если пользователь явно пропускает interview, flow продолжается с `project_principles: framework-default|skipped`, а `/constitution` можно пройти позже.
+
+3. `/write-prd`
 
    **Когда:** когда есть product brief, черновик требований или уже понятное описание продукта.
 
    **Создает/обновляет:** PRD с уточненными целями, scope, требованиями, ограничениями и открытыми вопросами.
 
-   **Дальше:** если PRD достаточно ясен, запустить `/prd`.
+   **Дальше:** если PRD достаточно ясен, запустить `/spec-init`.
 
-3. `/prd`
+4. `/spec-init`
+
+   **Когда:** после clarified PRD, до `/prd`.
+
+   **Создает/обновляет:** `.memory-bank/spec-index.md` как SDD Design Specs Index: planned/candidate/unknown/not_applicable areas, gaps, expected spec locations. Не создает authoritative architecture/contracts/states/data specs без evidence.
+
+   **Дальше:** запустить `/prd`.
+
+5. `/prd`
 
    **Когда:** когда PRD готов к разложению на структуру Memory Bank.
 
    **Создает/обновляет:** `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/epics/`, `.memory-bank/features/` и связанные индексы.
 
-   **Дальше:** выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`.
+   **Дальше:** выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-design FT-001`.
 
-4. `/clarify-feature FT-001`
+6. `/clarify-feature FT-001`
 
    **Когда:** только если конкретная feature содержит blocker, `TBD`, `TODO`, `NEEDS CLARIFICATION` или другой marker, который мешает нарезать задачи.
 
    **Создает/обновляет:** уточнения по feature и ее clarification status.
 
-   **Дальше:** после снятия blocker запустить `/prd-to-tasks FT-001`.
+   **Дальше:** после снятия blocker запустить `/spec-design FT-001`.
 
-5. `/prd-to-tasks FT-001`
+7. `/spec-design FT-001`
+
+   **Когда:** после `/prd` и до `/prd-to-tasks`, для выбранной feature.
+
+   **Создает/обновляет:** только нужные SDD artifacts: feature hub в `tech-specs`, architecture notes, contracts, domains, states, ADR, testing/runbooks. Для простых T0/T1-like features может поставить `spec_design_status: not_required` с кратким rationale.
+
+   **Дальше:** запустить `/prd-to-tasks FT-001`.
+
+8. `/prd-to-tasks FT-001`
 
    **Когда:** когда feature можно разложить на implementation tasks.
 
@@ -88,7 +115,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** взять первую готовую задачу и выполнить `/execute TASK-001`.
 
-6. `/execute TASK-001`
+9. `/execute TASK-001`
 
    **Когда:** для реализации одной конкретной задачи из task record.
 
@@ -96,7 +123,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** запустить `/verify TASK-001`.
 
-7. `/verify TASK-001`
+10. `/verify TASK-001`
 
    **Когда:** после реализации задачи.
 
@@ -104,15 +131,15 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-001`; иначе перейти к `/mb-sync`.
 
-8. `/red-verify TASK-001`
+11. `/red-verify TASK-001`
 
-   **Когда:** опционально в ручном workflow; особенно полезно для T2/T3 задач, где обычные tests могут пройти, но решение может быть неверным по смыслу.
+   **Когда:** обязательно для T2/T3 перед финальным закрытием; особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
    **Создает/обновляет:** semantic verification report и semantic verdict.
 
    **Дальше:** при проблемах вернуть задачу в доработку; при успешной проверке перейти к `/mb-sync`.
 
-9. `/mb-sync`
+12. `/mb-sync`
 
    **Когда:** после результата задачи, особенно если менялись требования, task status, changelog, RTM или durable Memory Bank docs.
 
@@ -120,7 +147,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** выбрать следующую задачу или feature.
 
-10. Повторять цикл
+13. Повторять цикл
 
     **Когда:** пока features и tasks не доведены до нужного состояния.
 
@@ -166,7 +193,7 @@ node .agents/skills/mb-init/scripts/shared-init-mb.js
 После bootstrap используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /write-prd -> /prd -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.

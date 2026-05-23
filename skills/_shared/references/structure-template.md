@@ -26,6 +26,9 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 - Start with `.memory-bank/architecture/*` and `.memory-bank/guides/*` for concept priming.
 - If present, prefer explicit normative docs such as `.memory-bank/constitution.md`, `.memory-bank/spec-index.md`, `.memory-bank/invariants.md`, `.memory-bank/glossary.md`, `.memory-bank/contracts/*`, `.memory-bank/states/*`, `.memory-bank/runbooks/*`, and `.memory-bank/testing/*`.
 - Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
+- Before serious work, read `.memory-bank/spec-index.md` and follow linked SDD specs.
+- Do not create a new spec before checking existing specs through `.memory-bank/spec-index.md`.
+- For `T2` / `T3` tasks, linked SDD specs are normative inputs; missing linked specs are a blocker for serious work.
 
 ## Docs First
 After finishing a meaningful unit of work:
@@ -48,7 +51,7 @@ When a task requires reading many files or producing long output:
 - T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
 - Scheduler mode: T2/T3 require full protocol state plus `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
 - Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
-- Manual mode: expected simple flow is `/execute -> /verify`; `/verify PASS` may close, including T2/T3, and later `/red-verify` may reopen/block/fail.
+- Manual mode: T0/T1 may close after `/verify PASS` only with explicit closure ownership and completed evidence; T2/T3 must run `/red-verify` before final closure/`/mb-sync`.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
@@ -60,8 +63,8 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
-- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if JSON task records already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init` and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
 - Folder per process: `.tasks/TASK-<ID>/`
@@ -79,13 +82,17 @@ Command specs live in `skills/_shared/references/commands/*.md`.
 
 Representative commands:
 - `/analysis`
+- `/brief`
+- `/constitution`
 - `/write-prd`
+- `/spec-init`
 - `/prd`
+- `/spec-design`
+- `/spec-auto`
 - `/clarify-feature`
 - `/prd-to-tasks`
 - `/autopilot`
 - `/mb-doctor`
-- `/constitution`
 
 > Keep this file small. Deep docs live under `.memory-bank/`.
 ```
@@ -146,7 +153,7 @@ status: active
 - [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 
-- [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
+- [.memory-bank/spec-index.md](spec-index.md): SDD Design Specs Index and route map for source-of-truth specs.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 - [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
@@ -216,27 +223,61 @@ status: active
 
 ```markdown
 ---
-description: Реестр normative docs и маршрутизация по source-of-truth документам.
+description: SDD Design Specs Index and route map for source-of-truth documents.
 status: active
 ---
-# Spec Index
+# SDD Design Specs Index
 
 ## Purpose
-- Используй этот файл как роутер по явным normative docs.
-- Если раздел не нужен проекту, оставь ссылку-плейсхолдер или отметь `not used`.
+- Use this file as the route map for SDD design specs and explicit normative docs.
+- Read this index before creating new specs or doing serious T2/T3 work.
+- If a design area is not needed, mark it `not_applicable` with a short reason.
+- Do not create authoritative specs unless PRD/user/spec evidence contains the decision.
 
-## Global
+## Hard rules
+- Do not create a new spec before checking existing specs through this index.
+- `/spec-init` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
+- `/spec-design FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
+- `T2` / `T3` tasks must carry relevant linked specs in task richer fields.
+
+## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
-
-## Governance
 - [.memory-bank/constitution.md](constitution.md): Top governing policy for AI-first project decisions.
-
-## Normative domains
 - [.memory-bank/contracts/](contracts/): Контракты интерфейсов и boundary specs.
+- [.memory-bank/domains/](domains/): Domain/data model specs.
 - [.memory-bank/states/](states/): Lifecycle/state rules.
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
+
+## Planned design areas
+- TBD
+
+## Candidate design areas
+- TBD
+
+## Unknown design areas
+- TBD
+
+## Not applicable areas
+- TBD
+
+## Feature design status map
+| Feature | spec_design_status | Linked specs | Notes |
+|---|---|---|---|
+| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto |
+
+## Expected spec locations
+- Feature hubs: `.memory-bank/tech-specs/FT-<NNN>-<slug>.md`
+- Architecture notes: `.memory-bank/architecture/<topic>.md`
+- Contracts: `.memory-bank/contracts/<boundary>.md`
+- Domain/data models: `.memory-bank/domains/<domain>.md`
+- States: `.memory-bank/states/<lifecycle>.md`
+- ADRs: `.memory-bank/adrs/ADR-<NNN>-<slug>.md`
+- Testing/runbooks: `.memory-bank/testing/` and `.memory-bank/runbooks/`
+
+## Gaps and open questions
+- TBD
 
 ## Compatibility note
 - Duo docs в `architecture/` и `guides/` остаются валидными.
@@ -252,7 +293,8 @@ status: active
 description: Project Constitution — governing principles for AI-first development.
 status: active
 version: 1
-ratified: YYYY-MM-DD
+project_principles: framework-default
+ratified: null
 last_updated: YYYY-MM-DD
 ---
 # Project Constitution
@@ -262,6 +304,10 @@ last_updated: YYYY-MM-DD
 This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
 
 ## Core Principles
+
+### 0. Project Principles Status
+
+This skeleton uses framework-default principles until `/constitution` runs the contextual interview. `ratified: null` means project principles are not ratified yet. When `/constitution` sets `project_principles: ratified` or `project_principles: partial`, it must fill `ratified: YYYY-MM-DD`. If the user explicitly skips that interview, keep or set `project_principles: skipped`, keep `ratified: null`, and continue; revisit `/constitution` later.
 
 ### I. AI-First Spec-Driven Development
 
@@ -463,7 +509,7 @@ status: draft
 
 ## 6b) Example task record template
 
-The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records when a feature is selected.
+The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design FT-<NNN>` has completed, blocked, or marked SDD design `not_required`.
 
 ```json
 {
@@ -544,6 +590,7 @@ status: active
 
 ## When to use
 - Bootstrap / memory: cold-start, mb-init
+- SDD design: /spec-init, /spec-design, /spec-auto
 - PRD decomposition: mb-from-prd
 - Codebase mapping: mb-map-codebase
 - Execution: mb-execute

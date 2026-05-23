@@ -34,16 +34,19 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected simple flow: `/execute -> /verify` for one TASK, with optional `/red-verify` when risk/substance warrants it.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- For risky tasks, the explicit closure owner decides whether to run `/red-verify`; if `/red-verify` later finds semantic issues, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -53,6 +56,7 @@ Manual mode:
 - Quality gates were already run (or failures were recorded).
 - For non-trivial tasks, `mb-verify` should usually run first.
 - The indexed task record contains `tier`. Authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
+- For `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-design` or `/spec-auto`.
 - In scheduler mode, `T2` / `T3` require this pass before scheduler marks `done`.
 - In manual mode, this pass is optional after `mb-verify PASS`; run it when risk/substance warrants it.
 - `T0` / `T1` usually skip it unless scope has grown and the tier is updated first.
@@ -80,7 +84,7 @@ Prime in this order:
 1. task intent and expected real-world outcome
 2. actual code changes / diff / touched runtime behavior
 3. tests, logs, screenshots, traces, and other evidence
-4. neighboring constraints (`contracts/*`, `states/*`, `runbooks/*`, invariants)
+4. linked SDD specs and neighboring constraints (`contracts/*`, `states/*`, `domains/*`, `runbooks/*`, invariants)
 5. broader spec reconciliation
 
 This keeps the verifier from merely confirming the workflow surface.
@@ -124,7 +128,9 @@ Challenge the solution from multiple angles:
 
 ### 3) Reconcile with specs only after forming independent concerns
 Then inspect the smallest sufficient spec subset:
+- `.memory-bank/spec-index.md` and linked SDD specs for `T2` / `T3`
 - relevant `contracts/*`
+- `domains/*`
 - `states/*`
 - `runbooks/*`
 - `requirements.md`
@@ -151,12 +157,12 @@ For `T3`, also cover critical/security/runtime/recovery concerns and confirm exa
 ### 5) Take action from the verdict
 - `semantic-pass`: no substantive concerns found; scheduler closure-eligible when `mb-verify` also has `PASS`; manual `done` may remain trusted
 - `semantic-concern`: not proven wrong, but blocked or human-review-required; in manual mode, do not trust existing `done` without human review / follow-up
-- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; recommend or apply task `status: failed` according to active workflow ownership
+- `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; recommend or apply task `status: failed` according to active workflow ownership and explicit closure ownership
 
 When invoked by `/autopilot` or `/autonomous`, `mb-red-verify` must not independently close the task, write `done`, write `failed`, block dependents, or promote dependents. It writes the semantic verdict and returns the recommended status/dependent action to the scheduler.
 
 For `semantic-concern`, recommend blocking task/dependents, reopening from `done`, or leaving the task pending human review. If human review accepts the concern, record owner/reason and repeat `mb-red-verify`; scheduler normal `done` requires `semantic-pass`.
-For `semantic-fail`, file or recommend a bug, recommend follow-up tasks, recommend or apply `status: failed` according to active workflow ownership, and stop downstream progression through the scheduler/explicit standalone owner.
+For `semantic-fail`, file or recommend a bug, recommend follow-up tasks, recommend or apply `status: failed` according to active workflow ownership and explicit closure ownership, and stop downstream progression through the scheduler/explicit standalone owner.
 
 ## Definition of done
 - `red-verification.md` exists and is substance-focused.

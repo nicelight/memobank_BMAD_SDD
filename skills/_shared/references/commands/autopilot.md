@@ -23,6 +23,7 @@ status: active
   - `touched_files`
   - `tier: T0|T1|T2|T3`
 - Every task `feature` points to a `.memory-bank/features/FT-<NNN>-*.md` file that is not explicitly marked `clarification_status: pending|blocked`.
+- Every `T2` / `T3` task has relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - Нет unresolved blocking questions в `.protocols/AUTONOMOUS-RUN/status.md` или equivalent run protocol.
 - `/mb-doctor --strict` passes before the run starts.
@@ -32,6 +33,7 @@ If there are no JSON task records, stop with an explicit error:
 
 If any indexed task record is missing `tier`, stop with `HALT_POLICY_VIOLATION`.
 If any indexed task record is missing `feature`, references a missing feature file, or references a feature explicitly marked `clarification_status: pending|blocked`, stop with `HALT_CLARIFICATION_REQUIRED`.
+If any indexed `T2` / `T3` task lacks linked SDD specs, stop with `HALT_QUALITY_GATES` and route back to `/spec-design FT-<NNN>` or `/spec-auto --all`.
 Read the task queue and task metadata only from JSON task records.
 Before task selection and before progression after a task closes, run `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat a missing doctor command/script, non-zero exit, or readiness error as `HALT_QUALITY_GATES`. Explicit pending/blocked feature clarification and tasks linked to those features are readiness errors. `mb-doctor` runs `mb-lint` as its first gate; do not fall back to plain `mb-lint` for autonomous readiness.
 
@@ -68,10 +70,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -148,3 +152,4 @@ claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
 - `HALT_DEPENDENCY_DEADLOCK`
 - `HALT_POLICY_VIOLATION`
 - `HALT_QUALITY_GATES`
+- `HALT_BUDGET_EXCEEDED`

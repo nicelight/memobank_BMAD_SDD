@@ -22,12 +22,15 @@ Start manually first. It makes the system easy to understand before you hand mor
 ```text
 idea / rough draft
   -> /analysis or /brief when the direction needs shaping
+  -> /constitution
   -> /write-prd
+  -> /spec-init
   -> /prd
+  -> /spec-design FT-001
   -> /prd-to-tasks FT-001
   -> /execute TASK-001
   -> /verify TASK-001
-  -> optional /red-verify TASK-001 for complex or risky work
+  -> /red-verify TASK-001 for T2/T3 work
   -> /mb-sync
   -> repeat the feature/task loop until the project is done
 ```
@@ -35,11 +38,14 @@ idea / rough draft
 In plain terms:
 
 - `/analysis` and `/brief` help turn a raw idea into a usable input.
+- `/constitution` runs a short contextual interview for project principles and non-negotiables. If you explicitly skip it, the flow can continue with framework-default/skipped principles and you can revisit it later.
 - `/write-prd` captures a clear PRD.
+- `/spec-init` creates the SDD Design Specs Index route map without inventing authoritative specs.
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
+- `/spec-design FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
 - `/prd-to-tasks FT-001` creates JSON tasks for one feature.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
-- `/red-verify` adds adversarial review when the work is substantive or risky.
+- `/red-verify` adds the required adversarial semantic pass for T2/T3 work.
 
 ## Automation, when you are ready
 
@@ -75,7 +81,7 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` or `/brief` -> `/write-prd` -> `/prd` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
+or go straight into the manual flow: `/analysis` or `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
 
 ## More detail
 

@@ -25,10 +25,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -55,6 +57,7 @@ Manual mode:
 - [ ] `.memory-bank/tasks/TASK-*.task.json` records отражают актуальные статусы задач.
 - [ ] Новые задачи (из багов, из новых требований) добавлены как schema-backed task records.
 - [ ] В scheduler mode closure/failure/blocking decision уже записан в indexed `.task.json`; если нет, report consistency gap and stop for explicit scheduler or standalone owner decision.
+- [ ] В manual mode manual closure sync имеет already-recorded explicit owner decision в task record или direct instruction for this sync; иначе report consistency gap and do not infer closure.
 - [ ] Promotion/dependent block/unblock не выполняется внутри `/mb-sync`; это отдельный scheduler pass после sync + strict doctor.
 
 ### 5) Changelog

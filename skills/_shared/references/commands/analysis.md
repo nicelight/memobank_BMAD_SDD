@@ -33,6 +33,7 @@ Do not create:
 ## 1) Inspect state
 Check only what is needed:
 - `prd.md`
+- `.memory-bank/constitution.md`
 - `.memory-bank/analysis/index.md`
 - `.memory-bank/analysis/product-brief.md`
 - `.memory-bank/analysis/brainstorming/BR-*.md`
@@ -63,21 +64,27 @@ status: active
 Do not create `.memory-bank/analysis/` in a clean skeleton unless `/analysis`, `/brainstorm`, or `/brief` is actually being used.
 
 ## 3) Routing table
+When routing from an existing Product Brief or PRD/delta source toward `/write-prd`, first inspect `.memory-bank/constitution.md` `project_principles`.
+
+- If project principles are `ratified` or `partial`, recommend `/write-prd`.
+- Otherwise, recommend `/constitution`, then `/write-prd`.
+
 Use this table:
 
 | State | Next step |
 |---|---|
-| Product brief exists, but `.memory-bank/prd.md` is missing | `/write-prd` |
-| `.memory-bank/prd.md` exists with `clarification_status: complete` and `constitution_checked: true`, but feature docs are not created | `/prd` |
+| Product brief exists, but `.memory-bank/prd.md` is missing | `/constitution` if principles are not `ratified|partial`, then `/write-prd` |
+| `.memory-bank/prd.md` exists with `clarification_status: complete` and `constitution_checked: true`, but spec-index is missing/stale | `/spec-init` |
+| `.memory-bank/prd.md` exists with `clarification_status: complete` and `constitution_checked: true`, but feature docs are not created | `/spec-init`, then `/prd` |
 | `.memory-bank/prd.md` exists with `clarification_status: pending|blocked` | `/write-prd` |
 | Feature docs exist with `clarification_status: pending|blocked` | `/clarify-feature FT-<NNN>` |
-| Feature docs exist without blocking clarification metadata | `/prd-to-tasks FT-<NNN>` |
-| Approved product brief exists | `/write-prd`, then `/prd` |
-| Draft product brief exists | finish `/brief`, then `/write-prd`, then `/prd` |
+| Feature docs exist without blocking clarification metadata | `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>` |
+| Approved product brief exists | `/constitution` if principles are not `ratified|partial`, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` |
+| Draft product brief exists | finish `/brief`, then `/constitution` if principles are not `ratified|partial`, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` |
 | Brainstorming report exists, but no brief exists | `/brief` |
 | Idea is raw or vague | `/brainstorm` |
 | Concept is understandable and no PRD exists | `/brief` |
-| Brownfield project without PRD | `/map-codebase`, then `/brief --delta` or `/write-prd --delta` |
+| Brownfield project without PRD | `/map-codebase`, then `/brief --delta` if needed, then `/constitution` if principles are not `ratified|partial`, then `/write-prd --delta` |
 | Not enough data | create/update index and give one explicit next step |
 
 Brownfield rule:

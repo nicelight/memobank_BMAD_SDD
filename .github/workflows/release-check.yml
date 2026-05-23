@@ -81,6 +81,9 @@ jobs:
             test -f .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
+            test -f .memory-bank/commands/spec-init.md
+            test -f .memory-bank/commands/spec-design.md
+            test -f .memory-bank/commands/spec-auto.md
             test -f .memory-bank/commands/prd.md
             test -f .memory-bank/commands/clarify-feature.md
             test ! -e .memory-bank/commands/clarify.md
@@ -97,6 +100,9 @@ jobs:
             node -e 'const fs = require("node:fs"); const index = JSON.parse(fs.readFileSync(".memory-bank/tasks/index.json", "utf8")); if (!Array.isArray(index.tasks)) throw new Error("tasks/index.json tasks must be an array"); if (index.tasks.length !== 0) throw new Error("fresh bootstrap must start with an empty task index"); if (fs.existsSync(".memory-bank/tasks/TASK-001.task.json")) throw new Error("fresh bootstrap must not create TASK-001.task.json");'
             test -f .claude/skills/prd/SKILL.md
             test -f .claude/skills/write-prd/SKILL.md
+            test -f .claude/skills/spec-init/SKILL.md
+            test -f .claude/skills/spec-design/SKILL.md
+            test -f .claude/skills/spec-auto/SKILL.md
             test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/constitution/SKILL.md
             test -f .claude/skills/analysis/SKILL.md
@@ -108,6 +114,9 @@ jobs:
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
             test -f .agents/skills/write-prd/SKILL.md
+            test -f .agents/skills/spec-init/SKILL.md
+            test -f .agents/skills/spec-design/SKILL.md
+            test -f .agents/skills/spec-auto/SKILL.md
             test -f .agents/skills/clarify-feature/SKILL.md
             test ! -e .claude/skills/mb-lint/SKILL.md
             test ! -e .claude/skills/clarify/SKILL.md
@@ -119,6 +128,9 @@ jobs:
               /brainstorm \
               /brief \
               /write-prd \
+              /spec-init \
+              /spec-design \
+              /spec-auto \
               /prd \
               /clarify-feature \
               /prd-to-tasks \
@@ -176,6 +188,9 @@ jobs:
             test -f .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
+            test -f .memory-bank/commands/spec-init.md
+            test -f .memory-bank/commands/spec-design.md
+            test -f .memory-bank/commands/spec-auto.md
             test -f .memory-bank/commands/autonomous.md
             test -f .memory-bank/commands/clarify-feature.md
             test ! -e .memory-bank/commands/clarify.md
@@ -196,6 +211,9 @@ jobs:
             test -f .claude/skills/brainstorm/SKILL.md
             test -f .claude/skills/brief/SKILL.md
             test -f .claude/skills/write-prd/SKILL.md
+            test -f .claude/skills/spec-init/SKILL.md
+            test -f .claude/skills/spec-design/SKILL.md
+            test -f .claude/skills/spec-auto/SKILL.md
             test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/autonomous/SKILL.md
             test -f .agents/skills/cold-start/SKILL.md
@@ -204,6 +222,9 @@ jobs:
             test -f .agents/skills/brainstorm/SKILL.md
             test -f .agents/skills/brief/SKILL.md
             test -f .agents/skills/write-prd/SKILL.md
+            test -f .agents/skills/spec-init/SKILL.md
+            test -f .agents/skills/spec-design/SKILL.md
+            test -f .agents/skills/spec-auto/SKILL.md
             test -f .agents/skills/clarify-feature/SKILL.md
             test -f .agents/skills/autonomous/SKILL.md
             test ! -e .claude/skills/mb-lint/SKILL.md
@@ -216,6 +237,9 @@ jobs:
               /brainstorm \
               /brief \
               /write-prd \
+              /spec-init \
+              /spec-design \
+              /spec-auto \
               /prd \
               /clarify-feature \
               /prd-to-tasks \
@@ -236,56 +260,56 @@ jobs:
 
             mkdir -p .memory-bank/analysis/brainstorming
             cat > .memory-bank/analysis/index.md <<'EOF'
----
-description: Analysis artifact index.
-status: active
----
-# Analysis
+            ---
+            description: Analysis artifact index.
+            status: active
+            ---
+            # Analysis
 
-- [Product brief](product-brief.md)
-- [Brainstorming BR-001](brainstorming/BR-001.md)
-EOF
+            - [Product brief](product-brief.md)
+            - [Brainstorming BR-001](brainstorming/BR-001.md)
+            EOF
             cat > .memory-bank/analysis/product-brief.md <<'EOF'
----
-description: CI smoke product brief.
-status: active
-type: product-brief
----
-# Product Brief
+            ---
+            description: CI smoke product brief.
+            status: active
+            type: product-brief
+            ---
+            # Product Brief
 
-## Decision
+            ## Decision
 
-Proceed to PRD.
-EOF
+            Proceed to PRD.
+            EOF
             cat > .memory-bank/analysis/brainstorming/BR-001.md <<'EOF'
----
-description: CI smoke brainstorming report.
-status: active
-type: brainstorming-report
-id: BR-001
----
-# BR-001 Brainstorming
+            ---
+            description: CI smoke brainstorming report.
+            status: active
+            type: brainstorming-report
+            id: BR-001
+            ---
+            # BR-001 Brainstorming
 
-## Recommended next step
+            ## Recommended next step
 
-Create or update the product brief.
-EOF
+            Create or update the product brief.
+            EOF
             cat > .memory-bank/prd.md <<'EOF'
----
-description: CI smoke PRD.
-status: draft
-type: prd
-clarification_status: complete
-constitution_checked: true
----
-# PRD
+            ---
+            description: CI smoke PRD.
+            status: draft
+            type: prd
+            clarification_status: complete
+            constitution_checked: true
+            ---
+            # PRD
 
-Source: .memory-bank/analysis/product-brief.md
+            Source: .memory-bank/analysis/product-brief.md
 
-## Clarifications
+            ## Clarifications
 
-Clarification: no critical ambiguity found
-EOF
+            Clarification: no critical ambiguity found
+            EOF
             node scripts/mb-lint.mjs
 
             node -e 'const fs = require("node:fs"); fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [] }, null, 2)}\n`); for (const file of fs.readdirSync(".memory-bank/tasks")) { if (file.endsWith(".task.json")) fs.unlinkSync(`.memory-bank/tasks/${file}`); }'
@@ -312,24 +336,24 @@ EOF
               local last_clarified="$2"
               local questions="$3"
               cat > .memory-bank/features/FT-998-clarification-smoke.md <<EOF
----
-description: Clarification smoke feature.
-status: active
-owner: ci
-last_updated: 2026-05-21
-source_of_truth:
-  - .memory-bank/features/FT-998-clarification-smoke.md
-lifecycle: planned
-clarification_status: $status
-last_clarified: $last_clarified
-clarification_questions: $questions
----
-# FT-998 Clarification smoke feature
+            ---
+            description: Clarification smoke feature.
+            status: active
+            owner: ci
+            last_updated: 2026-05-21
+            source_of_truth:
+              - .memory-bank/features/FT-998-clarification-smoke.md
+            lifecycle: planned
+            clarification_status: $status
+            last_clarified: $last_clarified
+            clarification_questions: $questions
+            ---
+            # FT-998 Clarification smoke feature
 
-## Clarifications
+            ## Clarifications
 
-Smoke fixture for clarification readiness checks.
-EOF
+            Smoke fixture for clarification readiness checks.
+            EOF
             }
 
             write_clarification_task() {

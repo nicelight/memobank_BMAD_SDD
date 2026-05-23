@@ -13,15 +13,17 @@ description: >
 - **Use `/brief` when:** the concept is clear enough to produce a concise Product Brief, or after a brainstorming report exists.
 - **Output:** optional artifacts under `.memory-bank/analysis/`.
 
-Analysis is optional. Raw PRD text or an existing external PRD must be normalized and checked through `/write-prd` first, producing `.memory-bank/prd.md` with `type: prd`, `clarification_status: complete`, and `constitution_checked: true`; then `/prd` decomposes it. Brownfield projects should map the current codebase first with `/map-codebase` before planning deltas.
+Analysis is optional. Raw PRD text or an existing external PRD should pass `/constitution` first when project principles are not ratified/partial, then be normalized and checked through `/write-prd`, producing `.memory-bank/prd.md` with `type: prd`, `clarification_status: complete`, and `constitution_checked: true`; then `/spec-init` prepares the SDD route map before `/prd` decomposes it. Brownfield projects should map the current codebase first with `/map-codebase` before planning deltas.
 
-`/brief` creates the Product Brief as the input contract for `/write-prd`. It is not a PRD, backlog, research report, or marketing document.
+`/brief` creates the Product Brief as the input contract for `/constitution` and `/write-prd`. It is not a PRD, backlog, research report, or marketing document.
 
 The normal planning path is:
 
 ```text
-/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-<NNN> -> /prd-to-tasks FT-<NNN>
 ```
+
+Use `/brainstorm` before `/brief` when the idea is raw. `/constitution` should read the Product Brief when present and run the governing-principles interview; if the user explicitly skips it, downstream PRD work may continue with framework-default/skipped principles.
 
 Analysis never creates task records. `/clarify-feature FT-<NNN>` is optional and only for a specific feature that is explicitly pending/blocked or has decomposition-affecting unresolved markers.
 

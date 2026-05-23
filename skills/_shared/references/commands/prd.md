@@ -14,6 +14,7 @@ Turn an already clarified `.memory-bank/prd.md` into Memory Bank L1-L3 artifacts
 - `.memory-bank/index.md`
 
 `/prd` does not write the PRD, ask Deep Questioning questions, create TASK records, create implementation plans, or require feature-level clarification.
+When `.memory-bank/spec-index.md` or linked SDD design specs exist, `/prd` uses them as source of truth while deriving L1-L3.
 </objective>
 
 <process>
@@ -35,6 +36,7 @@ If `constitution_checked` is not `true`, stop and run `/write-prd` or resolve th
 If the PRD contains unresolved `NEEDS CLARIFICATION` blockers in decomposition-relevant sections, stop and run `/write-prd`.
 
 Read `.memory-bank/constitution.md` before writing derived docs. If the PRD conflicts with the Constitution, stop and ask for explicit resolution or `/constitution` amendment.
+Read `.memory-bank/spec-index.md` before writing derived docs. If existing authoritative SDD specs conflict with the PRD, stop and ask for explicit resolution instead of silently overriding the specs.
 
 ## 1) Protocol
 Создай (если нет):
@@ -75,6 +77,8 @@ Read `.memory-bank/constitution.md` before writing derived docs. If the PRD conf
 - test strategy pointers
 - optional, if grounded in evidence: `Source artifacts`, `Normative inputs`, `Constraints / invariants`, `Verification targets`
  - `status: draft` по умолчанию
+- if existing SDD specs apply, add `spec_design_links` to those specs and set `spec_design_status: complete` only when the design is already authoritative and sufficient for task decomposition
+- otherwise omit `spec_design_status`; `/spec-design FT-<NNN>` or `/spec-auto` owns the feature-level design gate
 
 Do not set every new feature to `clarification_status: pending`.
 Only add feature clarification metadata when the PRD explicitly leaves a feature-level decomposition blocker:
@@ -101,9 +105,9 @@ When a feature is already clear enough for task decomposition, omit clarificatio
 Запусти `mb-review` (fresh context).
 
 ## 9) What next
-- interactive: choose one feature and run `/prd-to-tasks FT-<NNN>`
+- interactive: choose one feature and run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>`
 - optional: run `/clarify-feature FT-<NNN>` only if that feature is explicitly pending/blocked or has decomposition-affecting unresolved markers
-- autonomous end-to-end: запусти `/autonomous`
+- autonomous end-to-end: запусти `/autonomous`; it will run `/spec-auto --all` before `/prd-to-tasks --all`
 
 Do not create TASK records from `/prd`.
 </process>

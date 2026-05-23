@@ -7,6 +7,7 @@ status: active
 <objective>
 Запустить **полный автономный цикл** без ожидания пользователя:
 - intake Product Brief / PRD / delta
+- SDD Design Specs initialization and feature design
 - построение L1–L3
 - PRD-level ambiguity closure
 - декомпозиция всех FT в schema-backed JSON TASK records
@@ -67,9 +68,16 @@ Default pre-queue health check:
    - запусти `/find-skills`
    - **автоиспользуй только уже установленные project skills**
    - отсутствующие skills только зафиксируй как рекомендацию
-2) Если `.memory-bank/prd.md` отсутствует или не имеет `clarification_status: complete` + `constitution_checked: true`, запусти `/write-prd`.
-3) Построй L1–L3 через `/prd`.
-3) Если есть пробелы:
+2) Before `/write-prd`, inspect `.memory-bank/constitution.md` frontmatter/value `project_principles`.
+   - If `project_principles` is `ratified` or `partial`, use the Constitution as the current project principles.
+   - If it is anything else (`framework-default`, `skipped`, missing, or unclear), do not run an interactive `/constitution` interview in autonomous mode.
+   - Continue with framework defaults or an explicit skipped/default assumption, and record that marker in `.protocols/AUTONOMOUS-RUN/decision-log.md` and `.protocols/AUTONOMOUS-RUN/status.md`.
+   - This is not a hard blocker unless the PRD itself creates a blocking governance conflict.
+3) Если `.memory-bank/prd.md` отсутствует или не имеет `clarification_status: complete` + `constitution_checked: true`, запусти `/write-prd`.
+4) Запусти `/spec-auto --init` after `/write-prd` and before `/prd`.
+5) Построй L1–L3 через `/prd`.
+6) Запусти `/spec-auto --all` before `/prd-to-tasks --all`.
+7) Если есть пробелы:
    - **non-blocking** → зафиксируй в `.protocols/AUTONOMOUS-RUN/decision-log.md` как `Assumption`
    - **blocking** (security/compliance/payments/external contract/data loss) → поставь terminal state `HALT_BLOCKING_QUESTIONS` и остановись
 
@@ -84,9 +92,12 @@ Default pre-queue health check:
 ## 5) Feature preflight перед декомпозицией
 Перед `/prd-to-tasks --all` проверь targeted features.
 Missing feature clarification metadata is valid and must not block decomposition by itself.
+`/spec-auto --all` must already have assigned each targeted feature `spec_design_status: complete|not_required|blocked`.
 
 Block `/prd-to-tasks --all` when any targeted feature has:
 - explicit `clarification_status: pending|blocked`
+- `spec_design_status: blocked`
+- likely T2/T3 work with missing/incomplete `spec_design_status` or missing linked SDD specs
 - unresolved markers that affect decomposition, acceptance criteria, dependencies, verification, security/compliance, external contracts, data migration, or data-loss risk
 
 Правила:
@@ -95,6 +106,7 @@ Block `/prd-to-tasks --all` when any targeted feature has:
 - if feature blocker preflight finds blockers, record them in `.protocols/AUTONOMOUS-RUN/status.md`, set terminal state `HALT_CLARIFICATION_REQUIRED`, and stop
 - never invoke `/clarify-feature` automatically in autonomous mode; it is a manual or explicit follow-up command for feature blockers
 - missing clarification metadata is not a blocker
+- do not bypass `/spec-auto`; if T2/T3 work lacks linked SDD specs, record the blocker and stop before `/prd-to-tasks --all`
 - продолжай только когда no targeted feature is explicitly pending/blocked and no unresolved marker blocks decomposition
 
 ## 6) Декомпозиция всех фич
@@ -117,6 +129,7 @@ Block `/prd-to-tasks --all` when any targeted feature has:
   - `verify`
   - `docs`
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
+- T2/T3 task records must include relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
 
 ## 6.1) Review gate по JSON task records
 Сразу после `/prd-to-tasks --all` и до scheduler execution запусти `/review` именно по task planning surface:
@@ -137,12 +150,14 @@ Block `/prd-to-tasks --all` when any targeted feature has:
 - если doctor command/script отсутствует, падает, или возвращает readiness errors → terminal state `HALT_QUALITY_GATES`
 - after task queue exists, required ordering is `node scripts/mb-lint.mjs` + `mb-doctor --strict`; do not replace strict doctor with plain lint
 - explicit pending/blocked feature clarification or tasks linked to such features are readiness errors
+- T2/T3 tasks without linked SDD specs are readiness errors
 - strict doctor должен быть зелёным до первого task selection pass
 
 ## 7) Scheduler loop
 Работай по `.memory-bank/tasks/index.json` и indexed `.task.json` records.
 If JSON task records are missing or empty, set terminal state `HALT_DEPENDENCY_DEADLOCK` with reason `no schema-backed task records`.
 If any indexed task record is missing `tier`, set terminal state `HALT_POLICY_VIOLATION` and stop.
+If any indexed `T2` / `T3` task lacks linked SDD specs, set terminal state `HALT_QUALITY_GATES` and route back to `/spec-auto --all`.
 Read the task queue and task metadata only from JSON task records.
 Before task selection and before progression after each closed task, run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict` using the repository's documented command or `node scripts/mb-doctor.mjs --strict`. Treat doctor absence, non-zero exit, or readiness errors as `HALT_QUALITY_GATES`.
 
@@ -163,9 +178,10 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
+- Expected T0/T1 simple flow: `/execute -> /verify`.
+- Manual closure is allowed only when an explicit closure owner exists.
+- T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
+- T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
 - If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.

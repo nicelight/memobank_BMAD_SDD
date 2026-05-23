@@ -33,9 +33,10 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
+- Expected T0/T1 simple flow: `/execute -> /verify`.
+- Manual closure is allowed only when an explicit closure owner exists.
+- T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
+- T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
 - If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
@@ -51,6 +52,7 @@ Manual mode:
 - Link to protocol plan: `.protocols/<TASK_ID>/plan.md`
 
 If present, also use:
+- linked SDD specs for `T2` / `T3`
 - `verification_targets`
 - `normative_inputs`
 - task record references to source artifacts
@@ -73,8 +75,8 @@ If present, also use:
 
 - `mb-verify` owns verification evidence and `VERDICT: PASS|FAIL|NEEDS-CLARIFICATION`.
 - When invoked by `/autopilot` or `/autonomous`, it must not close the task, set `status: done`, set `status: failed`, block dependents, or promote dependents. It reports a recommended next status to the scheduler.
-- In standalone/manual mode, it may mark a task `done` after functional `VERDICT: PASS`, including `T2` / `T3`.
-- For risky manual tasks, `mb-red-verify` is a user/agent decision after `mb-verify`, not a universal precondition for `done`.
+- In standalone/manual mode, it may mark a `T0` / `T1` task `done` after functional `VERDICT: PASS` only with explicit closure ownership.
+- For `T2` / `T3`, `mb-verify` records functional evidence and closure recommendation, but final closure requires `mb-red-verify` semantic-pass first.
 
 ## Process
 
@@ -92,16 +94,18 @@ Before verifying, validate the authoritative task record:
 - the indexed record `id` matches `TASK_ID`
 - required fields for verification are present (`status`, `feature`, `reqs`, `depends_on`, `gates`, `verify`)
 - `tier` is present; if missing, stop
+- for `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-design` or `/spec-auto`
 
 If the authoritative task record is missing or invalid, stop and report the issue instead of verifying from protocol docs alone.
 
 Priority:
-1. explicit `Verification Targets`
-2. explicit `Normative Inputs`
-3. classic feature acceptance criteria and RTM
-4. evidence in `.tasks/<TASK_ID>/`
+1. linked SDD specs for `T2` / `T3`
+2. explicit `Verification Targets`
+3. explicit `Normative Inputs`
+4. classic feature acceptance criteria and RTM
+5. evidence in `.tasks/<TASK_ID>/`
 
-Missing richer fields must not block verification of a classic task.
+Missing richer fields must not block verification of a classic `T0` / `T1` task.
 
 ### 2) Verify acceptance criteria
 For each AC / REQ:
@@ -128,7 +132,7 @@ If all pass:
 - add completed verification/evidence entries in `verify`
 - apply status by tier:
   - scheduler mode: recommend the scheduler decision; do not close/fail/block/promote
-  - manual mode: may set `status: done` after functional `VERDICT: PASS`, including `T2` / `T3`
+  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify`
 - in scheduler mode, final `T2` / `T3` closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
 ### 4) Sync recommendations

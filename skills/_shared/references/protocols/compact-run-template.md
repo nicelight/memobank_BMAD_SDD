@@ -10,7 +10,8 @@ status: active
 - started:
 - finished:
 - local evidence verdict: <PASS|FAIL|BLOCKED>
-- closure owner: scheduler | explicit standalone owner | human
+- closure owner: scheduler | explicit standalone owner | human | none
+- closure decision: <none|status unchanged|status: done|status: failed|blocked; reason/evidence link>
 
 ## Goal
 - ...
@@ -41,8 +42,19 @@ VERDICT: PASS
 VERDICT: FAIL
 VERDICT: BLOCKED
 
+## Closure Decision
+Record task closure separately from the evidence verdict.
+
+- explicit standalone owner present: yes | no
+- owner basis: user direct instruction | top-level manual workflow ownership | scheduler | human | none
+- task record status change: none | `status: done` | `status: failed` | `status: blocked`
+- task record evidence updated in `verify`: yes | no
+
+If explicit standalone owner is absent, leave task status unchanged and hand off
+the closure recommendation to the scheduler/owner.
+
 ## MB-SYNC Handoff
-- owner: scheduler | explicit standalone owner | human
+- owner: scheduler | explicit standalone owner | human | none
 - reason:
 - files/docs likely needing sync:
   - ...

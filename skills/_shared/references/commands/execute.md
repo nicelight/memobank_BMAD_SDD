@@ -22,16 +22,19 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -45,6 +48,7 @@ Required sources:
 - `.memory-bank/tasks/TASK-<ID>.task.json`
 - task-relevant feature, epic, requirements, or normative docs referenced by the
   task
+- `.memory-bank/spec-index.md` and linked SDD specs for `T2` / `T3` tasks
 
 Use richer task fields when present:
 - `source_artifacts`
@@ -53,8 +57,8 @@ Use richer task fields when present:
 - `invariants`
 - `verification_targets`
 
-Missing richer fields are not an error. Use classic feature/requirements/docs
-fallback when they are absent.
+Missing richer fields are not an error for `T0` / `T1`. Use classic feature/requirements/docs fallback when they are absent.
+For `T2` / `T3`, missing linked SDD specs are a blocker for serious work unless the feature is explicitly marked `spec_design_status: not_required` and the task scope is downgraded to `T0` / `T1`.
 
 ## 1) Preflight
 Stop with an explicit error if:
@@ -65,6 +69,7 @@ Stop with an explicit error if:
 - `tier` is not `T0`, `T1`, `T2`, or `T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or has status other than `done`
+- `tier` is `T2` or `T3` and task/feature/spec-index provide no concrete linked SDD spec in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 
 Authoritative routing is only `task.tier`. Do not use legacy `risk` /
 `risk.level`.
@@ -105,6 +110,7 @@ Implement only scoped task changes.
 
 Rules:
 - keep edits bounded to acceptance criteria and referenced specs
+- for `T2` / `T3`, treat linked SDD specs as normative inputs, not optional reading
 - preserve unrelated user changes
 - do not edit generated `skills/*/{agents,references,scripts}/shared-*` files
 - update protocol/progress with what changed and where evidence lives

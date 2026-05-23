@@ -5,9 +5,9 @@ status: active
 # /brief - Product Brief input contract
 
 <objective>
-Create or update `.memory-bank/analysis/product-brief.md` as a concise Product Brief before `/write-prd`.
+Create or update `.memory-bank/analysis/product-brief.md` as a concise Product Brief before `/write-prd`, with `/constitution` as the normal next step only when project principles are not already `ratified|partial`.
 
-Product Brief is the input contract for `/write-prd`. It is not a PRD, backlog, marketing document, research report, or task plan.
+Product Brief is the input contract for `/constitution` when needed and for `/write-prd`. It is not a PRD, backlog, marketing document, research report, or task plan.
 </objective>
 
 <process>
@@ -105,7 +105,7 @@ KISS decision values:
 Do not add `no-go`.
 
 ## 3) Decision rules
-Set `Decision: proceed` only when the brief is clear enough for `/write-prd`.
+Set `Decision: proceed` only when the brief is clear enough for `/constitution` if needed and `/write-prd`.
 
 Set `Decision: blocked` when open questions block PRD quality. If blocked:
 - do not continue to `/prd` unless the user explicitly overrides
@@ -117,8 +117,10 @@ If the user explicitly overrides a blocked brief, `/write-prd` may continue, but
 The next planning chain is:
 
 ```text
-/brief -> /write-prd -> /prd -> /prd-to-tasks FT-<NNN>
+/brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-<NNN> -> /prd-to-tasks FT-<NNN>
 ```
+
+Check `.memory-bank/constitution.md` before recommending the next command. If `project_principles: ratified|partial`, continue directly to `/write-prd`. If `project_principles: framework-default|skipped|missing`, recommend `/constitution`; it should read `.memory-bank/analysis/product-brief.md` and run the governing-principles interview before `/write-prd`. If the user explicitly skips `/constitution`, continue to `/write-prd` with framework-default/skipped principles and recommend revisiting `/constitution` later.
 
 Do not recommend `/prd-to-tasks` directly from `/brief`.
 Recommend `/clarify-feature FT-<NNN>` only when a specific feature is explicitly pending/blocked or has decomposition-affecting unresolved markers.
@@ -131,6 +133,7 @@ Update `.memory-bank/analysis/index.md` with:
 - recommended next step
 
 Recommended next step:
-- if `Decision: proceed`: `/write-prd`, then `/prd`
+- if `Decision: proceed` and `project_principles: ratified|partial`: `/write-prd`, then `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>`
+- if `Decision: proceed` and `project_principles: framework-default|skipped|missing`: `/constitution`, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>`
 - if `Decision: blocked`: answer blocking questions, then rerun `/brief`
 </process>

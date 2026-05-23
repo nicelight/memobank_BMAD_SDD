@@ -21,6 +21,8 @@ status: active
 
 Если после обсуждения всё ясно:
 - предложи `/write-prd`, `/prd`, `/brief` или `/clarify-feature FT-<NNN>` по текущему состоянию материалов;
-- предлагай `/prd-to-tasks FT-<NNN>` только если PRD complete, feature exists, and feature is not explicitly pending/blocked;
+- предлагай `/spec-init` после clarified `/write-prd` и до `/prd`, если SDD route map еще не готов;
+- предлагай `/spec-design FT-<NNN>` после `/prd` и до `/prd-to-tasks`;
+- предлагай `/prd-to-tasks FT-<NNN>` только если PRD complete, feature exists, feature is not explicitly pending/blocked, and SDD design status is complete/not_required;
 - предлагай `/execute TASK-<ID>` только для существующего JSON task record `.memory-bank/tasks/TASK-<ID>.task.json`, проиндексированного в `.memory-bank/tasks/index.json`.
 </process>

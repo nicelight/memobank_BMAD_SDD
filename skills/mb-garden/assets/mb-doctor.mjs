@@ -25,10 +25,13 @@ const COMPACT_TIERS = new Set(['T0', 'T1']);
 const LINK_REQUIRED_TIERS = new Set(['T1', 'T2', 'T3']);
 const TERMINAL_STATUSES = new Set(['done', 'failed']);
 const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
+const SDD_SPEC_REQUIRED_TIERS = new Set(['T2', 'T3']);
 const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
 const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const REQ_ID_RE = /^REQ-[0-9]{3,}$/;
 const FT_ID_RE = /^FT-[0-9]{3,}$/;
+const SDD_SPEC_DIRS = ['tech-specs', 'architecture', 'contracts', 'domains', 'states', 'adrs', 'testing', 'runbooks'];
+const SDD_SPEC_PATH_RE = /(?:\.\/)?\.memory-bank\/(?:tech-specs|architecture|contracts|domains|states|adrs|testing|runbooks)\/[^\s"'`]+/i;
 const EVIDENCE_WORD_RE = /\b(evidence|result|fail|failed|error|output|log|artifact|report)\b/i;
 const PASS_EVIDENCE_RE = /^\s*VERDICT: PASS\s*$/im;
 const FAIL_EVIDENCE_RE = /\bverdict\s*:?\s*fail(?:ed)?\b|\bfail(?:ed)?\b|\berror\b/i;
@@ -231,6 +234,7 @@ function checkTaskReadiness() {
     checkCompactDoneProtocol(record);
     checkTerminalEvidence(record);
     checkReqFeatureLinkage(record);
+    checkSddSpecLinkage(record);
   }
 
   checkFailedTaskClosure(orderedRecords);
@@ -554,6 +558,31 @@ function checkReqFeatureLinkage(record) {
       });
     }
   }
+}
+
+function checkSddSpecLinkage(record) {
+  const { id, rel, task } = record;
+  if (!SDD_SPEC_REQUIRED_TIERS.has(task.tier)) return;
+
+  const taskSpecLinks = sddSpecLinkStatusFromTask(task);
+  if (taskSpecLinks.existing.length) return;
+
+  const severity = options.strict ? 'error' : 'warning';
+  const featureId = typeof task.feature === 'string' && FT_ID_RE.test(task.feature) ? task.feature : undefined;
+  const featureSpec = featureId ? getFeatureSpecDesign(featureId) : null;
+
+  addFinding(severity, 'TASK_SDD_SPEC_LINK_MISSING', `${rel}: ${task.tier} task has no existing linked SDD spec paths in richer task fields.`, {
+    path: rel,
+    task_id: id,
+    details: {
+      feature: featureId,
+      missing_sdd_spec_links: taskSpecLinks.missing,
+      feature_spec_design_status: featureSpec?.status,
+      feature_spec_design_links: featureSpec?.links.existing ?? [],
+      missing_feature_spec_design_links: featureSpec?.links.missing ?? [],
+    },
+    suggested_fix: `Run /spec-design ${featureId ?? 'FT-<NNN>'} or /spec-auto, then add relevant SDD spec links to source_artifacts, normative_inputs, constraints, invariants, or verification_targets.`,
+  });
 }
 
 function checkFeatureClarificationReadiness() {
@@ -903,6 +932,103 @@ function taskReferencesId(value, taskId) {
   if (Array.isArray(value)) return value.some((item) => taskReferencesId(item, taskId));
   if (!value || typeof value !== 'object') return false;
   return Object.entries(value).some(([key, child]) => key.includes(taskId) || taskReferencesId(child, taskId));
+}
+
+function sddSpecLinksFromTask(task) {
+  const fields = [
+    task.source_artifacts,
+    task.normative_inputs,
+    task.constraints,
+    task.invariants,
+    task.verification_targets,
+  ];
+  return collectSddSpecLinks(fields);
+}
+
+function sddSpecLinkStatusFromTask(task) {
+  return classifySddSpecLinks(sddSpecLinksFromTask(task));
+}
+
+function collectSddSpecLinks(value) {
+  const links = [];
+  collectSddSpecLinksInto(value, links);
+  return [...new Set(links)];
+}
+
+function collectSddSpecLinksInto(value, links) {
+  if (typeof value === 'string') {
+    for (const match of value.matchAll(new RegExp(SDD_SPEC_PATH_RE, 'ig'))) {
+      const candidate = normalizeSddSpecCandidate(match[0]);
+      if (candidate) links.push(candidate);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectSddSpecLinksInto(item, links));
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+  Object.values(value).forEach((child) => collectSddSpecLinksInto(child, links));
+}
+
+function classifySddSpecLinks(candidates) {
+  const existing = [];
+  const missing = [];
+
+  for (const candidate of candidates) {
+    if (!isAllowedSddSpecPath(candidate)) continue;
+    if (isFile(path.join(ROOT, candidate))) {
+      existing.push(candidate);
+    } else {
+      missing.push(candidate);
+    }
+  }
+
+  return {
+    existing: [...new Set(existing)],
+    missing: [...new Set(missing)],
+  };
+}
+
+function normalizeSddSpecCandidate(candidate) {
+  const trimmed = String(candidate ?? '')
+    .trim()
+    .replace(/^[`'"]+/, '')
+    .replace(/[`'".,;:)\]}]+$/g, '')
+    .replace(/^\.\//, '');
+
+  if (!trimmed.startsWith('.memory-bank/')) return null;
+
+  return normalizeRel(trimmed);
+}
+
+function isAllowedSddSpecPath(candidate) {
+  const rel = normalizeRel(candidate);
+  if (rel.includes('..')) return false;
+  return SDD_SPEC_DIRS.some((dir) => rel.startsWith(`.memory-bank/${dir}/`));
+}
+
+function getFeatureSpecDesign(featureId) {
+  const files = featureMarkdownFiles().filter((file) => featureFileMatches(file, featureId));
+  if (!files.length) return null;
+
+  const statuses = [];
+  const links = [];
+  for (const file of files) {
+    try {
+      const fm = parseFrontmatter(fs.readFileSync(file, 'utf8'));
+      if (!fm) continue;
+      if (hasOwn(fm, 'spec_design_status')) statuses.push(stripYamlQuotes(fm.spec_design_status));
+      if (hasOwn(fm, 'spec_design_links')) links.push(...collectSddSpecLinks(fm.spec_design_links));
+    } catch {
+      // Ignore unreadable feature docs; other checks report missing/invalid docs.
+    }
+  }
+
+  return {
+    status: statuses.find(Boolean),
+    links: classifySddSpecLinks([...new Set(links)]),
+  };
 }
 
 function featureMarkdownFiles() {

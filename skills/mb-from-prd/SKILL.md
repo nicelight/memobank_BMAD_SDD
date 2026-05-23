@@ -9,7 +9,7 @@ description: >
 - **What it does:** converts a PRD into structured project knowledge and traceable planning artifacts.
 - **Use it when:** the project is greenfield and `prd.md` or equivalent requirements already exist.
 - **Input:** `prd.md` or user-provided PRD text plus an initialized `.memory-bank/`.
-- **Output:** product, RTM, epics, features, and concept docs ready for `/prd-to-tasks`.
+- **Output:** product, RTM, epics, features, and SDD design routing ready for `/spec-design` before `/prd-to-tasks`.
 
 ## Preconditions
 - You are in the repo root.
@@ -23,7 +23,8 @@ description: >
 1. Read `.memory-bank/prd.md`.
 2. Confirm frontmatter has `type: prd`, `clarification_status: complete`, and `constitution_checked: true`.
 3. Stop if PRD contains unresolved `NEEDS CLARIFICATION` markers that affect decomposition.
-4. Start a task protocol folder:
+4. Read `.memory-bank/spec-index.md` and existing SDD specs; if missing or stale, run `/spec-init` before deriving L1-L3.
+5. Start a task protocol folder:
    - `.protocols/PRD-BOOTSTRAP/`
    - `plan.md` (steps)
    - `decision-log.md` (Q/A and choices)
@@ -72,13 +73,13 @@ Do **not** generate a full task queue “в лоб” for all features in one pa
 
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist. A fresh skeleton may have `{ "version": 1, "tasks": [] }`.
-2) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce:
+2) For each selected feature, run `/spec-design FT-<NNN>` first, then `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
 When enough structured evidence exists, those feature-level plans and task records may include optional richer fields such as `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, and `verification_targets`.
 Task routing is authoritative only through `task.tier`; the old `risk` / `risk.level` model is invalid.
-Canonical planning path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`. Run `/clarify-feature FT-<NNN>` only when a feature is explicitly pending/blocked.
+Canonical SDD planning path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`. Run `/clarify-feature FT-<NNN>` only when a feature is explicitly pending/blocked. For simple T0/T1-like features, `/spec-design` may set `spec_design_status: not_required` with a concise rationale.
 
 This keeps planning accurate and avoids speculative task explosions.
 
@@ -99,6 +100,7 @@ Rules:
 - classic duo docs remain valid and useful
 - richer docs are additive and should be grounded in evidence
 - if richer docs exist, route them from `.memory-bank/spec-index.md` and relevant feature/concept docs
+- do not create a new spec before checking existing specs through `.memory-bank/spec-index.md`
 
 ### 10) Update index
 Update `.memory-bank/index.md` with annotated links to everything new.
@@ -115,6 +117,7 @@ If the goal is “PRD → done without more user interaction”:
 - product.md + requirements.md are coherent.
 - Every REQ maps to an Epic/Feature in RTM.
 - Epics and features exist with acceptance criteria.
+- `.memory-bank/spec-index.md` routes existing/planned/candidate/unknown/not_applicable SDD design areas.
 - No schema-backed task records are required from `mb-from-prd` itself.
-- If task planning is explicitly continued with `/prd-to-tasks FT-<NNN>`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
+- If task planning is explicitly continued with `/spec-design FT-<NNN>` and `/prd-to-tasks FT-<NNN>`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
 - index.md is updated.

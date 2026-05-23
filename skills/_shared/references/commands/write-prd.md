@@ -7,33 +7,36 @@ status: active
 <objective>
 Create or update `.memory-bank/prd.md` from the Product Brief, Constitution, and optional supporting context.
 
-`/write-prd` is the PRD-level clarification loop. It resolves high-impact ambiguity before `/prd` decomposes the PRD into Memory Bank L1-L3 artifacts.
+`/write-prd` is the PRD-level clarification loop. It resolves high-impact ambiguity before `/spec-init` builds the SDD route map and `/prd` decomposes the PRD into Memory Bank L1-L3 artifacts.
 </objective>
 
 <process>
 
-## 0) Required inputs
-Read:
+## 0) Input sources
+Read the current PRD source. Accept any one of these as the source input:
 - `.memory-bank/analysis/product-brief.md`
-- `.memory-bank/constitution.md`
+- explicit PRD source text or file provided by the user
+- existing `prd.md` or `.memory-bank/prd.md` when present and being normalized/clarified
 
 Read as optional context when present and relevant:
+- `.memory-bank/constitution.md`
 - `.memory-bank/analysis/brainstorming/BR-*.md`
 - `.memory-bank/product.md`
 - `.memory-bank/requirements.md`
 - `.memory-bank/glossary.md`
 - `.memory-bank/invariants.md`
+- `.memory-bank/spec-index.md`
 - `.memory-bank/contracts/*`
 - `.memory-bank/states/*`
 - `.memory-bank/runbooks/*`
 - `.memory-bank/testing/*`
 - user-provided context in `$ARGUMENTS`
 
-If the Product Brief is missing, stop and ask for `/brief` or explicit PRD source text.
+If no Product Brief, explicit PRD source text/file, or existing `prd.md` / `.memory-bank/prd.md` is available, stop and ask for `/brief` or explicit PRD source text.
 If the Constitution is missing, stop and ask for `/constitution` or explicit permission to create the PRD without a Constitution gate.
 
 ## 1) Constitution gate
-Compare the Product Brief and optional context against `.memory-bank/constitution.md`.
+Compare the PRD source and optional context against `.memory-bank/constitution.md`.
 
 If the PRD requires changing the Constitution, add this section to `.memory-bank/prd.md` and stop unless the user explicitly confirms the amendment path:
 
@@ -98,7 +101,7 @@ Use this structure unless the repository already has a stronger local PRD templa
 ## Unresolved Blockers
 ```
 
-Ground every material claim in the Product Brief, Constitution, optional context, or explicit user answer. Mark unresolved product decisions as `NEEDS CLARIFICATION`.
+Ground every material claim in the Product Brief or explicit PRD source, Constitution, optional context, or explicit user answer. Mark unresolved product decisions as `NEEDS CLARIFICATION`.
 
 ## 3) Ambiguity coverage scan
 Before finalizing, scan the PRD with this taxonomy:
@@ -116,7 +119,7 @@ Before finalizing, scan the PRD with this taxonomy:
 Classify each category internally as Clear, Partial, or Missing. Ask only questions whose answers materially change architecture, data modeling, task decomposition, test design, UX behavior, operations, security, compliance, or acceptance criteria.
 
 ## 4) Targeted clarification loop
-Use the SpecKIT-style clarification pattern adapted from GitHub Spec Kit:
+Use this local clarification format, adapted from GitHub Spec Kit. This wording is only interaction guidance; it does not add hooks, generated files outside the PRD, or an external dependency.
 - https://raw.githubusercontent.com/github/spec-kit/main/templates/commands/clarify.md
 - https://github.com/github/spec-kit
 
@@ -193,5 +196,5 @@ Report:
 - `.memory-bank/prd.md` path
 - sections updated
 - remaining blockers, if any
-- next command: `/prd` only when `clarification_status: complete` and `constitution_checked: true`
+- next command: `/spec-init` only when `clarification_status: complete` and `constitution_checked: true`
 </process>

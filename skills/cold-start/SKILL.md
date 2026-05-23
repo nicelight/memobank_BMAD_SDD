@@ -19,7 +19,7 @@ description: >
 
 Supported scenarios:
 - **Idea-only**: repo has a raw idea, but no stable PRD yet; optionally route through `/analysis`, `/brainstorm`, and `/brief`.
-- **Clear concept**: repo has enough direction for a product brief; optionally run `/brief` before `/write-prd`.
+- **Clear concept**: repo has enough direction for a product brief; normally run `/brief`, then `/constitution` only if project principles are not already `ratified|partial`, before `/write-prd`.
 - **Greenfield**: repo has `prd.md` or requirements text, but no code yet.
 - **Brownfield**: repo already contains code and needs **as-is** documentation before change planning.
 
@@ -172,8 +172,8 @@ If Codex is used, create `.codex/config.toml` with profiles:
 
 ### Decision rule
 - If repo has substantial code (`src/`, `package.json`, `go.mod`, `Cargo.toml`, etc.) → **Brownfield** (Step 3B).
-- If repo is mostly empty and you have `prd.md` → **Greenfield** (Step 3A).
-- If repo is mostly empty and you only have an idea or loose concept → optionally run **Analysis** first: `/analysis`, `/brainstorm` when the idea is raw, and `/brief` before `/write-prd`.
+- If repo is mostly empty and you have `prd.md` → **Greenfield** (Step 3A); recommend `/constitution` before `/write-prd` if project principles are not ratified/partial.
+- If repo is mostly empty and you only have an idea or loose concept → optionally run **Analysis** first: `/analysis`, `/brainstorm` when the idea is raw, `/brief`, then `/constitution` before `/write-prd` only if project principles are not already `ratified|partial`.
 - If both exist: treat as **Brownfield + PRD delta** (Step 3B).
 - If repo is empty/new **and no `prd.md`** → **Skeleton-only** (Step 3C).
 
@@ -185,6 +185,8 @@ Record the scenario in:
 ## Step 3A — Greenfield workflow (PRD → Memory Bank)
 
 ### 3A.1 Write clarified PRD
+- Run `/constitution` before `/write-prd` when project principles are still framework-default/skipped/missing. If they are already ratified/partial, continue directly to `/write-prd`. `/constitution` reads `.memory-bank/analysis/product-brief.md` when present and asks up to 5 contextual governance questions per pass.
+- If the user explicitly skips `/constitution`, continue with framework-default/skipped principles and note that it can be ratified later.
 - Run `/write-prd` to turn Product Brief / PRD text + Constitution into `.memory-bank/prd.md`.
 - `/write-prd` handles PRD-level ambiguity with up to 5 targeted questions per pass.
 - If PRD mentions “use skills/tools/CLIs” — run `/find-skills` first (project-installed → marketplace).
@@ -199,7 +201,8 @@ If the user explicitly wants **autonomous mode**:
 - continue with `/autonomous` after `/write-prd` is complete
 
 ### 3A.2 Route PRD to L1–L3
-Run `/prd` to decompose `.memory-bank/prd.md` into product, requirements, epics, features, testing, and index updates.
+Run `/spec-init` to update `.memory-bank/spec-index.md` as the SDD Design Specs Index without inventing authoritative specs.
+Then run `/prd` to decompose `.memory-bank/prd.md` into product, requirements, epics, features, testing, and index updates.
 
 `/prd` owns:
 - `.memory-bank/product.md`
@@ -217,7 +220,7 @@ Each generated feature MUST include:
 Status policy:
 - Default EP/FT frontmatter to `status: draft` until `Open questions` are resolved.
 - Promote to `status: active` only when acceptance criteria + verification plan are stable.
-- `/prd` / `mb-from-prd` do not create tasks; canonical planning path is `/write-prd` → `/prd` → `/prd-to-tasks FT-<NNN>`.
+- `/prd` / `mb-from-prd` do not create tasks; canonical planning path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
 - Add feature `clarification_status: pending|blocked` only for explicit feature-level blockers.
 
 ### 3A.3 Tasks planning (per-feature, no “everything at once”)
@@ -226,7 +229,7 @@ Do **not** generate a full task queue for all features in one pass.
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
 2) For each selected feature, use `/clarify-feature FT-<NNN>` only if the feature is explicitly pending/blocked.
-3) Run `/prd-to-tasks FT-<NNN>` to produce:
+3) Run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
@@ -238,14 +241,18 @@ For every non-trivial concept, create support docs that make the concept cheap t
   - `.memory-bank/architecture/<concept>.md` (WHAT/WHY)
   - `.memory-bank/guides/<concept>.md` (HOW)
 - add spec-driven support docs when they clarify source-of-truth:
+  - `.memory-bank/tech-specs/...`
   - `.memory-bank/contracts/...`
+  - `.memory-bank/domains/...`
   - `.memory-bank/states/...`
+  - `.memory-bank/adrs/...`
   - `.memory-bank/runbooks/...`
   - `.memory-bank/testing/...`
 
 Rules:
 - classic duo docs remain valid and useful
 - spec-driven docs are additive, not a replacement by default
+- do not create a new spec before checking existing specs through `.memory-bank/spec-index.md`
 - if richer docs exist, route them from `.memory-bank/spec-index.md` and related concept docs
 
 ### 3A.5 Update index
@@ -297,7 +304,7 @@ Using the `.tasks/TASK-MB-MAP/` reports, fill:
 ### 3B.3 Ask user for PRD delta
 After baseline MB exists:
 - ask the user for `prd.md` describing **what to change/add**
-- run `/write-prd`, `/prd`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
+- run `/constitution` first only if project principles are not ratified/partial, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
 
 ---
 
@@ -314,12 +321,12 @@ In PRD-less mode, `tasks/index.json` must be `{ "version": 1, "tasks": [] }` and
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
 
-> "Memory Bank skeleton created. To fill it with product details, epics, features, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/write-prd`, then `/prd`, then `/prd-to-tasks FT-<NNN>`."
+> "Memory Bank skeleton created. To fill it with product details, epics, features, SDD design, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/constitution` first only if project principles are not already `ratified|partial`, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>`."
 
 ### 3C.3 Wait or proceed
 - **If user provides PRD now** → continue to Step 3A (Greenfield workflow).
 - **If user defers** → stop here. The skeleton is valid and usable. The user can invoke `$mb-from-prd` or `/prd` later to fill the Memory Bank.
-- **If user provides partial info** → route it through `/brief` and `/write-prd`; stop if PRD-level blockers remain.
+- **If user provides partial info** → route it through `/brief`, then `/constitution` only if project principles are not already `ratified|partial`, and `/write-prd`; stop if PRD-level blockers remain.
 
 > **Note**: The skeleton-only state is a valid stopping point. `AGENTS.md` + `.memory-bank/index.md` + MBB rules are enough for agents to start navigating the repo.
 
@@ -364,7 +371,7 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and use `/prd-to-tasks FT-<NNN>` for a selected feature.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and use `/spec-design FT-<NNN>` then `/prd-to-tasks FT-<NNN>` for a selected feature.
    Use `/clarify-feature FT-<NNN>` first only if that feature is explicitly pending/blocked.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Route by `task.tier`: `T0`/`T1` may use compact verification in `run.md`; `T2`/`T3` require `mb-verify` and `mb-red-verify`.

@@ -70,7 +70,7 @@ Codex (fresh session):
 
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
+- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
 - Run `/clarify-feature FT-001` only for explicit feature blockers before `/prd-to-tasks`.
 - Execute tasks one-by-one and review after each wave.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if the JSON task queue already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.

@@ -31,10 +31,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify`.
-- `/verify` may mark a task `done` after functional `VERDICT: PASS`, including T2/T3.
-- For risky tasks, user/agent decides whether to run `/red-verify` after `/verify`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
+- Manual closure is allowed only when an explicit closure owner exists.
+- `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
+- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -43,7 +45,7 @@ Tier summary:
 - T0/T1: compact allowed.
 - T2/T3: verify + red-verify before scheduler marks done.
 - T3: human checkpoint + rollback/recovery before scheduler marks done.
-- Manual mode: /verify PASS may close; /red-verify may reopen/block/fail.
+- Manual mode: T0/T1 may close on /verify PASS only with explicit closure ownership; T2/T3 require /red-verify semantic-pass before closure.
 
 ## T0 - trivial / docs-only
 
@@ -76,7 +78,7 @@ Use for APIs, contracts, events, schemas, state machines, lifecycle changes, dat
 - Compact-only protocol: invalid
 - `/verify`: required
 - Scheduler mode: verify + red-verify before scheduler marks done; semantic-pass required
-- Manual mode: `/verify PASS` may close; later `/red-verify` may reopen/block/fail
+- Manual mode: T2 requires explicit closure ownership plus `/red-verify` semantic-pass before closure
 - Evidence: store substantive artifacts under `.tasks/<TASK_ID>/`
 - MB-SYNC: required
 
@@ -90,7 +92,7 @@ Use for auth, permissions, secrets, security-sensitive behavior, deploy/runtime 
 - Scheduler mode: verify + red-verify before scheduler marks done; semantic-pass required
 - T3: human checkpoint + rollback/recovery before scheduler marks done
 - Required scheduler marker lines are exact standalone lines: `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`
-- Manual mode: `/verify PASS` may still close; later red-verify/human review may reopen/block/fail
+- Manual mode: T3 requires explicit closure ownership, `/red-verify` semantic-pass, and human/recovery markers before closure
 - MB-SYNC: required
 
 ## Assignment Rules

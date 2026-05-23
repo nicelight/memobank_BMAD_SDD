@@ -34,7 +34,7 @@ Default mode may emit warnings for incomplete scheduler readiness evidence that 
 
 Use `--strict` before `/autopilot` or the scheduler phase of `/autonomous`, before each task-selection pass, and after each `/mb-sync` before promoting dependents or declaring success.
 
-Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonomous` own closure/failure/blocking decisions, T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass`, and T3 scheduler closure also requires exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`. In manual mode, `/verify PASS` may close, including T2/T3; later `/red-verify` may reopen/block/fail.
+Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonomous` own closure/failure/blocking decisions, T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass`, and T3 scheduler closure also requires exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`. In manual mode, `/verify PASS` may close only T0/T1 with explicit closure ownership; T2/T3 require `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
 
 ## Required checks
 `mb-doctor` must check only readiness-critical conditions:
@@ -60,6 +60,8 @@ Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonom
 - `failed` tasks have either a bug doc in `.memory-bank/bugs/` mentioning the task id or an indexed follow-up task depending on/referencing the failed task.
 - Direct dependents of failed tasks are marked `blocked`.
 - `T1` / `T2` / `T3` tasks have concrete `REQ-*` and `FT-*` linkage. Placeholder values such as `REQ-XXX` and `FT-XXX` do not count.
+- `T2` / `T3` tasks have relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
+- Default mode reports missing T2/T3 SDD spec links as warnings; `--strict` reports readiness errors.
 - When `.memory-bank/requirements.md` exists, referenced `REQ-*` IDs appear in it.
 - When `.memory-bank/features/` contains markdown files, referenced `FT-*` IDs have a matching `.memory-bank/features/FT-<NNN>*.md` file.
 - Obsolete `.memory-bank/tasks/backlog.md` is absent. If present, report `TASK_BACKLOG_MD_PRESENT` as an error.
@@ -97,6 +99,7 @@ Errors block autonomous/autopilot progression:
 - `TASK_REQUIREMENT_LINK_MISSING` in `--strict`
 - `TASK_REQUIREMENT_NOT_FOUND` in `--strict`
 - `TASK_FEATURE_FILE_MISSING` in `--strict`
+- `TASK_SDD_SPEC_LINK_MISSING` in `--strict`
 - `TASK_BACKLOG_MD_PRESENT`
 
 Structural lint details such as invalid legacy `risk`, dependency cycles, and schema-level task field violations are surfaced through `MB_LINT_FAILED` with captured `mb-lint` output.
@@ -123,6 +126,7 @@ Warnings identify non-blocking quality risks in default mode:
 - `TASK_REQUIREMENT_LINK_MISSING`
 - `TASK_REQUIREMENT_NOT_FOUND`
 - `TASK_FEATURE_FILE_MISSING`
+- `TASK_SDD_SPEC_LINK_MISSING`
 - `TASK_PLANNED_READY_CANDIDATE`
 - `TASK_BLOCKED_BY_UPSTREAM`
 - `TASK_QUEUE_NO_EXECUTABLE_READY`

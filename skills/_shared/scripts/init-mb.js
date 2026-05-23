@@ -415,27 +415,31 @@ function seedCommandsFromTemplates() {
 
 function constitutionCommandTemplate() {
   return `---
-description: Read or minimally amend the Project Constitution.
+description: Run a contextual interview and maintain the Project Constitution.
 status: active
 ---
 # /constitution
 
 ## Purpose
-Read, create, or minimally amend \`.memory-bank/constitution.md\`.
+Run a contextual governing-principles interview and maintain \`.memory-bank/constitution.md\`.
 
 ## Behavior
 1. Read \`.memory-bank/constitution.md\`.
-2. If it is missing, create it from the generated Constitution skeleton.
-3. Read governance context before amendments:
+2. Read \`.memory-bank/analysis/product-brief.md\` when present and use it only to make questions contextual.
+3. If \`.memory-bank/constitution.md\` is missing, create it from the generated Constitution skeleton.
+4. Read governance context before amendments:
    - \`.memory-bank/mbb/index.md\`
    - \`.memory-bank/spec-index.md\`
    - \`.memory-bank/invariants.md\`
    - \`.memory-bank/workflows/*\`
    - \`AGENTS.md\`
-4. Update the Constitution only when the user asks to create, amend, or clarify governing principles.
-5. Keep it short; move concrete project rules to \`invariants.md\`, \`contracts/*\`, \`states/*\`, or workflow policy docs.
-6. Do not invent domain-specific principles without evidence.
-7. Do not add \`/mb-constitution\`, package skills, migration tooling, governance engines, or compatibility layers.
+5. Ask at most 5 questions per pass, one at a time, using recommended options/rationale like \`/write-prd\`.
+6. Cover project level, architecture priority, DoD/checks, agent autonomy/human checkpoints, and critical non-negotiables.
+7. If the user skips, leave \`project_principles: framework-default\` or set \`project_principles: skipped\`, keep \`ratified: null\`, and continue; this is not a hard blocker.
+8. When project principles become \`ratified\` or \`partial\`, set \`ratified: YYYY-MM-DD\`.
+9. Keep it short; move concrete project rules to \`invariants.md\`, \`contracts/*\`, \`states/*\`, or workflow policy docs.
+10. Do not invent domain-specific principles without evidence.
+11. Do not add \`/mb-constitution\`, Spec Kit hooks, migration tooling, governance engines, or compatibility layers.
 `;
 }
 
@@ -551,6 +555,9 @@ Every ORCHESTRATOR response must start with:
 - Start with \`.memory-bank/architecture/*\` and \`.memory-bank/guides/*\` for concept priming.
 - If present, prefer explicit normative docs such as \`.memory-bank/constitution.md\`, \`.memory-bank/spec-index.md\`, \`.memory-bank/invariants.md\`, \`.memory-bank/glossary.md\`, \`.memory-bank/contracts/*\`, \`.memory-bank/states/*\`, \`.memory-bank/runbooks/*\`, and \`.memory-bank/testing/*\`.
 - Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
+- Before serious work, read \`.memory-bank/spec-index.md\` and follow linked SDD specs.
+- Do not create a new spec before checking existing specs through \`.memory-bank/spec-index.md\`.
+- For \`T2\` / \`T3\` tasks, linked SDD specs are normative inputs; missing linked specs are a blocker for serious work.
 
 ## Docs First
 After finishing a meaningful unit of work:
@@ -599,9 +606,10 @@ Claude (fresh session):
 - \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is \`/analysis -> /brainstorm -> /brief -> /write-prd -> /prd -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`.
+- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`.
+- Use \`/brainstorm\` before \`/brief\` only when the idea is raw.
 - Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
-- **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`, or \`/autopilot\` if JSON task records already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
+- **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`; it runs \`/spec-auto --init\` after \`/write-prd\` and \`/spec-auto --all\` after \`/prd\`. Use \`/autopilot\` only if JSON task records and required SDD spec links already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
 
 Naming:
 - Folder: \`.tasks/TASK-<ID>/\`
@@ -617,12 +625,15 @@ Naming:
 - /cold-start → .memory-bank/commands/cold-start.md
 - /mb → .memory-bank/commands/mb.md
 - /mb-init → .memory-bank/commands/mb-init.md
-- /constitution → .memory-bank/commands/constitution.md
+- /constitution → .memory-bank/commands/constitution.md (normal before /write-prd only when project_principles is not ratified|partial)
 - /analysis → .memory-bank/commands/analysis.md (optional idea discovery router)
 - /brainstorm → .memory-bank/commands/brainstorm.md (optional raw idea facilitation)
 - /brief → .memory-bank/commands/brief.md (optional product brief before PRD)
 - /write-prd → .memory-bank/commands/write-prd.md
+- /spec-init → .memory-bank/commands/spec-init.md
 - /prd → .memory-bank/commands/prd.md
+- /spec-design → .memory-bank/commands/spec-design.md
+- /spec-auto → .memory-bank/commands/spec-auto.md
 - /clarify-feature → .memory-bank/commands/clarify-feature.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /execute → .memory-bank/commands/execute.md
@@ -658,7 +669,7 @@ status: active
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 - [.memory-bank/workflows/tier-policy.md](workflows/tier-policy.md): Tier policy for TASK routing and protocol depth.
 
-- [.memory-bank/spec-index.md](spec-index.md): Реестр normative docs и маршрутизация по source-of-truth.
+- [.memory-bank/spec-index.md](spec-index.md): SDD Design Specs Index and source-of-truth route map.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 - [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
@@ -714,27 +725,61 @@ status: active
 `);
 
 writeFile(`${MB}/spec-index.md`, `---
-description: Реестр normative docs и маршрутизация по source-of-truth документам.
+description: SDD Design Specs Index and route map for source-of-truth documents.
 status: active
 ---
-# Spec Index
+# SDD Design Specs Index
 
 ## Purpose
-- Используй этот файл как роутер по явным normative docs.
-- Если раздел не нужен проекту, оставь ссылку-плейсхолдер или отметь \`not used\`.
+- Use this file as the route map for SDD design specs and explicit normative docs.
+- Read this index before creating new specs or doing serious T2/T3 work.
+- If a design area is not needed, mark it \`not_applicable\` with a short reason.
+- Do not create authoritative specs unless PRD/user/spec evidence contains the decision.
 
-## Global
+## Hard rules
+- Do not create a new spec before checking existing specs through this index.
+- \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
+- \`/spec-design FT-<NNN>\` owns feature-level design before \`/prd-to-tasks FT-<NNN>\`.
+- \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
+
+## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
-
-## Governance
 - [.memory-bank/constitution.md](constitution.md): Top governing policy for AI-first project decisions.
-
-## Normative domains
 - [.memory-bank/contracts/](contracts/): Контракты интерфейсов и boundary specs.
+- [.memory-bank/domains/](domains/): Domain/data model specs.
 - [.memory-bank/states/](states/): Lifecycle/state rules.
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
+
+## Planned design areas
+- TBD
+
+## Candidate design areas
+- TBD
+
+## Unknown design areas
+- TBD
+
+## Not applicable areas
+- TBD
+
+## Feature design status map
+| Feature | spec_design_status | Linked specs | Notes |
+|---|---|---|---|
+| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto |
+
+## Expected spec locations
+- Feature hubs: \`.memory-bank/tech-specs/FT-<NNN>-<slug>.md\`
+- Architecture notes: \`.memory-bank/architecture/<topic>.md\`
+- Contracts: \`.memory-bank/contracts/<boundary>.md\`
+- Domain/data models: \`.memory-bank/domains/<domain>.md\`
+- States: \`.memory-bank/states/<lifecycle>.md\`
+- ADRs: \`.memory-bank/adrs/ADR-<NNN>-<slug>.md\`
+- Testing/runbooks: \`.memory-bank/testing/\` and \`.memory-bank/runbooks/\`
+
+## Gaps and open questions
+- TBD
 
 ## Compatibility note
 - Duo docs в \`architecture/\` и \`guides/\` остаются валидными.
@@ -745,7 +790,8 @@ writeFile(`${MB}/constitution.md`, `---
 description: Project Constitution — governing principles for AI-first development.
 status: active
 version: 1
-ratified: ${TODAY}
+project_principles: framework-default
+ratified: null
 last_updated: ${TODAY}
 ---
 # Project Constitution
@@ -755,6 +801,10 @@ last_updated: ${TODAY}
 This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
 
 ## Core Principles
+
+### 0. Project Principles Status
+
+This skeleton uses framework-default principles until \`/constitution\` runs the contextual interview. \`ratified: null\` means project principles are not ratified yet. When \`/constitution\` sets \`project_principles: ratified\` or \`project_principles: partial\`, it must fill \`ratified: YYYY-MM-DD\`. If the user explicitly skips that interview, keep or set \`project_principles: skipped\`, keep \`ratified: null\`, and continue; revisit \`/constitution\` later.
 
 ### I. AI-First Spec-Driven Development
 
@@ -907,7 +957,9 @@ status: active
 ## When to use
 - Bootstrap: cold-start / mb-init
 - Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
-- PRD → MB: /write-prd, then /prd and /prd-to-tasks
+- Project principles: /constitution after /brief or existing PRD context, before /write-prd only when project_principles is not ratified|partial
+- PRD → MB: /write-prd, /spec-init, /prd, /spec-design, then /prd-to-tasks
+- SDD design: /spec-init for route map, /spec-design FT-XXX for manual feature design, /spec-auto for autonomous design
 - Map codebase: /map-codebase
 - Execution: /execute
 - Verification (UAT): /verify
@@ -1006,23 +1058,28 @@ status: active
 ## Principle: no task explosion
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
 - \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
-- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs.
+- \`/spec-init\` creates the SDD Design Specs Index after \`/write-prd\` and before \`/prd\`.
+- \`/spec-design FT-<NNN>\` completes or marks unnecessary feature-level design before task decomposition.
+- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready.
 
 ## Interactive mode (you stay)
-1) \`/analysis -> /brainstorm -> /brief\` when idea discovery is needed
-2) \`/write-prd\` (creates clarified .memory-bank/prd.md)
-3) \`/prd\` (fills L1–L3)
-4) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
-5) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
-6) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
-7) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
+1) \`/analysis -> /brief\` when idea discovery is needed; use \`/brainstorm\` before \`/brief\` only for raw ideas
+2) \`/constitution\` for contextual governing principles when \`.memory-bank/constitution.md\` is missing or \`project_principles\` is framework-default|skipped|missing; if principles are already ratified/partial, continue to \`/write-prd\`; if explicitly skipped, continue with framework-default/skipped principles
+3) \`/write-prd\` (creates clarified .memory-bank/prd.md)
+4) \`/spec-init\` (updates .memory-bank/spec-index.md route map)
+5) \`/prd\` (fills L1–L3)
+6) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
+7) \`/spec-design FT-001\` (updates only needed SDD specs or marks not_required)
+8) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
+9) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
+10) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
    - \`/execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`
-8) After each wave: \`/review\` (fresh context)
+11) After each wave: \`/review\` (fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) \`/autonomous\`
-2) command builds L1–L3, runs review gate, decomposes all FT, and then schedules ready TASKs
-3) run \`/mb-doctor --strict\` before scheduler execution
+2) command runs \`/write-prd -> /spec-auto --init -> /prd -> /spec-auto --all -> /prd-to-tasks --all\`, then schedules ready TASKs
+3) run \`/mb-doctor --strict\` before scheduler execution; T2/T3 tasks without SDD spec links are blockers
 4) each TASK runs in **fresh CLI sessions**
 5) after each \`/mb-sync\`, run \`/mb-doctor --strict\` before promoting dependents
 6) after each wave: \`/review\`
