@@ -358,7 +358,7 @@ function ensureTargetDirectory(targetRepo, { assumeYes, interactive }) {
 }
 
 async function askYesNo(rl, label, defaultYes = false) {
-  const suffix = defaultYes ? '[Д/н]' : '[д/Н]';
+  const suffix = defaultYes ? '[Y/n]' : '[y/N]';
   const answer = (await rl.question(`${label} ${suffix}: `)).trim().toLowerCase();
   if (!answer) return defaultYes;
   if (['y', 'yes', 'д', 'да'].includes(answer)) return true;
@@ -432,6 +432,15 @@ function resolvePickerInput(openDir, input, choices) {
   return join(openDir, choices.dirs[number - 1]);
 }
 
+function printInvalidPickerNumber(input, choices) {
+  if (choices.dirs.length === 0) {
+    console.log('Список пуст. Используйте .., s, p, n или q.');
+    return;
+  }
+
+  console.log(`Нет пункта ${input}. В этой папке доступны пункты 1..${choices.dirs.length}.`);
+}
+
 async function createFolderInPicker(rl, openDir) {
   const name = (await rl.question('Имя новой папки: ')).trim();
   if (!name) {
@@ -494,6 +503,11 @@ async function pickTargetDirectory(rl) {
     const selectedDir = resolvePickerInput(openDir, normalized, choices);
     if (selectedDir) {
       openDir = selectedDir;
+      continue;
+    }
+
+    if (/^\d+$/.test(normalized)) {
+      printInvalidPickerNumber(normalized, choices);
       continue;
     }
 
