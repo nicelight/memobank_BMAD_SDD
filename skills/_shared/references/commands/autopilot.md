@@ -61,7 +61,8 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -97,29 +98,24 @@ Manual mode:
 1) переведи в task record `status: ready -> in_progress`
 2) перечитай `task.tier` из JSON record and route only by that value
 3) выполни `/execute TASK-<ID>`
-4) verification by tier:
-   - `T0` / `T1`: compact allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
-   - `T2` / `T3`: full path is required; run `/verify TASK-<ID>` and `/red-verify TASK-<ID>` before the scheduler marks `done`
+4) выполни `/verify TASK-<ID>` by tier:
+   - `T0` / `T1`: compact protocol/evidence allowed according to tier policy
+   - `T2` / `T3`: full path is required
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
-5) scheduler closure decision:
+5) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
+6) scheduler writes closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`:
    - `T0` / `T1`: normal `done` allowed after compact evidence / functional `VERDICT: PASS`
    - `T2` / `T3`: `done` allowed only after `/verify` `VERDICT: PASS` evidence and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
-6) run `/mb-sync` to sync the scheduler decision; `/mb-sync` must not promote dependents by itself
-7) apply scheduler-owned closure:
-   - `status: done` in the task record
-   - run `/mb-doctor --strict` before promoting dependents
+   - `semantic-concern`: never normal `done`; write `blocked` or `in_progress` pending human review with owner/reason/follow-up evidence
+   - `FAIL` or `semantic-fail`: write `status: failed`, create bug + follow-up task, and record failure budget impact
+7) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
+8) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
+9) apply a separate scheduler promotion/dependent blocking pass:
    - promote dependents через explicit `planned -> ready`, если все их deps закрыты и нет blockers / blocking review rejects / unresolved semantic-concern
-8) если итог = `semantic-concern`:
-   - не ставь normal `done`
-   - до продолжения task/wave явно выбери и запиши решение: `blocked` для task/dependents или `in_progress` pending human review
-   - если human review принимает concern, сначала зафиксируй owner/reason и повтори `/red-verify`; normal `done` разрешён только после `semantic-pass`
-   - не продвигай dependents, пока задача не получила `semantic-pass`
-   - `/mb-sync` только для записи blocked / human-review-required состояния
-9) если `FAIL` или `semantic-fail`:
-   - `status: failed` in the task record
-   - создай bug + follow-up task
-   - downstream dependents → `blocked`
-   - проверь failure budget
+   - block dependents if upstream is `failed` / blocking / unresolved `semantic-concern`
+   - write every promotion/blocking result to the affected `.task.json` records
+
+After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → scheduler writes final task decision/status/evidence to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` + `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
 
 Новые follow-up задачи, созданные во время verify, должны подхватываться **в том же run** на следующей итерации.
 

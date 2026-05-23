@@ -28,14 +28,16 @@ status: active
 - `.tasks/TASK-MB-REVIEW/TASK-MB-REVIEW-<STAGE_ID>-final-report-docs-01.md`
 
 ## 1) Запусти reviewers (fresh context)
-STAGE_IDs (рекомендуемо):
-- `S-01` Architect (C4 + boundaries + ADR)
-- `S-02` Scope/RTM (REQ→EP→FT)
-- `S-03` Plan/tasks (JSON records/index/waves/gates)
-- `S-04` Security
-- `S-05` MBB compliance
+Canonical STAGE_ID table:
 
-Если есть код — опционально добавь code-quality reviewer.
+| STAGE_ID | Reviewer |
+| --- | --- |
+| `S-01` | Architect (C4 + boundaries + ADR) |
+| `S-02` | Scope/RTM (REQ→EP→FT) |
+| `S-03` | Plan/tasks (JSON records/index/waves/gates) |
+| `S-04` | Security |
+| `S-05` | MBB compliance |
+| `S-06` | Code quality (optional, if code exists) |
 
 Constitution checks are blocking:
 - If `.memory-bank/constitution.md` exists, reviewers must flag contradictions between the Constitution and Memory Bank docs, task records, workflow routing, implementation plans, or proposed execution.

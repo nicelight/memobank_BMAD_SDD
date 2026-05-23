@@ -78,8 +78,8 @@ Installable skill entrypoints:
 Skill-specific non-shared assets:
 
 - `skills/mb-analysis/assets/*.md`: analysis index, brainstorming, and product brief templates.
-- `skills/mb-garden/assets/mb-lint.mjs`: deterministic Memory Bank linter.
-- `skills/mb-garden/assets/mb-doctor.mjs`: deterministic autonomous readiness check.
+- `skills/mb-garden/assets/mb-lint.mjs`: packaged deterministic Memory Bank structural/mechanical hygiene linter.
+- `skills/mb-garden/assets/mb-doctor.mjs`: current packaged location for the deterministic workflow/autonomous readiness check over `mb-lint`.
 - `skills/mb-garden/assets/memory-bank-lint.yml`: related lint config asset.
 - `skills/mb-harness/assets/codex-config.toml`: Codex harness config template.
 - `skills/mb-from-prd/references/*.md`: PRD decomposition templates.
@@ -100,8 +100,8 @@ For updates that change the JSON-only task registry or indexed task record model
 - `skills/_shared/references/commands/execute.md`
 - `skills/_shared/references/commands/verify.md`
 - `skills/_shared/references/commands/mb-sync.md`
-- `skills/mb-garden/assets/mb-lint.mjs`
-- `skills/mb-garden/assets/mb-doctor.mjs`
+- `skills/mb-garden/assets/mb-lint.mjs` (packaged deterministic lint asset)
+- `skills/mb-garden/assets/mb-doctor.mjs` (current packaged deterministic readiness asset)
 - `.github/workflows/release-check.yml`
 - `README.en.md`, `README.ru.md`
 

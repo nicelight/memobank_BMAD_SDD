@@ -192,7 +192,7 @@ GEMINI.md
 - `mb-verify` - functional verification по AC/REQ и evidence.
 - `mb-red-verify` - adversarial semantic verification.
 - `mb-review` - fresh-context review Memory Bank.
-- `mb-garden` - lint, doctor и maintenance assets.
+- `mb-garden` - maintenance Memory Bank и packaged deterministic lint/readiness tool assets.
 - `mb-harness` - deterministic commands, clean sessions и worktree guidance.
 
 ## 6. Workflows
@@ -390,7 +390,7 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 | `/review` | Fresh-context Memory Bank/planning review | `.tasks/TASK-MB-REVIEW/*`, fix list/verdict | не является per-task semantic verification | исправить issues, `/prd-to-tasks`, `/autopilot` или continue |
 | `/map-codebase` | Brownfield as-is mapping | `.memory-bank/*` baseline docs, `.tasks/TASK-MB-MAP/*` | не создает roadmap/tasks без PRD | `/write-prd --delta`, затем `/prd` |
 | `/mb-sync` | Synchronize durable docs and task consistency | indexes, RTM/lifecycle, changelog, task consistency | не принимает scheduler closure/promotion decisions | `mb-doctor`, review, next task |
-| `/mb-garden` | Maintain Memory Bank hygiene | lint findings, cleanup/archive recommendations | не меняет product scope | исправить docs или rerun checks |
+| `/mb-garden` | Maintain Memory Bank hygiene | cleanup/archive recommendations, hygiene findings | не меняет product scope; не является doctor workflow gate | исправить docs или rerun checks |
 | `/mb-doctor` | Deterministic readiness gate over `mb-lint` | report only; optional JSON output | не заменяет `/review`, `/verify`, `/red-verify`; нет markdown task-card fallback | исправить findings или перейти к scheduler |
 | `/mb-harness` | Set up deterministic agent-safe workflows | harness docs/config guidance, gates/worktree guidance | не реализует product tasks | запустить выбранный workflow с gates |
 | `/autopilot` | Execute existing JSON task queue | task statuses, protocols, evidence, sync/review loop | не создает PRD/FT/TASK queue | terminal state или follow-up fixes |

@@ -1,7 +1,7 @@
 # MB-SYNC — Memory Bank synchronization workflow
 
 ## Когда запускать
-- После scheduler-provided closure/failure/blocking decision (`/autopilot` / `/autonomous`) и выполнения required `/verify` / `/red-verify` gates.
+- После scheduler записал closure/failure/blocking decision, final task status, and evidence links в authoritative indexed `.memory-bank/tasks/TASK-*.task.json` (`/autopilot` / `/autonomous`) и выполнения required `/verify` / `/red-verify` gates.
 - После manual `/verify`, если он изменил durable task/docs state.
 - После `/red-verify`, если выполнялась семантическая adversarial-проверка и она изменила или требует reconcile task/docs state.
 - После значимых рефакторингов или архитектурных изменений.
@@ -18,7 +18,8 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -53,6 +54,8 @@ Manual mode:
 - [ ] `.memory-bank/tasks/index.json` отражает актуальный набор задач.
 - [ ] `.memory-bank/tasks/TASK-*.task.json` records отражают актуальные статусы задач.
 - [ ] Новые задачи (из багов, из новых требований) добавлены как schema-backed task records.
+- [ ] В scheduler mode closure/failure/blocking decision уже записан в indexed `.task.json`; если нет, report consistency gap and stop for explicit scheduler or standalone owner decision.
+- [ ] Promotion/dependent block/unblock не выполняется внутри `/mb-sync`; это отдельный scheduler pass после sync + strict doctor.
 
 ### 5) Changelog
 - [ ] `.memory-bank/changelog.md` содержит запись о текущей wave/change.

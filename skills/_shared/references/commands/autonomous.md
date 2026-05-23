@@ -156,7 +156,8 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -193,16 +194,17 @@ Manual mode:
 Для каждого выбранного `TASK-*`:
 1) scheduler writes `ready -> in_progress`
 2) `/execute TASK-<ID>`
-3) verify by `task.tier` from the JSON record:
-   - `T0` / `T1`: compact allowed; verification may be recorded in `.protocols/TASK-<ID>/run.md`
-   - `T2` / `T3`: full protocol path is required; run `/verify TASK-<ID>`
+3) `/verify TASK-<ID>` by `task.tier` from the JSON record:
+   - `T0` / `T1`: compact protocol/evidence allowed according to tier policy
+   - `T2` / `T3`: full protocol path is required
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
 4) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
-5) scheduler records the closure/failure/blocking decision from verification verdicts, then runs `/mb-sync` to synchronize that decision
-6) scheduler writes final closure/failure/blocking status and dependent block/unblock decisions
-7) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict` before promoting dependents
+5) scheduler records the closure/failure/blocking decision, final task status, and evidence links in the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`
+6) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
+7) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
+8) scheduler performs a separate promotion/dependent blocking pass and writes any `planned -> ready` / downstream `blocked` changes to their `.task.json` records
 
-After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → `/mb-sync` → scheduler closure.
+After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → scheduler writes final task decision/status/evidence to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` + `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
 
 Переходы состояния:
 - `ready -> in_progress`

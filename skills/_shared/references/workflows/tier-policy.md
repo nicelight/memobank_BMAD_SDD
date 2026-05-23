@@ -24,7 +24,8 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -49,7 +50,8 @@ Tier summary:
 Use for typos, formatting, broken links, or safe documentation changes with no runtime, contract, state, data, security, or test impact.
 
 - Protocol: compact allowed. Full protocol not required.
-- Separate `/verify`: not required; it may be skipped if compact evidence is enough
+- Scheduler mode: `/verify TASK` is the ordered verification step; compact protocol/evidence may be enough.
+- Manual mode: separate `/verify` is not required; it may be skipped if compact evidence is enough.
 - `/red-verify`: not required
 - Evidence: `VERDICT: PASS` or clear compact evidence accepted by current lint/doctor policy
 - MB-SYNC: only if durable Memory Bank docs/state changed
@@ -60,7 +62,8 @@ Use for one local function, one small component, a local unit test, or a contain
 
 - Protocol: compact allowed. Full protocol not required.
 - Checks: relevant local lint/typecheck/unit tests when available
-- Separate `/verify`: optional; it may be skipped if compact evidence is enough
+- Scheduler mode: `/verify TASK` is the ordered verification step; compact protocol/evidence may be enough.
+- Manual mode: separate `/verify` is optional; it may be skipped if compact evidence is enough.
 - `/red-verify`: not required
 - Evidence: `VERDICT: PASS` or clear compact evidence accepted by current lint/doctor policy
 - MB-SYNC: only if durable Memory Bank docs/state changed

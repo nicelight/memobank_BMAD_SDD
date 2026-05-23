@@ -18,7 +18,8 @@ Scheduler mode:
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
 - `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
-- `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
+- Scheduler must write the closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json` record before `/mb-sync`.
+- `/mb-sync` records/reconciles already-written task state. It does not decide closure/failure/blocking/promotion and must not sync a decision that exists only in scheduler context.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
 - T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -32,9 +33,10 @@ Manual mode:
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
 
-- `/mb-sync` synchronizes Memory Bank docs, RTM/lifecycle notes, changelog, evidence links, and task-record consistency after a closure/failure/blocking decision already exists.
-- `/mb-sync` does not independently decide task closure, write `planned -> ready`, unblock dependents, block dependents, or promote downstream work.
-- In `/autopilot` / `/autonomous`, the scheduler owns task status transitions, closure, failure handling, and dependent block/unblock. `/mb-sync` records the scheduler-provided decision and reports consistency problems.
+- `/mb-sync` synchronizes Memory Bank docs, RTM/lifecycle notes, changelog, evidence links, and task-record consistency after a closure/failure/blocking decision already exists in the authoritative task record.
+- `/mb-sync` does not independently decide task closure, failure, blocking, promotion, `planned -> ready`, dependent unblock, or dependent block.
+- In `/autopilot` / `/autonomous`, the scheduler owns task status transitions, closure, failure handling, and dependent block/unblock. `/mb-sync` records already-written scheduler decisions and reports consistency problems.
+- If a closure/failure/blocking decision is only present in the current agent/scheduler context and is not written to the indexed `.task.json`, `/mb-sync` must report a consistency gap and stop for an explicit scheduler or standalone owner decision.
 - In standalone/manual mode, `/mb-sync` may record an explicit user/direct-command closure decision, but it must not silently claim scheduler ownership or advance dependents on its own.
 
 Минимальный чеклист:
@@ -45,7 +47,7 @@ Manual mode:
 - [ ] Обновить RTM/REQ lifecycle в `.memory-bank/requirements.md`
 - [ ] Если у EP/FT есть `lifecycle`, синхронизировать его отдельно от document `status`
 - [ ] Проверить, что task records не ссылаются на features с `clarification_status: pending|blocked`
-- [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write status only when supplied by the scheduler or explicit standalone closure decision
+- [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write status only when an explicit standalone owner decision is supplied, or synchronize status already written by the scheduler
 - [ ] Записать changelog `.memory-bank/changelog.md`
 - [ ] Для `/autonomous` и `/autopilot`: `/mb-doctor --strict` после sync — blocking gate, не optional
 
@@ -59,7 +61,7 @@ Task synchronization rule:
 - JSON task records are authoritative for task status, dependencies, tier, gates, verification targets, and evidence markers.
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - RTM and changelog should be reconciled from JSON task records.
-- During sync, validate and report whether scheduler-owned promotions would be legal; do not write `planned -> ready` from `/mb-sync` alone.
+- During sync, validate and report whether scheduler-owned promotions/blocking changes would be legal; do not write `planned -> ready`, dependent unblock, or dependent block from `/mb-sync` alone.
 - Report tasks whose `feature` points to `clarification_status: pending|blocked` as not promotion-eligible. Missing clarification metadata is allowed.
 - Report tasks with failed/blocked upstream dependencies, open blocking bugs, or unresolved semantic concern decisions as not promotion-eligible.
 - In scheduler mode, `T2` / `T3` tasks may close only when full protocol closure expectations are present. `T2` / `T3` require `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`; `T3` also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
