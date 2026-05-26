@@ -182,13 +182,7 @@ node scripts/install-framework.mjs
 установит команды memobank и создаст или синхронизирует skeleton Memory Bank в
 выбранном репозитории.
 
-Если нужно вручную запустить bootstrap из уже установленного skill package:
-
-```bash
-node .agents/skills/mb-init/scripts/shared-init-mb.js
-```
-
-После bootstrap используйте `/cold-start` или начните ручной цикл:
+После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
 /analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
