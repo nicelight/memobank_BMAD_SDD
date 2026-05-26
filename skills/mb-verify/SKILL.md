@@ -37,7 +37,7 @@ Manual mode:
 - Manual closure is allowed only when an explicit closure owner exists.
 - T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
 - T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- If required T2/T3 `/red-verify` returns anything other than `semantic-pass`, leave closure pending or blocked, not done; optional T0/T1 red-verify does not make their normal verify-based closure stricter.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -52,10 +52,18 @@ Manual mode:
 - Link to protocol plan: `.protocols/<TASK_ID>/plan.md`
 
 If present, also use:
-- linked SDD specs for `T2` / `T3`
+- linked authoritative SDD specs for any tier
 - `verification_targets`
 - `normative_inputs`
+- `constraints`
+- `invariants`
 - task record references to source artifacts
+
+Authoritative SDD spec links are links in task richer fields or linked feature
+`spec_design_links` that point to `.memory-bank/spec-index.md`,
+`.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
+`.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`,
+`.memory-bank/adrs/`, `.memory-bank/testing/`, or `.memory-bank/runbooks/`.
 
 ## Preconditions
 - Implementation is done and gates were run (or failures recorded).
@@ -88,6 +96,8 @@ Read:
 - `.protocols/<TASK_ID>/plan.md`
 - `.protocols/<TASK_ID>/progress.md`
 - acceptance criteria source docs
+- `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
+  task record or linked feature contains SDD spec links, for any tier
 
 Before verifying, validate the authoritative task record:
 - the task is present in `.memory-bank/tasks/index.json`
@@ -96,16 +106,18 @@ Before verifying, validate the authoritative task record:
 - `tier` is present; if missing, stop
 - for `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-design` or `/spec-auto`
 
+Do not block `T0` / `T1` only because SDD spec links are absent.
 If the authoritative task record is missing or invalid, stop and report the issue instead of verifying from protocol docs alone.
 
 Priority:
-1. linked SDD specs for `T2` / `T3`
+1. linked authoritative SDD specs for any tier, when present
 2. explicit `Verification Targets`
 3. explicit `Normative Inputs`
 4. classic feature acceptance criteria and RTM
 5. evidence in `.tasks/<TASK_ID>/`
 
-Missing richer fields must not block verification of a classic `T0` / `T1` task.
+Missing richer fields or absent SDD spec links must not block verification of a
+classic `T0` / `T1` task.
 
 ### 2) Verify acceptance criteria
 For each AC / REQ:
@@ -132,7 +144,7 @@ If all pass:
 - add completed verification/evidence entries in `verify`
 - apply status by tier:
   - scheduler mode: recommend the scheduler decision; do not close/fail/block/promote
-  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify`
+  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
 - in scheduler mode, final `T2` / `T3` closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
 ### 4) Sync recommendations
@@ -141,5 +153,5 @@ If all pass:
 
 ## Definition of done
 - Verification output exists and is evidence-backed: compact `run.md` for eligible `T0` / `T1`, full `verification.md` for `T2` / `T3`.
-- PASS verification has updated RTM/task evidence; scheduler-mode `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
+- PASS verification has updated RTM/task evidence; `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
 - FAIL tasks have a bug doc and next steps.

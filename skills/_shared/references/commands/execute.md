@@ -34,7 +34,7 @@ Manual mode:
 - `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
 - `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
 - If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
-- `T2` / `T3` manual closure requires `/red-verify` `SEMANTIC_VERDICT: semantic-pass` after `/verify PASS`; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
+- `T2` / `T3` manual closure requires `/verify PASS` plus `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before `status: done` or `/mb-sync`; if semantic-pass is absent, leave closure pending or blocked, not done.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -48,7 +48,8 @@ Required sources:
 - `.memory-bank/tasks/TASK-<ID>.task.json`
 - task-relevant feature, epic, requirements, or normative docs referenced by the
   task
-- `.memory-bank/spec-index.md` and linked SDD specs for `T2` / `T3` tasks
+- `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
+  task record or linked feature contains SDD spec links, for any tier
 
 Use richer task fields when present:
 - `source_artifacts`
@@ -57,7 +58,15 @@ Use richer task fields when present:
 - `invariants`
 - `verification_targets`
 
-Missing richer fields are not an error for `T0` / `T1`. Use classic feature/requirements/docs fallback when they are absent.
+Scan richer task fields and linked feature `spec_design_links` for authoritative
+SDD spec links. For this rule, authoritative SDD spec links are links to
+`.memory-bank/spec-index.md`, `.memory-bank/tech-specs/`,
+`.memory-bank/architecture/`, `.memory-bank/contracts/`,
+`.memory-bank/domains/`, `.memory-bank/states/`, `.memory-bank/adrs/`,
+`.memory-bank/testing/`, or `.memory-bank/runbooks/`.
+
+Missing richer fields or absent SDD spec links are not an error for `T0` /
+`T1`. Use classic feature/requirements/docs fallback when they are absent.
 For `T2` / `T3`, missing linked SDD specs are a blocker for serious work unless the feature is explicitly marked `spec_design_status: not_required` and the task scope is downgraded to `T0` / `T1`.
 
 ## 1) Preflight
@@ -71,6 +80,7 @@ Stop with an explicit error if:
 - any `depends_on` task is missing or has status other than `done`
 - `tier` is `T2` or `T3` and task/feature/spec-index provide no concrete linked SDD spec in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 
+Do not block `T0` / `T1` only because SDD spec links are absent.
 Authoritative routing is only `task.tier`. Do not use legacy `risk` /
 `risk.level`.
 
@@ -110,7 +120,9 @@ Implement only scoped task changes.
 
 Rules:
 - keep edits bounded to acceptance criteria and referenced specs
-- for `T2` / `T3`, treat linked SDD specs as normative inputs, not optional reading
+- for any tier, if the task record or linked feature contains authoritative SDD
+  spec links, read `.memory-bank/spec-index.md` and all linked authoritative SDD
+  specs before editing; treat them as normative inputs, not optional reading
 - preserve unrelated user changes
 - do not edit generated `skills/*/{agents,references,scripts}/shared-*` files
 - update protocol/progress with what changed and where evidence lives

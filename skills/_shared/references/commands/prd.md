@@ -14,13 +14,13 @@ Turn an already clarified `.memory-bank/prd.md` into Memory Bank L1-L3 artifacts
 - `.memory-bank/index.md`
 
 `/prd` does not write the PRD, ask Deep Questioning questions, create TASK records, create implementation plans, or require feature-level clarification.
-When `.memory-bank/spec-index.md` or linked SDD design specs exist, `/prd` uses them as source of truth while deriving L1-L3.
+`/prd` requires `.memory-bank/spec-index.md` as the SDD route map and reads only relevant authoritative specs routed by that index before deriving L1-L3.
 </objective>
 
 <process>
 
 ## 0) Required PRD input
-Require `.memory-bank/prd.md`.
+Require `.memory-bank/prd.md` and `.memory-bank/spec-index.md`.
 
 Its frontmatter must include:
 
@@ -36,7 +36,17 @@ If `constitution_checked` is not `true`, stop and run `/write-prd` or resolve th
 If the PRD contains unresolved `NEEDS CLARIFICATION` blockers in decomposition-relevant sections, stop and run `/write-prd`.
 
 Read `.memory-bank/constitution.md` before writing derived docs. If the PRD conflicts with the Constitution, stop and ask for explicit resolution or `/constitution` amendment.
-Read `.memory-bank/spec-index.md` before writing derived docs. If existing authoritative SDD specs conflict with the PRD, stop and ask for explicit resolution instead of silently overriding the specs.
+
+### SDD route map gate
+`.memory-bank/spec-index.md` is a required SDD route map for `/prd` after `/spec-init`.
+
+Before writing derived docs:
+- read `.memory-bank/spec-index.md` as a route map, not as a substitute for the specs;
+- stop and run `/spec-init` if `.memory-bank/spec-index.md` is missing, stale, placeholder-only, ambiguous, has broken links, or cannot safely identify relevant authoritative specs;
+- determine relevance from PRD sections, affected product areas, requirements, actors, data/domain model, contracts/APIs, states/lifecycles, security/compliance, runtime/operations, and verification strategy;
+- resolve and read only the relevant authoritative spec files routed by `.memory-bank/spec-index.md`;
+- do not load every SDD spec by default; leave non-relevant authoritative specs closed unless the index routes them into the current PRD/decomposition scope;
+- if a relevant authoritative spec conflicts with the PRD, stop and ask for explicit resolution through a spec or PRD amendment instead of silently overriding either source.
 
 ## 1) Protocol
 Создай (если нет):
@@ -77,8 +87,9 @@ Read `.memory-bank/spec-index.md` before writing derived docs. If existing autho
 - test strategy pointers
 - optional, if grounded in evidence: `Source artifacts`, `Normative inputs`, `Constraints / invariants`, `Verification targets`
  - `status: draft` по умолчанию
+- write a `## SDD Design Gate` section into every new feature: run `/spec-design FT-<NNN>` before `/prd-to-tasks FT-<NNN>`; when `/spec-design` sets `spec_design_status: complete`, linked specs go in `spec_design_links`; `not_required` needs a short rationale; `blocked` must record the blocker
 - if existing SDD specs apply, add `spec_design_links` to those specs and set `spec_design_status: complete` only when the design is already authoritative and sufficient for task decomposition
-- otherwise omit `spec_design_status`; `/spec-design FT-<NNN>` or `/spec-auto` owns the feature-level design gate
+- otherwise omit `spec_design_status`; `/spec-design FT-<NNN>` or `/spec-auto` owns the feature-level design gate and may establish only `complete`, `not_required`, or `blocked`
 
 Do not set every new feature to `clarification_status: pending`.
 Only add feature clarification metadata when the PRD explicitly leaves a feature-level decomposition blocker:

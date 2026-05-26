@@ -31,7 +31,7 @@ Manual mode:
 - Manual closure is allowed only when an explicit closure owner exists.
 - T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
 - T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- If required T2/T3 `/red-verify` returns anything other than `semantic-pass`, leave closure pending or blocked, not done; optional T0/T1 red-verify does not make their normal verify-based closure stricter.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -49,11 +49,19 @@ Manual mode:
 - acceptance criteria источник:
   - `.memory-bank/features/FT-*` и/или
   - `.memory-bank/requirements.md` (REQ IDs)
-- for `T2` / `T3`: `.memory-bank/spec-index.md` and linked SDD specs from the task record or feature `spec_design_links`
+- if the task record or linked feature contains authoritative SDD spec links,
+  read `.memory-bank/spec-index.md` and all linked authoritative SDD specs, for
+  any tier
 
 If the task record is missing, stop with an explicit error.
 If the task record has no `tier`, stop with an explicit error. Authoritative verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
+Authoritative SDD spec links are links in task richer fields or linked feature
+`spec_design_links` that point to `.memory-bank/spec-index.md`,
+`.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
+`.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`,
+`.memory-bank/adrs/`, `.memory-bank/testing/`, or `.memory-bank/runbooks/`.
 If `tier` is `T2` or `T3` and no linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`, stop and report a blocker instead of verifying against classic AC alone.
+Do not block `T0` / `T1` only because SDD spec links are absent.
 
 Tier policy:
 - `T0`: `/verify` is normally not required; verification may be recorded in `.protocols/TASK-<ID>/run.md`.
@@ -68,7 +76,7 @@ Status ownership:
 - For `T2` / `T3`, `/verify PASS` records functional evidence and closure recommendation, but final closure requires `/red-verify` semantic-pass first.
 
 Приоритет basis для verify:
-1. linked SDD specs for `T2` / `T3`
+1. linked authoritative SDD specs for any tier, when present
 2. `verification_targets`, если они явно указаны в task record / IMPL plan / feature doc
 3. `normative_inputs`, если они явно перечислены и релевантны проверке
 4. classic acceptance criteria из feature doc
@@ -77,7 +85,8 @@ Status ownership:
 
 Важно:
 - отсутствие richer verification fields не является ошибкой
-- в таком случае verifier должен опираться на classic AC/REQ model only for `T0` / `T1`
+- absence of SDD spec links is not a blocker for `T0` / `T1`; in that case the
+  verifier should use the classic AC/REQ model
 - for `T2` / `T3`, linked SDD specs are mandatory verification inputs; route back to `/spec-design` or `/spec-auto` when absent
 - `evidence_required` и `verification_targets` описывают требования/цели проверки; сами по себе они не являются proof
 - detailed verification report may live in `.protocols/TASK-<ID>/verification.md`, with artifacts in `.tasks/TASK-<ID>/`
@@ -112,6 +121,6 @@ Status ownership:
   - add completed verification/evidence entries in `verify`
 - status by tier:
   - scheduler mode: recommend the scheduler decision; do not close/fail/block/promote
-  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify`
+  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
 - record RTM/feature lifecycle recommendations for `/mb-sync`; do not independently perform scheduler closure
 </process>

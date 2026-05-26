@@ -41,12 +41,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify` for one TASK, with optional `/red-verify` when risk/substance warrants it.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
 - Manual closure is allowed only when an explicit closure owner exists.
 - `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
-- `/verify PASS` may mark `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
 - If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
-- For risky tasks, the explicit closure owner decides whether to run `/red-verify`; if `/red-verify` later finds semantic issues, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
+- `T2` / `T3` manual closure requires `/verify PASS` plus `/red-verify` / `mb-red-verify` `SEMANTIC_VERDICT: semantic-pass` before `status: done` or `/mb-sync`; if semantic-pass is absent, leave closure pending or blocked, not done.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -58,7 +58,7 @@ Manual mode:
 - The indexed task record contains `tier`. Authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
 - For `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-design` or `/spec-auto`.
 - In scheduler mode, `T2` / `T3` require this pass before scheduler marks `done`.
-- In manual mode, this pass is optional after `mb-verify PASS`; run it when risk/substance warrants it.
+- In manual mode, this pass is required for `T2` / `T3` after `mb-verify PASS` and before final closure/`/mb-sync`; `T0` / `T1` usually skip it unless their real scope grew beyond the recorded tier.
 - `T0` / `T1` usually skip it unless scope has grown and the tier is updated first.
 
 ## Required outputs
@@ -155,7 +155,7 @@ The output must be concise and high-signal. Include:
 For `T3`, also cover critical/security/runtime/recovery concerns and confirm exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` are present before closure.
 
 ### 5) Take action from the verdict
-- `semantic-pass`: no substantive concerns found; scheduler closure-eligible when `mb-verify` also has `PASS`; manual `done` may remain trusted
+- `semantic-pass`: no substantive concerns found; scheduler closure-eligible when `mb-verify` also has `PASS`; manual `T2` / `T3` closure is eligible when `mb-verify` also has `PASS`
 - `semantic-concern`: not proven wrong, but blocked or human-review-required; in manual mode, do not trust existing `done` without human review / follow-up
 - `semantic-fail`: substantively wrong, systemically harmful, or too risky to accept; recommend or apply task `status: failed` according to active workflow ownership and explicit closure ownership
 

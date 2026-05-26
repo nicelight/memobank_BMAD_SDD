@@ -43,7 +43,7 @@ Manual mode:
 - `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
 - `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
 - If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
-- For `T2` / `T3`, the explicit closure owner must run `/red-verify` before final closure; if semantic issues are found, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
+- `T2` / `T3` manual closure requires `/verify PASS` plus `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before `status: done` or `/mb-sync`; if semantic-pass is absent, leave closure pending or blocked, not done.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -153,7 +153,7 @@ Status ownership:
 - `semantic-pass`:
   - substantive concerns не обнаружены
   - scheduler closure-eligible for normal `done` when `/verify` also has `PASS`
-  - manual `done` may remain trusted when `/verify` already closed the task
+  - manual `T2` / `T3` closure is eligible when `/verify` also has `PASS`; voluntary `T0` / `T1` red-verify does not make their normal verify-based closure stricter
   - recommend `/mb-sync` and closure by the scheduler or explicit standalone owner
 
 - `semantic-concern`:

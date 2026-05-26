@@ -66,6 +66,8 @@ Autonomous decision rules:
 - choose the smallest reversible design that satisfies PRD/Constitution/requirements
 - record assumptions in the feature design hub or spec-index
 - do not invent external contracts, security posture, migrations, or irreversible data behavior
+- set `spec_design_status: complete` only when every feature-relevant SDD design area either has a concrete linked spec file routed through `.memory-bank/spec-index.md` as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for this feature
+- do not set `complete` while any feature-relevant design area remains planned, candidate, unknown, conflicting, or otherwise unresolved; instead set `spec_design_status: blocked` or leave the feature without `complete`, and record the gap/open question in `.memory-bank/spec-index.md`
 - if blocking ambiguity affects security/compliance/payments/external contracts/data loss, set `spec_design_status: blocked`, record the reason, and halt the autonomous run with `HALT_BLOCKING_QUESTIONS` or `HALT_CLARIFICATION_REQUIRED`
 
 For simple T0/T1-like features, `not_required` is valid with a concise rationale.

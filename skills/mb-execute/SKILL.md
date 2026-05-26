@@ -29,12 +29,12 @@ Scheduler mode:
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
-- Expected simple flow: `/execute -> /verify` for one TASK, with optional `/red-verify` when risk/substance warrants it.
+- Expected T0/T1 simple flow: `/execute -> /verify` for one TASK.
 - Manual closure is allowed only when an explicit closure owner exists.
 - `explicit standalone owner` means either the user directly asked the current top-level agent to close the task, or the top-level agent/orchestrator explicitly runs a manual workflow for one TASK and records that it owns closure. Subagents/worker prompts do not silently become closure owners.
-- `/verify PASS` may mark `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
+- `/verify PASS` may mark `T0` / `T1` `status: done` only when explicit closure ownership is present and completed evidence has been written to the task record `verify` field and the compact/full protocol required by tier.
 - If explicit closure owner is absent, `/verify` records `VERDICT: PASS`, evidence, and a closure recommendation, leaves `status` unchanged, and tells the scheduler/owner to close.
-- For risky tasks, the explicit closure owner decides whether to run `/red-verify`; if `/red-verify` later finds semantic issues, the scheduler or explicit owner may reopen/block/fail or create follow-up work.
+- `T2` / `T3` manual closure requires `/verify PASS` plus `/red-verify` / `mb-red-verify` `SEMANTIC_VERDICT: semantic-pass` before `status: done` or `/mb-sync`; if semantic-pass is absent, leave closure pending or blocked, not done.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -46,11 +46,18 @@ Manual mode:
 - task `tier: T0|T1|T2|T3`
 - feature or epic docs referenced by the task
 - `.memory-bank/requirements.md` / REQ IDs when relevant
-- `.memory-bank/spec-index.md` and linked SDD specs for `T2` / `T3`
+- `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
+  task record or linked feature contains SDD spec links, for any tier
 - richer task fields when present: `source_artifacts`, `normative_inputs`,
   `constraints`, `invariants`, `verification_targets`
 
-Missing richer fields do not block classic `T0` / `T1` tasks; fall back to referenced docs.
+Authoritative SDD spec links are links to `.memory-bank/spec-index.md`,
+`.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
+`.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`,
+`.memory-bank/adrs/`, `.memory-bank/testing/`, or `.memory-bank/runbooks/`.
+
+Missing richer fields or absent SDD spec links do not block classic `T0` /
+`T1` tasks; fall back to referenced docs.
 For `T2` / `T3`, missing linked SDD specs are a blocker for serious work.
 
 ## Minimal Preflight
@@ -60,8 +67,10 @@ Stop with an explicit handoff error if:
 - `tier` is missing or is not `T0|T1|T2|T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or is not `done`
-- `tier` is `T2` / `T3` and task richer fields do not include relevant SDD spec links
+- `tier` is `T2` / `T3` and neither task richer fields nor linked feature
+  `spec_design_links` include relevant SDD spec links
 
+Do not block `T0` / `T1` only because SDD spec links are absent.
 Route only by `task.tier`. Do not use legacy `risk` / `risk.level`.
 
 ## Protocol Routing
@@ -84,7 +93,9 @@ Record whether these markers are present or still needed; do not close the task.
 
 ## Implementation Rules
 - Keep scope bounded to the task and its acceptance criteria.
-- For `T2` / `T3`, treat linked SDD specs as normative inputs.
+- For any tier, if the task record or linked feature contains authoritative SDD
+  spec links, read `.memory-bank/spec-index.md` and all linked authoritative SDD
+  specs before editing; treat them as normative inputs.
 - Record goal, non-goals, constraints, touched areas, and gates before broad edits.
 - If fan-out is needed, use narrow non-overlapping worker scopes.
 - Preserve unrelated changes and do not rewrite generated `shared-*` files.

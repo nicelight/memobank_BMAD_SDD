@@ -28,6 +28,9 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 - Normative docs enrich the Memory Bank; they do not invalidate valid duo docs.
 - Before serious work, read `.memory-bank/spec-index.md` and follow linked SDD specs.
 - Do not create a new spec before checking existing specs through `.memory-bank/spec-index.md`.
+- For any tier, if the task record or linked feature contains authoritative SDD
+  spec links, read `.memory-bank/spec-index.md` and those linked specs before
+  implementation or verification.
 - For `T2` / `T3` tasks, linked SDD specs are normative inputs; missing linked specs are a blocker for serious work.
 
 ## Docs First
@@ -238,6 +241,7 @@ status: active
 - Do not create a new spec before checking existing specs through this index.
 - `/spec-init` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
 - `/spec-design FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
+- `spec_design_status: complete` means every feature-relevant SDD design area either has a concrete linked spec file routed through this index as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for that feature. Do not mark complete while feature-relevant areas remain planned, candidate, unknown, conflicting, or unresolved.
 - `T2` / `T3` tasks must carry relevant linked specs in task richer fields.
 
 ## Existing authoritative specs

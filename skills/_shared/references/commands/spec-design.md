@@ -87,6 +87,11 @@ Update `.memory-bank/spec-index.md`:
 - mark statuses as authoritative/planned/candidate/unknown/not_applicable
 - record gaps/open questions
 
+Invariant for `spec_design_status: complete`:
+- set `complete` only when every feature-relevant SDD design area either has a concrete linked spec file routed through `.memory-bank/spec-index.md` as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for this feature
+- do not set `complete` while any feature-relevant design area remains planned, candidate, unknown, conflicting, or otherwise unresolved
+- if unresolved feature-relevant planned/candidate/unknown/conflicting areas remain, set `spec_design_status: blocked` or leave the feature without `complete`, and record the gap/open question in `.memory-bank/spec-index.md`
+
 Update target feature frontmatter:
 
 ```yaml

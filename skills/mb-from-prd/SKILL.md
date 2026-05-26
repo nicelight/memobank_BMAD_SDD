@@ -14,6 +14,7 @@ description: >
 ## Preconditions
 - You are in the repo root.
 - `.memory-bank/prd.md` exists with `type: prd`, `clarification_status: complete`, and `constitution_checked: true`; otherwise run `/write-prd` first.
+- `.memory-bank/spec-index.md` exists after `/spec-init` as the required SDD route map for PRD decomposition.
 - Optional Analysis artifacts such as a product brief may exist; use them as upstream PRD input, but do not require them.
 - `.memory-bank/` exists. If not, run `mb-init` first (or create the skeleton manually).
 
@@ -23,8 +24,11 @@ description: >
 1. Read `.memory-bank/prd.md`.
 2. Confirm frontmatter has `type: prd`, `clarification_status: complete`, and `constitution_checked: true`.
 3. Stop if PRD contains unresolved `NEEDS CLARIFICATION` markers that affect decomposition.
-4. Read `.memory-bank/spec-index.md` and existing SDD specs; if missing or stale, run `/spec-init` before deriving L1-L3.
-5. Start a task protocol folder:
+4. Read `.memory-bank/spec-index.md` as the SDD route map. Stop and run `/spec-init` if the index is missing, stale, placeholder-only, has broken links, is ambiguous, or cannot safely identify relevant authoritative specs.
+5. Determine relevant authoritative specs from PRD sections, affected product areas, requirements, actors, data/domain model, contracts/APIs, states/lifecycles, security/compliance, runtime/operations, and verification strategy.
+6. Resolve and read only those relevant authoritative spec files routed by `.memory-bank/spec-index.md`. Do not load every SDD spec by default.
+7. If a relevant authoritative spec conflicts with the PRD, stop and ask for explicit resolution through a spec or PRD amendment.
+8. Start a task protocol folder:
    - `.protocols/PRD-BOOTSTRAP/`
    - `plan.md` (steps)
    - `decision-log.md` (Q/A and choices)
@@ -66,6 +70,7 @@ For each feature:
 - Ensure autonomy and explicit acceptance criteria.
 - Do not add clarification metadata by default. Add `clarification_status: pending|blocked` only when the PRD explicitly leaves a feature-level blocker that affects task decomposition.
 - Fill optional sections such as `Source artifacts`, `Normative inputs`, `Constraints / invariants`, and `Verification targets` only when they are grounded in evidence.
+- Include the `## SDD Design Gate` section in every feature. This routes to `/spec-design FT-<NNN>` before `/prd-to-tasks FT-<NNN>` but does not introduce a placeholder `spec_design_status` or a new blocking status.
 - Default `status: draft` until acceptance criteria + verification plan are solid.
 
 ### 8) Tasks planning (per-feature, no “everything at once”)
