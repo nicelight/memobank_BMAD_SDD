@@ -606,7 +606,8 @@ Claude (fresh session):
 - \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`.
+- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> optional /spec-backbone -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`.
+- Use \`/spec-backbone\` after \`/prd\` when the feature set exposes shared T2/T3 backbone concerns; it does not replace per-feature \`/spec-design FT-001\`.
 - Use \`/brainstorm\` before \`/brief\` only when the idea is raw.
 - Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
 - **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`; it runs \`/spec-auto --init\` after \`/write-prd\` and \`/spec-auto --all\` after \`/prd\`. Use \`/autopilot\` only if JSON task records and required SDD spec links already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
@@ -632,6 +633,7 @@ Naming:
 - /write-prd → .memory-bank/commands/write-prd.md
 - /spec-init → .memory-bank/commands/spec-init.md
 - /prd → .memory-bank/commands/prd.md
+- /spec-backbone → .memory-bank/commands/spec-backbone.md (optional after /prd for shared T2/T3 backbone design)
 - /spec-design → .memory-bank/commands/spec-design.md
 - /spec-auto → .memory-bank/commands/spec-auto.md
 - /clarify-feature → .memory-bank/commands/clarify-feature.md
@@ -739,6 +741,7 @@ status: active
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
 - \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
+- \`/spec-backbone\` is optional after \`/prd\` and recommended/required when the feature set exposes shared T2/T3 backbone concerns; it routes shared backbone specs but does not replace per-feature \`/spec-design FT-<NNN>\`.
 - \`/spec-design FT-<NNN>\` owns feature-level design before \`/prd-to-tasks FT-<NNN>\`.
 - \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
 
@@ -767,10 +770,11 @@ status: active
 ## Feature design status map
 | Feature | spec_design_status | Linked specs | Notes |
 |---|---|---|---|
-| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto |
+| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto; link backbone specs when /spec-backbone applies |
 
 ## Expected spec locations
 - Feature hubs: \`.memory-bank/tech-specs/FT-<NNN>-<slug>.md\`
+- Backbone/shared specs: \`.memory-bank/architecture/\`, \`.memory-bank/contracts/\`, \`.memory-bank/domains/\`, and \`.memory-bank/states/\`
 - Architecture notes: \`.memory-bank/architecture/<topic>.md\`
 - Contracts: \`.memory-bank/contracts/<boundary>.md\`
 - Domain/data models: \`.memory-bank/domains/<domain>.md\`
@@ -958,8 +962,8 @@ status: active
 - Bootstrap: cold-start / mb-init
 - Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
 - Project principles: /constitution after /brief or existing PRD context, before /write-prd only when project_principles is not ratified|partial
-- PRD → MB: /write-prd, /spec-init, /prd, /spec-design, then /prd-to-tasks
-- SDD design: /spec-init for route map, /spec-design FT-XXX for manual feature design, /spec-auto for autonomous design
+- PRD → MB: /write-prd, /spec-init, /prd, optional /spec-backbone, /spec-design, then /prd-to-tasks
+- SDD design: /spec-init for route map, /spec-backbone for shared T2/T3 backbone concerns after /prd, /spec-design FT-XXX for manual feature design, /spec-auto for autonomous design
 - Map codebase: /map-codebase
 - Execution: /execute
 - Verification (UAT): /verify
@@ -1059,6 +1063,7 @@ status: active
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
 - \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
 - \`/spec-init\` creates the SDD Design Specs Index after \`/write-prd\` and before \`/prd\`.
+- \`/spec-backbone\` is an optional pass after \`/prd\` when multiple features share T2/T3 backbone concerns; it does not replace per-feature \`/spec-design\`.
 - \`/spec-design FT-<NNN>\` completes or marks unnecessary feature-level design before task decomposition.
 - Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready.
 
@@ -1068,17 +1073,18 @@ status: active
 3) \`/write-prd\` (creates clarified .memory-bank/prd.md)
 4) \`/spec-init\` (updates .memory-bank/spec-index.md route map)
 5) \`/prd\` (fills L1–L3)
-6) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
-7) \`/spec-design FT-001\` (updates only needed SDD specs or marks not_required)
-8) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
-9) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
-10) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
+6) Optional \`/spec-backbone\` when the feature set exposes shared T2/T3 backbone concerns
+7) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
+8) \`/spec-design FT-001\` (updates only needed SDD specs or marks not_required)
+9) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
+10) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
+11) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
    - \`/execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`
-11) After each wave: \`/review\` (fresh context)
+12) After each wave: \`/review\` (fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) \`/autonomous\`
-2) command runs \`/write-prd -> /spec-auto --init -> /prd -> /spec-auto --all -> /prd-to-tasks --all\`, then schedules ready TASKs
+2) command runs \`/write-prd -> /spec-auto --init -> /prd -> optional backbone design -> /spec-auto --all -> /prd-to-tasks --all\`, then schedules ready TASKs
 3) run \`/mb-doctor --strict\` before scheduler execution; T2/T3 tasks without SDD spec links are blockers
 4) each TASK runs in **fresh CLI sessions**
 5) after each \`/mb-sync\`, run \`/mb-doctor --strict\` before promoting dependents

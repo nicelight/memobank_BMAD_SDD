@@ -43,6 +43,7 @@ Memory Bank помогает вести разработку как повтор
   -> PRD
   -> SDD spec index       Карта design specs
   -> features            + проработка /clarify
+  -> /spec-backbone       опционально: общий SDD слой
   -> feature design       /spec-design перед tasks
   -> JSON tasks          с градацией сложности и риска 
   -> execute             можно все сразу в авторежиме
@@ -89,9 +90,17 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/epics/`, `.memory-bank/features/` и связанные индексы.
 
-   **Дальше:** выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-design FT-001`.
+   **Дальше:** при общем домене, модели, contracts, state, security/runtime логике или ожидаемом shared design для T2/T3 можно запустить опциональный `/spec-backbone`. Для маленьких независимых T0/T1 features его лучше пропустить. Затем выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-design FT-001`.
 
-6. `/clarify-feature FT-001`
+6. `/spec-backbone` опционально
+
+   **Когда:** после `/prd`, если нескольким features нужен общий SDD backbone. Это не обязательная тяжелая фаза.
+
+   **Создает/обновляет:** только backbone SDD specs и `spec-index`. Не создает tasks и не заменяет feature-level `/spec-design`.
+
+   **Дальше:** выбрать feature и запустить `/spec-design FT-001`.
+
+7. `/clarify-feature FT-001`
 
    **Когда:** только если конкретная feature содержит blocker, `TBD`, `TODO`, `NEEDS CLARIFICATION` или другой marker, который мешает нарезать задачи.
 
@@ -99,7 +108,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** после снятия blocker запустить `/spec-design FT-001`.
 
-7. `/spec-design FT-001`
+8. `/spec-design FT-001`
 
    **Когда:** после `/prd` и до `/prd-to-tasks`, для выбранной feature.
 
@@ -107,7 +116,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** запустить `/prd-to-tasks FT-001`.
 
-8. `/prd-to-tasks FT-001`
+9. `/prd-to-tasks FT-001`
 
    **Когда:** когда feature можно разложить на implementation tasks.
 
@@ -115,7 +124,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** взять первую готовую задачу и выполнить `/execute TASK-001`.
 
-9. `/execute TASK-001`
+10. `/execute TASK-001`
 
    **Когда:** для реализации одной конкретной задачи из task record.
 
@@ -123,7 +132,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** запустить `/verify TASK-001`.
 
-10. `/verify TASK-001`
+11. `/verify TASK-001`
 
    **Когда:** после реализации задачи.
 
@@ -131,7 +140,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-001`; иначе перейти к `/mb-sync`.
 
-11. `/red-verify TASK-001`
+12. `/red-verify TASK-001`
 
    **Когда:** обязательно для T2/T3 перед финальным закрытием; особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
@@ -139,7 +148,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** при проблемах вернуть задачу в доработку; при успешной проверке перейти к `/mb-sync`.
 
-12. `/mb-sync`
+13. `/mb-sync`
 
    **Когда:** после результата задачи, особенно если менялись требования, task status, changelog, RTM или durable Memory Bank docs.
 
@@ -147,7 +156,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** выбрать следующую задачу или feature.
 
-13. Повторять цикл
+14. Повторять цикл
 
     **Когда:** пока features и tasks не доведены до нужного состояния.
 
@@ -182,10 +191,15 @@ node scripts/install-framework.mjs
 установит команды memobank и создаст или синхронизирует skeleton Memory Bank в
 выбранном репозитории.
 
+Если Memory Bank уже был развернут, installer обновит generated commands,
+proxy skills, runtime scripts и может синхронизировать `AGENTS.md`. Для
+существующего проекта лучше запускать установку в git-репозитории или заранее
+сделать копию `AGENTS.md`, чтобы при необходимости посмотреть diff.
+
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> опционально /spec-backbone -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.

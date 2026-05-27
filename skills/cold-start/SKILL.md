@@ -203,6 +203,7 @@ If the user explicitly wants **autonomous mode**:
 ### 3A.2 Route PRD to L1–L3
 Run `/spec-init` to update `.memory-bank/spec-index.md` as the SDD Design Specs Index without inventing authoritative specs.
 Then run `/prd` to decompose `.memory-bank/prd.md` into product, requirements, epics, features, testing, and index updates.
+After `/prd`, optionally run `/spec-backbone` when multiple features share domain/model/contracts/state/security/runtime concerns or likely T2/T3 shared design. Skip it for small independent T0/T1 features. This is not another mandatory heavy phase: it creates/updates only backbone SDD specs and `spec-index`, not tasks and not feature-local implementation design. `/spec-design FT-<NNN>` remains the feature-level gate.
 
 `/prd` owns:
 - `.memory-bank/product.md`
@@ -220,7 +221,7 @@ Each generated feature MUST include:
 Status policy:
 - Default EP/FT frontmatter to `status: draft` until `Open questions` are resolved.
 - Promote to `status: active` only when acceptance criteria + verification plan are stable.
-- `/prd` / `mb-from-prd` do not create tasks; canonical planning path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+- `/prd` / `mb-from-prd` do not create tasks; canonical planning path is `/write-prd` → `/spec-init` → `/prd` → optional `/spec-backbone` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
 - Add feature `clarification_status: pending|blocked` only for explicit feature-level blockers.
 
 ### 3A.3 Tasks planning (per-feature, no “everything at once”)
@@ -229,7 +230,8 @@ Do **not** generate a full task queue for all features in one pass.
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist.
 2) For each selected feature, use `/clarify-feature FT-<NNN>` only if the feature is explicitly pending/blocked.
-3) Run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>` to produce:
+3) Optionally run `/spec-backbone` after `/prd` only when shared backbone SDD design is useful across features.
+4) Run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>` to produce:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
@@ -304,7 +306,7 @@ Using the `.tasks/TASK-MB-MAP/` reports, fill:
 ### 3B.3 Ask user for PRD delta
 After baseline MB exists:
 - ask the user for `prd.md` describing **what to change/add**
-- run `/constitution` first only if project principles are not ratified/partial, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
+- run `/constitution` first only if project principles are not ratified/partial, then `/write-prd`, `/spec-init`, `/prd`, optional `/spec-backbone`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>` style decomposition against the existing baseline
 
 ---
 
@@ -321,7 +323,7 @@ In PRD-less mode, `tasks/index.json` must be `{ "version": 1, "tasks": [] }` and
 ### 3C.2 Ask for PRD
 After skeleton is created, **ask the user** to provide a PRD:
 
-> "Memory Bank skeleton created. To fill it with product details, epics, features, SDD design, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/constitution` first only if project principles are not already `ratified|partial`, then `/write-prd`, `/spec-init`, `/prd`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>`."
+> "Memory Bank skeleton created. To fill it with product details, epics, features, SDD design, and task records, please provide a `prd.md` file (or paste requirements text). You can do this now or later — run `/constitution` first only if project principles are not already `ratified|partial`, then `/write-prd`, `/spec-init`, `/prd`, optional `/spec-backbone`, `/spec-design FT-<NNN>`, and `/prd-to-tasks FT-<NNN>`."
 
 ### 3C.3 Wait or proceed
 - **If user provides PRD now** → continue to Step 3A (Greenfield workflow).
@@ -371,7 +373,7 @@ Rules:
 
 After review gate passes (APPROVE):
 
-1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and use `/spec-design FT-<NNN>` then `/prd-to-tasks FT-<NNN>` for a selected feature.
+1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and use optional `/spec-backbone` only when shared backbone design is needed, then `/spec-design FT-<NNN>` and `/prd-to-tasks FT-<NNN>` for a selected feature.
    Use `/clarify-feature FT-<NNN>` first only if that feature is explicitly pending/blocked.
 2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
 3. Route by `task.tier`: `T0`/`T1` may use compact verification in `run.md`; `T2`/`T3` require `mb-verify` and `mb-red-verify`.

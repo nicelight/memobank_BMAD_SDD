@@ -24,7 +24,7 @@ status: active
 
 ## 1) Decomposition preflight
 Перед созданием или обновлением implementation plan и JSON task records проверь, что feature can be decomposed.
-`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/spec-init` → `/prd` → optional `/spec-backbone` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
 
 Для `FT-<NNN>`:
 1. Найди `.memory-bank/features/FT-<NNN>-*.md`.
@@ -77,6 +77,7 @@ Rules:
 - `spec_design_status: complete` requires at least one concrete linked spec when the feature implies T2/T3 work.
 - missing or incomplete `spec_design_status` does not always block immediately; first estimate the likely task tiers from feature scope.
 - If decomposition reveals any T2/T3 task would be needed and `spec_design_status` is missing, `blocked`, `not_required`, or `complete` without linked specs, stop and route to `/spec-design FT-<NNN>` (or `/spec-auto FT-<NNN>` in autonomous flow).
+- If multiple targeted features need the same missing shared domain/contract/state/API/security/data/runtime decision, stop and route to `/spec-backbone` before `/spec-design`.
 - Do not create new specs here. This command only consumes the design surface and routes to `/spec-design` when needed.
 
 T2/T3 indicators include:

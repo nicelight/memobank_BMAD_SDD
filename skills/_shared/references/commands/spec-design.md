@@ -17,6 +17,7 @@ Expected `$ARGUMENTS`:
 - `FT-<NNN>`
 
 Run after `/prd` and before `/prd-to-tasks FT-<NNN>`.
+If `/spec-backbone` already produced shared specs, consume those normative links instead of duplicating them.
 
 If the argument is missing, ask the user to choose one feature.
 
@@ -28,6 +29,7 @@ Before creating any new spec:
 4. Search existing `.memory-bank/architecture/`, `.memory-bank/tech-specs/`, `.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`, `.memory-bank/adrs/`, `.memory-bank/testing/`, and `.memory-bank/runbooks/` for overlapping decisions.
 
 Rule: do not create a new spec before checking existing specs through the index.
+If several features need the same missing domain/contract/state/API/security/data/runtime decision, stop and route to `/spec-backbone` instead of creating duplicate feature-local specs.
 
 ## 2) Decide required design depth
 Classify what the feature needs:
@@ -80,6 +82,7 @@ Keep KISS:
 - do not fork duplicate specs
 - do not add schema, migration, hook, or governance machinery just for design routing
 - write decisions, constraints, invariants, and verification targets only when grounded in PRD/user/spec evidence
+- use backbone specs from `/spec-backbone` as normative inputs when they exist
 
 ## 6) Update routes and feature metadata
 Update `.memory-bank/spec-index.md`:

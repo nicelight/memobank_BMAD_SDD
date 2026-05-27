@@ -37,7 +37,7 @@ If a contradiction or ambiguity is unsafe/blocking, record a blocker and stop wi
 
 If no argument is provided, infer:
 - before `/prd`, use `--init`
-- after `/prd`, use `--all`
+- after `/prd`, use `--all`; if shared concerns exist, run `/spec-backbone --all` first
 - if unclear, stop and report the missing argument
 
 ## 2) `--init`

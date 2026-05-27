@@ -90,6 +90,7 @@ Before writing derived docs:
 - write a `## SDD Design Gate` section into every new feature: run `/spec-design FT-<NNN>` before `/prd-to-tasks FT-<NNN>`; when `/spec-design` sets `spec_design_status: complete`, linked specs go in `spec_design_links`; `not_required` needs a short rationale; `blocked` must record the blocker
 - if existing SDD specs apply, add `spec_design_links` to those specs and set `spec_design_status: complete` only when the design is already authoritative and sufficient for task decomposition
 - otherwise omit `spec_design_status`; `/spec-design FT-<NNN>` or `/spec-auto` owns the feature-level design gate and may establish only `complete`, `not_required`, or `blocked`
+- if multiple features share domain/contract/state/API/security/data/runtime concerns, add an SDD Design Gate note recommending `/spec-backbone` before per-feature `/spec-design`
 
 Do not set every new feature to `clarification_status: pending`.
 Only add feature clarification metadata when the PRD explicitly leaves a feature-level decomposition blocker:
@@ -116,9 +117,9 @@ When a feature is already clear enough for task decomposition, omit clarificatio
 Запусти `mb-review` (fresh context).
 
 ## 9) What next
-- interactive: choose one feature and run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>`
+- interactive: if shared design concerns exist, run `/spec-backbone`; then choose one feature and run `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>`
 - optional: run `/clarify-feature FT-<NNN>` only if that feature is explicitly pending/blocked or has decomposition-affecting unresolved markers
-- autonomous end-to-end: запусти `/autonomous`; it will run `/spec-auto --all` before `/prd-to-tasks --all`
+- autonomous end-to-end: запусти `/autonomous`; it will run `/spec-backbone --all` when needed, then `/spec-auto --all` before `/prd-to-tasks --all`
 
 Do not create TASK records from `/prd`.
 </process>

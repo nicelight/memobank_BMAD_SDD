@@ -66,7 +66,7 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → optional `/spec-backbone` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/spec-backbone` after `/prd` when the feature set exposes shared T2/T3 backbone concerns; it does not replace per-feature `/spec-design`. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init` and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
@@ -90,6 +90,7 @@ Representative commands:
 - `/write-prd`
 - `/spec-init`
 - `/prd`
+- `/spec-backbone`
 - `/spec-design`
 - `/spec-auto`
 - `/clarify-feature`
@@ -240,6 +241,7 @@ status: active
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
 - `/spec-init` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
+- `/spec-backbone` is optional after `/prd` and recommended/required when the feature set exposes shared T2/T3 backbone concerns. It routes shared backbone specs through this index and does not replace per-feature `/spec-design FT-<NNN>`.
 - `/spec-design FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
 - `spec_design_status: complete` means every feature-relevant SDD design area either has a concrete linked spec file routed through this index as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for that feature. Do not mark complete while feature-relevant areas remain planned, candidate, unknown, conflicting, or unresolved.
 - `T2` / `T3` tasks must carry relevant linked specs in task richer fields.
@@ -269,10 +271,11 @@ status: active
 ## Feature design status map
 | Feature | spec_design_status | Linked specs | Notes |
 |---|---|---|---|
-| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto |
+| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto; link backbone specs when /spec-backbone applies |
 
 ## Expected spec locations
 - Feature hubs: `.memory-bank/tech-specs/FT-<NNN>-<slug>.md`
+- Backbone/shared specs: `.memory-bank/architecture/`, `.memory-bank/contracts/`, `.memory-bank/domains/`, and `.memory-bank/states/`
 - Architecture notes: `.memory-bank/architecture/<topic>.md`
 - Contracts: `.memory-bank/contracts/<boundary>.md`
 - Domain/data models: `.memory-bank/domains/<domain>.md`
@@ -594,7 +597,7 @@ status: active
 
 ## When to use
 - Bootstrap / memory: cold-start, mb-init
-- SDD design: /spec-init, /spec-design, /spec-auto
+- SDD design: /spec-init, optional /spec-backbone for shared T2/T3 backbone concerns, /spec-design, /spec-auto
 - PRD decomposition: mb-from-prd
 - Codebase mapping: mb-map-codebase
 - Execution: mb-execute

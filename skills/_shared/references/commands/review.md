@@ -10,7 +10,7 @@ status: active
 - Constitution compliance (governing principles, no contradictions with routed docs)
 - архитектура (C4, границы, ADR)
 - scope/RTM (REQ → EP → FT)
-- SDD Design Specs routing (`spec-index`, `spec_design_status`, linked specs for T2/T3)
+- SDD Design Specs routing (`spec-index`, optional `/spec-backbone`, `spec_design_status`, linked specs for T2/T3)
 - lightweight Analysis Quality, only when `.memory-bank/analysis/product-brief.md` exists
 - планирование (JSON task records/index/waves/качество TASK)
 - security risks
@@ -52,6 +52,7 @@ Analysis Quality checks are conditional:
 - Check that the brief is not blocked / no-go / not ready with unresolved blocking questions unless `/prd` recorded an explicit user override.
 - If brainstorming artifacts exist without a product brief, report a warning unless an existing PRD was intentionally used as the upstream source.
 - Confirm there is no route from Analysis or Product Brief directly to `/prd-to-tasks` without `/write-prd`, `/spec-init`, `/prd`, and `/spec-design`; `/clarify-feature` is optional and only for explicit feature blockers.
+- Confirm shared T2/T3 design concerns are not duplicated across feature-local specs when `/spec-backbone` should have produced a common authoritative backbone.
 
 Для `S-03` reviewer обязательно проверь:
 - `.memory-bank/tasks/index.json` содержит только ссылки на `.memory-bank/tasks/*.task.json`
@@ -62,6 +63,7 @@ Analysis Quality checks are conditional:
 - T2/T3 task records include relevant linked SDD specs in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 - feature `spec_design_status` is compatible with task tier: `not_required` only for T0/T1-like scope; T2/T3 require `complete` and linked specs
 - `.memory-bank/spec-index.md` routes existing specs and does not encourage duplicate specs
+- shared domain/contract/state/API/security/data/runtime concerns have backbone specs or recorded gaps before per-feature task planning
 - `/mb-doctor` findings from the reviewed surface are addressed; for autonomous/autopilot readiness, `/mb-doctor --strict` must pass before `APPROVE` for batch execution
 - нет “слепой” JSON task queue, которую нельзя безопасно запускать автономно
 
