@@ -80,7 +80,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после clarified PRD, до `/prd`.
 
-   **Создает/обновляет:** `.memory-bank/spec-index.md` как SDD Design Specs Index: planned/candidate/unknown/not_applicable areas, gaps, expected spec locations. Не создает authoritative architecture/contracts/states/data specs без evidence.
+   **Создает/обновляет:** минимальный `.memory-bank/spec-index.md` как lightweight SDD route map: planned/candidate/unknown/not_applicable areas, gaps, expected spec locations только по evidence из PRD/brief/existing specs. Не проводит architecture interview, не проектирует architecture и не создает authoritative specs.
 
    **Дальше:** запустить `/prd`.
 
@@ -96,7 +96,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** `spec-index`, global backbone status, source-of-truth hierarchy, architecture/source-of-truth/module-boundary/data/API/testing specs по необходимости. Не создает tasks и не заменяет feature-level `/spec-improve`.
+   **Создает/обновляет:** `spec-index`, global backbone status, source-of-truth hierarchy, architecture/source-of-truth/module-boundary/data/API/testing specs по необходимости. Потребляет lightweight route map из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
 
    **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
 

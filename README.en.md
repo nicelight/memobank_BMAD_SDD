@@ -41,7 +41,7 @@ In plain terms:
 - `/analysis` and `/brief` help turn a raw idea into a usable input.
 - `/constitution` runs a short contextual interview for project principles and non-negotiables. If you explicitly skip it, the flow can continue with framework-default/skipped principles and you can revisit it later.
 - `/write-prd` captures a clear PRD.
-- `/spec-init` creates the SDD Design Specs Index route map without inventing authoritative specs.
+- `/spec-init` creates a lightweight SDD route map from PRD/brief/existing-spec evidence. It does not run architecture design or create authoritative specs.
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
 - `/spec-design` is mandatory after `/prd`, but adaptive in depth. Small independent T0/T1 projects get a minimal backbone with irrelevant areas marked `not_applicable`; shared/T2/T3 projects get normal architecture backbone decisions. If key decisions are unresolved, it records blockers and stops downstream.
 - `/spec-improve FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.

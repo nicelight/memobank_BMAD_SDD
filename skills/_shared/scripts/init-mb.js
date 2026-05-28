@@ -671,7 +671,7 @@ status: active
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 - [.memory-bank/workflows/tier-policy.md](workflows/tier-policy.md): Tier policy for TASK routing and protocol depth.
 
-- [.memory-bank/spec-index.md](spec-index.md): SDD Design Specs Index and source-of-truth route map.
+- [.memory-bank/spec-index.md](spec-index.md): Lightweight SDD route map for existing specs, planned/candidate/unknown areas, and \`/spec-design\` handoff.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 - [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
@@ -727,37 +727,25 @@ status: active
 `);
 
 writeFile(`${MB}/spec-index.md`, `---
-description: SDD Design Specs Index and route map for source-of-truth documents.
+description: Lightweight SDD Design Specs Index route map.
 status: active
 ---
 # SDD Design Specs Index
 
 ## Purpose
-- Use this file as the route map for SDD design specs and explicit normative docs.
+- Use this file as the lightweight route map for SDD design specs and explicit normative docs.
+- \`/spec-init\` creates or refreshes this skeleton before \`/prd\`; it is preflight/bootstrap, not design.
 - Read this index before creating new specs or doing serious T2/T3 work.
 - If a design area is not needed, mark it \`not_applicable\` with a short reason.
 - Do not create authoritative specs unless PRD/user/spec evidence contains the decision.
 
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
-- \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
-- \`/spec-design\` is mandatory after \`/prd\`. It creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status; simple T0/T1 scope may use \`minimal\` with explicit \`not_applicable\` areas. It routes shared backbone specs but does not replace per-feature \`/spec-improve FT-<NNN>\`.
+- \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable from PRD/brief/existing-spec evidence, but must not interview for or invent authoritative architecture/contracts/states/data specs.
+- \`/spec-init\` does not own global backbone status, source-of-truth hierarchy, OpenAPI policy, diagrams, or global design decisions.
+- \`/spec-design\` is mandatory after \`/prd\`. It consumes this lightweight route map, creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status, owns the source-of-truth hierarchy and global design decisions, and routes shared backbone specs through this index. Simple T0/T1 scope may use \`minimal\` with explicit \`not_applicable\` areas. It does not replace per-feature \`/spec-improve FT-<NNN>\`.
 - \`/spec-improve FT-<NNN>\` owns feature-level design before \`/prd-to-tasks FT-<NNN>\`.
 - \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
-
-## Global backbone status
-- Status: unknown
-- Last updated: TBD
-- Decision depth: TBD (\`minimal\` for simple T0/T1, normal for shared/T2/T3)
-- Not applicable areas: TBD
-- Blocked: no
-
-## Source-of-truth hierarchy
-1. Constitution and explicit user decisions
-2. SDD backbone specs routed by this index
-3. Feature-level SDD specs and feature docs
-4. JSON task records
-5. Code/tests as implementation truth
 
 ## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
@@ -769,7 +757,7 @@ status: active
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
 
-## Expected baseline backbone specs
+## Expected backbone/spec locations
 - [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Global architecture with Mermaid diagrams when useful.
 - [.memory-bank/architecture/source-of-truth.md](architecture/source-of-truth.md): Ownership and SSOT rules.
 - [.memory-bank/architecture/module-boundaries.md](architecture/module-boundaries.md): Module/service boundaries.
@@ -808,8 +796,9 @@ status: active
 ## Gaps and open questions
 - TBD
 
-## Backbone blockers
-- TBD
+## Handoff to /spec-design
+- \`/spec-design\` fills real backbone status, source-of-truth hierarchy, OpenAPI/API policy, diagrams, and global decisions after \`/prd\`.
+- Blocking uncertainty from this preflight should be listed above as gaps/open questions.
 
 ## Compatibility note
 - Duo docs в \`architecture/\` и \`guides/\` остаются валидными.
@@ -988,8 +977,8 @@ status: active
 - Bootstrap: cold-start / mb-init
 - Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
 - Project principles: /constitution after /brief or existing PRD context, before /write-prd only when project_principles is not ratified|partial
-- PRD → MB: /write-prd, /spec-init, /prd, /spec-design, /spec-improve, then /prd-to-tasks
-- SDD design: /spec-init for route map, /spec-design for mandatory adaptive global backbone after /prd, /spec-improve FT-XXX for manual feature design, /spec-auto for autonomous design
+- PRD → MB: /write-prd, lightweight /spec-init, /prd, /spec-design, /spec-improve, then /prd-to-tasks
+- SDD design: /spec-init for lightweight route-map preflight, /spec-design for mandatory adaptive global backbone after /prd, /spec-improve FT-XXX for manual feature design, /spec-auto for autonomous design
 - Map codebase: /map-codebase
 - Execution: /execute
 - Verification (UAT): /verify
@@ -1088,7 +1077,7 @@ status: active
 ## Principle: no task explosion
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
 - \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
-- \`/spec-init\` creates the SDD Design Specs Index after \`/write-prd\` and before \`/prd\`.
+- \`/spec-init\` creates the lightweight SDD route map after \`/write-prd\` and before \`/prd\`.
 - \`/spec-design\` is mandatory after \`/prd\`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, and it does not replace per-feature \`/spec-improve\`.
 - \`/spec-improve FT-<NNN>\` completes or marks unnecessary feature-level design before task decomposition.
 - Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready.

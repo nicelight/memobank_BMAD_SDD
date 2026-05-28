@@ -157,7 +157,7 @@ status: active
 - [.memory-bank/tasks/index.json](tasks/index.json): Authoritative JSON task record index.
 - [.memory-bank/schemas/task.schema.json](schemas/task.schema.json): JSON schema for task records.
 
-- [.memory-bank/spec-index.md](spec-index.md): SDD Design Specs Index and route map for source-of-truth specs.
+- [.memory-bank/spec-index.md](spec-index.md): Lightweight SDD route map for existing specs, planned/candidate/unknown areas, and `/spec-design` handoff.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 - [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
@@ -227,38 +227,26 @@ status: active
 
 ```markdown
 ---
-description: SDD Design Specs Index and route map for source-of-truth documents.
+description: Lightweight SDD Design Specs Index route map.
 status: active
 ---
 # SDD Design Specs Index
 
 ## Purpose
-- Use this file as the route map for SDD design specs and explicit normative docs.
+- Use this file as the lightweight route map for SDD design specs and explicit normative docs.
+- `/spec-init` creates or refreshes this skeleton before `/prd`; it is preflight/bootstrap, not design.
 - Read this index before creating new specs or doing serious T2/T3 work.
 - If a design area is not needed, mark it `not_applicable` with a short reason.
 - Do not create authoritative specs unless PRD/user/spec evidence contains the decision.
 
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
-- `/spec-init` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
-- `/spec-design` is mandatory after `/prd`. It creates `complete`, `minimal`, or `blocked` global backbone status; simple T0/T1 scope may use `minimal` with explicit `not_applicable` areas. It routes shared backbone specs through this index and does not replace per-feature `/spec-improve FT-<NNN>`.
+- `/spec-init` may mark areas as planned/candidate/unknown/not_applicable from PRD/brief/existing-spec evidence, but must not interview for or invent authoritative architecture/contracts/states/data specs.
+- `/spec-init` does not own global backbone status, source-of-truth hierarchy, OpenAPI policy, diagrams, or global design decisions.
+- `/spec-design` is mandatory after `/prd`. It consumes this lightweight route map, creates `complete`, `minimal`, or `blocked` global backbone status, owns the source-of-truth hierarchy and global design decisions, and routes shared backbone specs through this index. Simple T0/T1 scope may use `minimal` with explicit `not_applicable` areas. It does not replace per-feature `/spec-improve FT-<NNN>`.
 - `/spec-improve FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
 - `spec_design_status: complete` means every feature-relevant SDD design area either has a concrete linked spec file routed through this index as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for that feature. Do not mark complete while feature-relevant areas remain planned, candidate, unknown, conflicting, or unresolved.
 - `T2` / `T3` tasks must carry relevant linked specs in task richer fields.
-
-## Global backbone status
-- Status: unknown
-- Last updated: TBD
-- Decision depth: TBD (`minimal` for simple T0/T1, normal for shared/T2/T3)
-- Not applicable areas: TBD
-- Blocked: no
-
-## Source-of-truth hierarchy
-1. Constitution and explicit user decisions
-2. SDD backbone specs routed by this index
-3. Feature-level SDD specs and feature docs
-4. JSON task records
-5. Code/tests as implementation truth
 
 ## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
@@ -270,7 +258,7 @@ status: active
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
 
-## Expected baseline backbone specs
+## Expected backbone/spec locations
 - [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Global architecture with Mermaid diagrams when useful.
 - [.memory-bank/architecture/source-of-truth.md](architecture/source-of-truth.md): Ownership and SSOT rules.
 - [.memory-bank/architecture/module-boundaries.md](architecture/module-boundaries.md): Module/service boundaries.
@@ -309,8 +297,9 @@ status: active
 ## Gaps and open questions
 - TBD
 
-## Backbone blockers
-- TBD
+## Handoff to /spec-design
+- `/spec-design` fills real backbone status, source-of-truth hierarchy, OpenAPI/API policy, diagrams, and global decisions after `/prd`.
+- Blocking uncertainty from this preflight should be listed above as gaps/open questions.
 
 ## Compatibility note
 - Duo docs в `architecture/` и `guides/` остаются валидными.

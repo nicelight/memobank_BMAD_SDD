@@ -39,7 +39,7 @@ From templates, create:
 - `.memory-bank/testing/index.md`
 - `.memory-bank/skills/index.md`
 
-Fresh PRD-less bootstrap must not create `.memory-bank/features/FT-001-*.md`, `.memory-bank/tasks/TASK-001.task.json`, or any other fake roadmap artifact. `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/write-prd` creates a clarified PRD, `/spec-init` prepares the SDD route map, `/prd` creates real features, mandatory `/spec-design` creates a minimal or full backbone gate, `/spec-improve FT-<NNN>` completes or marks unnecessary feature design, and `/prd-to-tasks FT-<NNN>` creates real `TASK-*.task.json` records after that. `/clarify-feature FT-<NNN>` is optional for explicitly pending/blocked features.
+Fresh PRD-less bootstrap must not create `.memory-bank/features/FT-001-*.md`, `.memory-bank/tasks/TASK-001.task.json`, or any other fake roadmap artifact. `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/write-prd` creates a clarified PRD, `/spec-init` prepares only the lightweight SDD route map, `/prd` creates real features, mandatory `/spec-design` creates a minimal or full backbone gate, `/spec-improve FT-<NNN>` completes or marks unnecessary feature design, and `/prd-to-tasks FT-<NNN>` creates real `TASK-*.task.json` records after that. `/clarify-feature FT-<NNN>` is optional for explicitly pending/blocked features.
 
 Also create optional folders that support the richer normative layer without making it mandatory:
 - `.memory-bank/contracts/`

@@ -5,7 +5,7 @@ status: active
 # /spec-auto - Autonomous SDD design
 
 <objective>
-Run the autonomous equivalent of `/spec-init`, mandatory `/spec-design`, and `/spec-improve` without user interview.
+Run the autonomous equivalent of lightweight `/spec-init`, mandatory `/spec-design`, and `/spec-improve` without user interview.
 
 Supported arguments:
 - `--init`
@@ -41,12 +41,12 @@ If no argument is provided, infer:
 - if unclear, stop and report the missing argument
 
 ## 2) `--init`
-Perform `/spec-init` behavior without interview:
+Perform lightweight `/spec-init` behavior:
 - read Constitution, Product Brief, PRD, existing spec-index, and existing specs
-- update `.memory-bank/spec-index.md` as SDD Design Specs Index / route map
-- mark areas as planned/candidate/unknown/not_applicable
+- update `.memory-bank/spec-index.md` as the pre-PRD SDD route map
+- mark areas as planned/candidate/unknown/not_applicable only from PRD/brief/existing-spec evidence
 - record assumptions and open questions
-- do not create authoritative design specs unless PRD/user evidence already contains the decision
+- do not run architecture design, set backbone status, create diagrams, define source-of-truth hierarchy, or create authoritative design specs unless existing evidence already contains the decision
 
 If the skeleton would be misleading without unavailable user input:
 - record `BLOCKER: misleading spec-index risk`

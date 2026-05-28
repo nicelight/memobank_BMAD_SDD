@@ -14,7 +14,7 @@ Turn an already clarified `.memory-bank/prd.md` into Memory Bank L1-L3 artifacts
 - `.memory-bank/index.md`
 
 `/prd` does not write the PRD, ask Deep Questioning questions, create TASK records, create implementation plans, or require feature-level clarification.
-`/prd` requires `.memory-bank/spec-index.md` as the SDD route map and reads only relevant authoritative specs routed by that index before deriving L1-L3.
+`/prd` requires `.memory-bank/spec-index.md` as the lightweight SDD route map and reads only relevant existing authoritative specs routed by that index before deriving L1-L3.
 </objective>
 
 <process>
@@ -38,11 +38,11 @@ If the PRD contains unresolved `NEEDS CLARIFICATION` blockers in decomposition-r
 Read `.memory-bank/constitution.md` before writing derived docs. If the PRD conflicts with the Constitution, stop and ask for explicit resolution or `/constitution` amendment.
 
 ### SDD route map gate
-`.memory-bank/spec-index.md` is a required SDD route map for `/prd` after `/spec-init`.
+`.memory-bank/spec-index.md` is a required lightweight SDD route map for `/prd` after `/spec-init`.
 
 Before writing derived docs:
 - read `.memory-bank/spec-index.md` as a route map, not as a substitute for the specs;
-- stop and run `/spec-init` if `.memory-bank/spec-index.md` is missing, stale, placeholder-only, ambiguous, has broken links, or cannot safely identify relevant authoritative specs;
+- stop and run `/spec-init` if `.memory-bank/spec-index.md` is missing, stale, placeholder-only, ambiguous, has broken links, or cannot safely identify relevant existing specs and planned/candidate/unknown/not_applicable areas;
 - determine relevance from PRD sections, affected product areas, requirements, actors, data/domain model, contracts/APIs, states/lifecycles, security/compliance, runtime/operations, and verification strategy;
 - resolve and read only the relevant authoritative spec files routed by `.memory-bank/spec-index.md`;
 - do not load every SDD spec by default; leave non-relevant authoritative specs closed unless the index routes them into the current PRD/decomposition scope;

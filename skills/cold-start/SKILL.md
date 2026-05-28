@@ -201,7 +201,7 @@ If the user explicitly wants **autonomous mode**:
 - continue with `/autonomous` after `/write-prd` is complete
 
 ### 3A.2 Route PRD to L1–L3
-Run `/spec-init` to update `.memory-bank/spec-index.md` as the SDD Design Specs Index without inventing authoritative specs.
+Run `/spec-init` to update `.memory-bank/spec-index.md` as a lightweight SDD route map from PRD/brief/existing-spec evidence, without architecture interview or invented authoritative specs.
 Then run `/prd` to decompose `.memory-bank/prd.md` into product, requirements, epics, features, testing, and index updates.
 After `/prd`, always run `/spec-design`. For small independent T0/T1 features it may record a minimal backbone with irrelevant areas marked `not_applicable`; for shared/T2/T3 concerns it creates or updates the needed backbone SDD specs and `spec-index`. This is not another mandatory heavy phase: it creates no tasks and no feature-local implementation design. `/spec-improve FT-<NNN>` remains the feature-level gate after backbone.
 
