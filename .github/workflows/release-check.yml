@@ -82,10 +82,10 @@ jobs:
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/spec-init.md
-            test -f .memory-bank/commands/spec-design.md
+            test -f .memory-bank/commands/spec-improve.md
             test -f .memory-bank/commands/spec-auto.md
             test -f .memory-bank/commands/prd.md
-            test -f .memory-bank/commands/spec-backbone.md
+            test -f .memory-bank/commands/spec-design.md
             test -f .memory-bank/commands/clarify-feature.md
             test ! -e .memory-bank/commands/clarify.md
             test -f .memory-bank/commands/autonomous.md
@@ -102,8 +102,8 @@ jobs:
             test -f .claude/skills/prd/SKILL.md
             test -f .claude/skills/write-prd/SKILL.md
             test -f .claude/skills/spec-init/SKILL.md
-            test -f .claude/skills/spec-backbone/SKILL.md
             test -f .claude/skills/spec-design/SKILL.md
+            test -f .claude/skills/spec-improve/SKILL.md
             test -f .claude/skills/spec-auto/SKILL.md
             test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/constitution/SKILL.md
@@ -117,8 +117,8 @@ jobs:
             test -f .agents/skills/brief/SKILL.md
             test -f .agents/skills/write-prd/SKILL.md
             test -f .agents/skills/spec-init/SKILL.md
-            test -f .agents/skills/spec-backbone/SKILL.md
             test -f .agents/skills/spec-design/SKILL.md
+            test -f .agents/skills/spec-improve/SKILL.md
             test -f .agents/skills/spec-auto/SKILL.md
             test -f .agents/skills/clarify-feature/SKILL.md
             test ! -e .claude/skills/mb-lint/SKILL.md
@@ -133,8 +133,8 @@ jobs:
               /write-prd \
               /spec-init \
               /prd \
-              /spec-backbone \
               /spec-design \
+              /spec-improve \
               /spec-auto \
               /clarify-feature \
               /prd-to-tasks \
@@ -167,9 +167,9 @@ jobs:
           test -f "$TARGET/.memory-bank/tasks/index.json"
           test -f "$TARGET/AGENTS.md"
           test -f "$TARGET/.memory-bank/commands/cold-start.md"
-          test -f "$TARGET/.memory-bank/commands/spec-backbone.md"
-          test -f "$TARGET/.claude/skills/spec-backbone/SKILL.md"
-          test -f "$TARGET/.agents/skills/spec-backbone/SKILL.md"
+          test -f "$TARGET/.memory-bank/commands/spec-design.md"
+          test -f "$TARGET/.claude/skills/spec-design/SKILL.md"
+          test -f "$TARGET/.agents/skills/spec-design/SKILL.md"
           test -f "$TARGET/scripts/mb-lint.mjs"
           (
             cd "$TARGET"
@@ -196,9 +196,9 @@ jobs:
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/spec-init.md
-            test -f .memory-bank/commands/spec-design.md
+            test -f .memory-bank/commands/spec-improve.md
             test -f .memory-bank/commands/spec-auto.md
-            test -f .memory-bank/commands/spec-backbone.md
+            test -f .memory-bank/commands/spec-design.md
             test -f .memory-bank/commands/autonomous.md
             test -f .memory-bank/commands/clarify-feature.md
             test ! -e .memory-bank/commands/clarify.md
@@ -220,8 +220,8 @@ jobs:
             test -f .claude/skills/brief/SKILL.md
             test -f .claude/skills/write-prd/SKILL.md
             test -f .claude/skills/spec-init/SKILL.md
-            test -f .claude/skills/spec-backbone/SKILL.md
             test -f .claude/skills/spec-design/SKILL.md
+            test -f .claude/skills/spec-improve/SKILL.md
             test -f .claude/skills/spec-auto/SKILL.md
             test -f .claude/skills/clarify-feature/SKILL.md
             test -f .claude/skills/autonomous/SKILL.md
@@ -232,8 +232,8 @@ jobs:
             test -f .agents/skills/brief/SKILL.md
             test -f .agents/skills/write-prd/SKILL.md
             test -f .agents/skills/spec-init/SKILL.md
-            test -f .agents/skills/spec-backbone/SKILL.md
             test -f .agents/skills/spec-design/SKILL.md
+            test -f .agents/skills/spec-improve/SKILL.md
             test -f .agents/skills/spec-auto/SKILL.md
             test -f .agents/skills/clarify-feature/SKILL.md
             test -f .agents/skills/autonomous/SKILL.md
@@ -249,8 +249,8 @@ jobs:
               /write-prd \
               /spec-init \
               /prd \
-              /spec-backbone \
               /spec-design \
+              /spec-improve \
               /spec-auto \
               /clarify-feature \
               /prd-to-tasks \

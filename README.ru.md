@@ -43,8 +43,8 @@ Memory Bank помогает вести разработку как повтор
   -> PRD
   -> SDD spec index       Карта design specs
   -> features            + проработка /clarify
-  -> /spec-backbone       опционально: общий SDD слой
-  -> feature design       /spec-design перед tasks
+  -> /spec-design         обязательный адаптивный SDD backbone
+  -> feature design       /spec-improve для выбранной feature
   -> JSON tasks          с градацией сложности и риска 
   -> execute             можно все сразу в авторежиме
   -> verify              + red-verify
@@ -90,15 +90,15 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/epics/`, `.memory-bank/features/` и связанные индексы.
 
-   **Дальше:** при общем домене, модели, contracts, state, security/runtime логике или ожидаемом shared design для T2/T3 можно запустить опциональный `/spec-backbone`. Для маленьких независимых T0/T1 features его лучше пропустить. Затем выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-design FT-001`.
+   **Дальше:** запустить обязательный `/spec-design`. Для маленьких независимых T0/T1 features он создает minimal backbone и помечает лишние области `not_applicable`; для shared/T2/T3 concerns проводит архитектурный checkpoint. Затем выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-improve FT-001`.
 
-6. `/spec-backbone` опционально
+6. `/spec-design`
 
-   **Когда:** после `/prd`, если нескольким features нужен общий SDD backbone. Это не обязательная тяжелая фаза.
+   **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** только backbone SDD specs и `spec-index`. Не создает tasks и не заменяет feature-level `/spec-design`.
+   **Создает/обновляет:** `spec-index`, global backbone status, source-of-truth hierarchy, architecture/source-of-truth/module-boundary/data/API/testing specs по необходимости. Не создает tasks и не заменяет feature-level `/spec-improve`.
 
-   **Дальше:** выбрать feature и запустить `/spec-design FT-001`.
+   **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
 
 7. `/clarify-feature FT-001`
 
@@ -106,11 +106,11 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** уточнения по feature и ее clarification status.
 
-   **Дальше:** после снятия blocker запустить `/spec-design FT-001`.
+   **Дальше:** после снятия blocker запустить `/spec-improve FT-001`.
 
-8. `/spec-design FT-001`
+8. `/spec-improve FT-001`
 
-   **Когда:** после `/prd` и до `/prd-to-tasks`, для выбранной feature.
+   **Когда:** после `/spec-design` и до `/prd-to-tasks`, для выбранной feature.
 
    **Создает/обновляет:** только нужные SDD artifacts: feature hub в `tech-specs`, architecture notes, contracts, domains, states, ADR, testing/runbooks. Для простых T0/T1-like features может поставить `spec_design_status: not_required` с кратким rationale.
 
@@ -199,7 +199,7 @@ proxy skills, runtime scripts и может синхронизировать `AG
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> опционально /spec-backbone -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.

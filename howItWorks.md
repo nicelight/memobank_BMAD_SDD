@@ -208,7 +208,8 @@ idea / rough draft
   -> /write-prd
   -> /spec-init
   -> /prd
-  -> /spec-design FT-001
+  -> /spec-design
+  -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
   -> /execute TASK-001
   -> /verify TASK-001
@@ -221,20 +222,20 @@ idea / rough draft
 
 `/constitution` читает Product Brief, если он есть, и проводит короткое contextual interview по project principles, Definition of Done, автономности агентов, human checkpoints и non-negotiables. Это нормальный шаг перед `/write-prd`, когда principles еще не `ratified|partial`, но не hard-blocker: если пользователь явно пропускает его, flow продолжает идти с `project_principles: framework-default|skipped`, а Constitution можно ratify позже.
 
-`/write-prd` нормализует вход в `.memory-bank/prd.md` с `type: prd`, `clarification_status: complete` и `constitution_checked: true`. `/spec-init` обновляет `.memory-bank/spec-index.md` как SDD Design Specs Index без раннего выдумывания authoritative specs. `/prd` декомпозирует PRD в L1-L3 docs Memory Bank: product, requirements, epics и features. `/spec-design FT-001` завершает минимально нужный feature-level design или ставит `not_required` для простого T0/T1-like scope. `/prd-to-tasks` создает JSON task records только после появления feature docs и прохождения SDD design gate.
+`/write-prd` нормализует вход в `.memory-bank/prd.md` с `type: prd`, `clarification_status: complete` и `constitution_checked: true`. `/spec-init` обновляет `.memory-bank/spec-index.md` как SDD Design Specs Index без раннего выдумывания authoritative specs. `/prd` декомпозирует PRD в L1-L3 docs Memory Bank: product, requirements, epics и features. `/spec-design` является обязательным gate после `/prd`: для T0/T1 может записать minimal backbone и `not_applicable`, для shared/T2/T3 фиксирует source-of-truth, boundaries, data/contracts/testing decisions или blockers. `/spec-improve FT-001` завершает минимально нужный feature-level design или ставит `not_required` для простого T0/T1-like scope. `/prd-to-tasks` создает JSON task records только после появления feature docs и прохождения SDD design gate.
 
 ### Понятный PRD или concept
 
 Если есть понятный concept, но нет PRD:
 
 ```text
-/brief -> /constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
+/brief -> /constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001
 ```
 
 Если уже есть внешний PRD или PRD-like text:
 
 ```text
-/constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
+/constitution if principles are not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001
 ```
 
 Если project principles уже `ratified` или `partial`, можно сразу продолжать с `/write-prd`.
@@ -244,7 +245,7 @@ idea / rough draft
 Для существующего codebase сначала соберите as-is baseline:
 
 ```text
-/map-codebase -> /constitution if principles are not ratified|partial -> /write-prd --delta -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001
+/map-codebase -> /constitution if principles are not ratified|partial -> /write-prd --delta -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001
 ```
 
 Можно использовать `/brief`, чтобы сформировать delta input, но route не должен обходить `/write-prd`; перед `/write-prd --delta` запускайте `/constitution`, если project principles еще не `ratified|partial`. Brownfield rule: без PRD/delta нельзя создавать roadmap epics, features или runnable task records. `/map-codebase` документирует текущую систему; он не придумывает план.
@@ -283,6 +284,7 @@ PRD/Product Brief/delta
 -> /write-prd
 -> /spec-auto --init
 -> /prd
+-> /spec-design --all
 -> /spec-auto --all
 -> /review
 -> /prd-to-tasks --all
@@ -314,7 +316,7 @@ Fresh bootstrap создает:
 }
 ```
 
-Fresh bootstrap не создает `.memory-bank/tasks/TASK-001.task.json` и не создает runnable task records. Task records появляются через `/spec-design FT-001` + `/prd-to-tasks FT-001` или `/spec-auto --all` + `/prd-to-tasks --all`.
+Fresh bootstrap не создает `.memory-bank/tasks/TASK-001.task.json` и не создает runnable task records. Task records появляются через `/spec-design` + `/spec-improve FT-001` + `/prd-to-tasks FT-001` или `/spec-design --all` + `/spec-auto --all` + `/prd-to-tasks --all`.
 
 Минимальная форма task record:
 
@@ -394,10 +396,11 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 | `/constitution` | Contextual interview for governing principles | `.memory-bank/constitution.md` | не добавляет Spec Kit hooks, governance engines или command aliases; не заменяет PRD | `/write-prd` или current workflow |
 | `/write-prd` | Product Brief/context -> clarified PRD | `.memory-bank/prd.md` | не создает EP/FT/TASK; не обходит Constitution conflicts | `/spec-init` |
 | `/spec-init` | Initialize SDD Design Specs Index | `.memory-bank/spec-index.md` route map | не создает authoritative specs без evidence | `/prd` |
-| `/prd` | Clarified PRD -> L1-L3 Memory Bank | product, requirements, epics, features, testing/index | не создает всю task queue вслепую | `/clarify-feature` если blocked, затем `/spec-design FT-*` |
-| `/spec-design` | Feature-level SDD design | needed tech-specs/architecture/contracts/domains/states/ADR/testing links, feature `spec_design_status` | не дублирует existing specs; не выдумывает decisions | `/prd-to-tasks FT-*` |
+| `/prd` | Clarified PRD -> L1-L3 Memory Bank | product, requirements, epics, features, testing/index | не создает всю task queue вслепую | `/spec-design`, затем `/clarify-feature` если blocked и `/spec-improve FT-*` |
+| `/spec-design` | Mandatory adaptive global SDD backbone | spec-index backbone status, source-of-truth, architecture/boundaries/data/contracts/testing specs as needed | не создает tasks/plans/feature-local tech-specs; не раздувает T0/T1 scope | `/spec-improve FT-*` или `/spec-auto --all` |
+| `/spec-improve` | Feature-level SDD design | needed tech-specs/architecture/contracts/domains/states/ADR/testing links, feature `spec_design_status` | не дублирует existing specs; не выдумывает decisions | `/prd-to-tasks FT-*` |
 | `/spec-auto` | Autonomous SDD init/design | spec-index, feature design status, assumptions/blockers | не спрашивает пользователя; не игнорирует unsafe ambiguity | `/prd` или `/prd-to-tasks --all` |
-| `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/spec-design FT-*` |
+| `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/spec-improve FT-*` |
 | `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не проходит pending blockers or missing T2/T3 SDD specs | `/execute` вручную или `/review`/`/autopilot` |
 | `/execute` | Implement one scoped task | `.protocols/<TASK>/...`, `.tasks/<TASK>/...`, code/docs в task scope | не закрывает task; не запускает verify/red-verify/mb-sync | `/verify` |
 | `/verify` | Functional acceptance/evidence verification | verification protocol/evidence, task `verify` entries, possible bugs/follow-ups | в scheduler mode не закрывает/fail-ит/promote-ит | manual close или `/red-verify`/scheduler decision |

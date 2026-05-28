@@ -66,8 +66,8 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → optional `/spec-backbone` → `/spec-design FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. Use `/spec-backbone` after `/prd` when the feature set exposes shared T2/T3 backbone concerns; it does not replace per-feature `/spec-design`. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
-- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init` and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init`, mandatory `/spec-design --all`, and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
 - Folder per process: `.tasks/TASK-<ID>/`
@@ -90,8 +90,8 @@ Representative commands:
 - `/write-prd`
 - `/spec-init`
 - `/prd`
-- `/spec-backbone`
 - `/spec-design`
+- `/spec-improve`
 - `/spec-auto`
 - `/clarify-feature`
 - `/prd-to-tasks`
@@ -241,10 +241,24 @@ status: active
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
 - `/spec-init` may mark areas as planned/candidate/unknown/not_applicable, but must not invent authoritative architecture/contracts/states/data specs.
-- `/spec-backbone` is optional after `/prd` and recommended/required when the feature set exposes shared T2/T3 backbone concerns. It routes shared backbone specs through this index and does not replace per-feature `/spec-design FT-<NNN>`.
-- `/spec-design FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
+- `/spec-design` is mandatory after `/prd`. It creates `complete`, `minimal`, or `blocked` global backbone status; simple T0/T1 scope may use `minimal` with explicit `not_applicable` areas. It routes shared backbone specs through this index and does not replace per-feature `/spec-improve FT-<NNN>`.
+- `/spec-improve FT-<NNN>` owns feature-level design before `/prd-to-tasks FT-<NNN>`.
 - `spec_design_status: complete` means every feature-relevant SDD design area either has a concrete linked spec file routed through this index as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for that feature. Do not mark complete while feature-relevant areas remain planned, candidate, unknown, conflicting, or unresolved.
 - `T2` / `T3` tasks must carry relevant linked specs in task richer fields.
+
+## Global backbone status
+- Status: unknown
+- Last updated: TBD
+- Decision depth: TBD (`minimal` for simple T0/T1, normal for shared/T2/T3)
+- Not applicable areas: TBD
+- Blocked: no
+
+## Source-of-truth hierarchy
+1. Constitution and explicit user decisions
+2. SDD backbone specs routed by this index
+3. Feature-level SDD specs and feature docs
+4. JSON task records
+5. Code/tests as implementation truth
 
 ## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
@@ -255,6 +269,15 @@ status: active
 - [.memory-bank/states/](states/): Lifecycle/state rules.
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
+
+## Expected baseline backbone specs
+- [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Global architecture with Mermaid diagrams when useful.
+- [.memory-bank/architecture/source-of-truth.md](architecture/source-of-truth.md): Ownership and SSOT rules.
+- [.memory-bank/architecture/module-boundaries.md](architecture/module-boundaries.md): Module/service boundaries.
+- [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md): Runtime data model.
+- [.memory-bank/contracts/api-guidelines.md](contracts/api-guidelines.md): HTTP/API rules when HTTP boundary exists.
+- [.memory-bank/guides/frontend-component-guide.md](guides/frontend-component-guide.md): Frontend component/design behavior when UI component system is in scope.
+- [.memory-bank/testing/index.md](testing/index.md): Required verification gates.
 
 ## Planned design areas
 - TBD
@@ -271,7 +294,7 @@ status: active
 ## Feature design status map
 | Feature | spec_design_status | Linked specs | Notes |
 |---|---|---|---|
-| FT-XXX | unknown | - | Fill via /spec-design or /spec-auto; link backbone specs when /spec-backbone applies |
+| FT-XXX | unknown | - | Fill via /spec-improve or /spec-auto; link backbone specs when /spec-design applies |
 
 ## Expected spec locations
 - Feature hubs: `.memory-bank/tech-specs/FT-<NNN>-<slug>.md`
@@ -284,6 +307,9 @@ status: active
 - Testing/runbooks: `.memory-bank/testing/` and `.memory-bank/runbooks/`
 
 ## Gaps and open questions
+- TBD
+
+## Backbone blockers
 - TBD
 
 ## Compatibility note
@@ -516,7 +542,7 @@ status: draft
 
 ## 6b) Example task record template
 
-The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design FT-<NNN>` has completed, blocked, or marked SDD design `not_required`.
+The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design` is `complete|minimal` and `/spec-improve FT-<NNN>` has completed, blocked, or marked SDD design `not_required`.
 
 ```json
 {
@@ -597,7 +623,7 @@ status: active
 
 ## When to use
 - Bootstrap / memory: cold-start, mb-init
-- SDD design: /spec-init, optional /spec-backbone for shared T2/T3 backbone concerns, /spec-design, /spec-auto
+- SDD design: /spec-init, mandatory adaptive /spec-design, /spec-improve, /spec-auto
 - PRD decomposition: mb-from-prd
 - Codebase mapping: mb-map-codebase
 - Execution: mb-execute

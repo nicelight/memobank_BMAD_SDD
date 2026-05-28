@@ -15,8 +15,7 @@
    - relevant `.memory-bank/epics/EP-*.md`
    - relevant `.memory-bank/features/FT-*.md`
    - relevant `.memory-bank/architecture/*.md`
-   - relevant `.memory-bank/diagrams/*`
-   - relevant `.memory-bank/lld/*`
+   - relevant `.memory-bank/guides/*`
    - relevant `.memory-bank/contracts/*`
    - relevant `.memory-bank/states/*`
    - relevant `.memory-bank/adrs/*`
@@ -70,7 +69,7 @@ Codex (fresh session):
 
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
+- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
 - Run `/clarify-feature FT-001` only for explicit feature blockers before `/prd-to-tasks`.
 - Execute tasks one-by-one and review after each wave.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if the JSON task queue already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
@@ -137,7 +136,11 @@ Naming:
 - /brainstorm → .memory-bank/commands/brainstorm.md (optional raw idea facilitation)
 - /brief → .memory-bank/commands/brief.md (optional product brief before PRD)
 - /write-prd → .memory-bank/commands/write-prd.md
+- /spec-init → .memory-bank/commands/spec-init.md
 - /prd → .memory-bank/commands/prd.md
+- /spec-design → .memory-bank/commands/spec-design.md
+- /spec-improve → .memory-bank/commands/spec-improve.md
+- /spec-auto → .memory-bank/commands/spec-auto.md
 - /clarify-feature → .memory-bank/commands/clarify-feature.md
 - /prd-to-tasks → .memory-bank/commands/prd-to-tasks.md
 - /mb-from-prd → .memory-bank/commands/mb-from-prd.md (alias)

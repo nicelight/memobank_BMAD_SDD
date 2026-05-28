@@ -39,7 +39,7 @@ From templates, create:
 - `.memory-bank/testing/index.md`
 - `.memory-bank/skills/index.md`
 
-Fresh PRD-less bootstrap must not create `.memory-bank/features/FT-001-*.md`, `.memory-bank/tasks/TASK-001.task.json`, or any other fake roadmap artifact. `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/write-prd` creates a clarified PRD, `/spec-init` prepares the SDD route map, `/prd` creates real features, optional `/spec-backbone` creates/updates only shared backbone SDD specs and `spec-index` when several features need common design, `/spec-design FT-<NNN>` completes or marks unnecessary feature design, and `/prd-to-tasks FT-<NNN>` creates real `TASK-*.task.json` records after that. `/clarify-feature FT-<NNN>` is optional for explicitly pending/blocked features.
+Fresh PRD-less bootstrap must not create `.memory-bank/features/FT-001-*.md`, `.memory-bank/tasks/TASK-001.task.json`, or any other fake roadmap artifact. `.memory-bank/tasks/index.json` starts as `{ "version": 1, "tasks": [] }`; `/write-prd` creates a clarified PRD, `/spec-init` prepares the SDD route map, `/prd` creates real features, mandatory `/spec-design` creates a minimal or full backbone gate, `/spec-improve FT-<NNN>` completes or marks unnecessary feature design, and `/prd-to-tasks FT-<NNN>` creates real `TASK-*.task.json` records after that. `/clarify-feature FT-<NNN>` is optional for explicitly pending/blocked features.
 
 Also create optional folders that support the richer normative layer without making it mandatory:
 - `.memory-bank/contracts/`
@@ -57,8 +57,8 @@ Use `./references/shared-commands-*.md`:
 - `write-prd.md`
 - `spec-init.md`
 - `prd.md`
-- `spec-backbone.md`
 - `spec-design.md`
+- `spec-improve.md`
 - `spec-auto.md`
 - `clarify-feature.md`
 - `prd-to-tasks.md`
@@ -105,7 +105,7 @@ If you don’t want a script, just create the files manually using the templates
 - `.memory-bank/constitution.md` exists as the governing-principles doc and `/constitution` is available in `.memory-bank/commands/`.
 - `.memory-bank/tasks/index.json` and `.memory-bank/schemas/task.schema.json` exist; task state is JSON-backed.
 - `.memory-bank/tasks/index.json` has an empty `tasks` array in a PRD-less skeleton.
-- Skeleton bootstrap creates no fake feature docs; task planning starts later with `/write-prd`, `/spec-init`, `/prd`, optional `/spec-backbone`, `/spec-design FT-<NNN>`, then `/prd-to-tasks FT-<NNN>`.
+- Skeleton bootstrap creates no fake feature docs; task planning starts later with `/write-prd`, `/spec-init`, `/prd`, mandatory `/spec-design`, `/spec-improve FT-<NNN>`, then `/prd-to-tasks FT-<NNN>`.
 - No `.memory-bank/tasks/TASK-001.task.json` is created by bootstrap.
 - Future task records must contain mandatory `tier: T0|T1|T2|T3`; routing is only through `task.tier`, not the removed `risk` / `risk.level` model.
 - `.memory-bank/commands/` has stub command docs.

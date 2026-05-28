@@ -16,7 +16,7 @@ Create or update `.memory-bank/spec-index.md` as the SDD Design Specs Index / ro
 Run after clarified `/write-prd` and before `/prd`.
 
 Canonical manual chain:
-`/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design FT-001 -> /prd-to-tasks FT-001`.
+`/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001`.
 
 ## 1) Inputs
 Read, if present:
@@ -57,7 +57,7 @@ Use simple links and short annotations. Keep it a route map, not a design dump.
 Design area status meanings:
 - `authoritative`: the linked spec is evidence-backed and binding
 - `planned`: likely needed, but decision/spec is not written yet
-- `candidate`: may be needed; confirm during `/spec-design`
+- `candidate`: may be needed; confirm during `/spec-improve`
 - `unknown`: insufficient evidence
 - `not_applicable`: explicitly out of scope
 

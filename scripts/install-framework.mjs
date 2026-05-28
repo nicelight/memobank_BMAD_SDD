@@ -25,6 +25,16 @@ const args = process.argv.slice(2);
 const DEFAULT_SKILLS_ADD_ARGS = ['--skill', '*', '--yes'];
 const SKILLS_LOCK_FILE = 'skills-lock.json';
 const MAX_PICKER_ENTRIES = 25;
+const PREPARE_EXCLUDED_ROOTS = new Set([
+  '.agents',
+  '.claude',
+  '.codex',
+  '.memory-bank',
+  '.protocols',
+  '.tasks',
+  'node_modules',
+  '.git',
+]);
 const SPLASH_GRADIENT_STOPS = [
   [5, 18, 48],
   [0, 188, 255],
@@ -205,10 +215,8 @@ function prepareRepository() {
     recursive: true,
     filter: (source) => {
       const rel = resolve(source).slice(repoRoot.length + 1);
-      return ![
-        '.git',
-        'node_modules',
-      ].some((ignored) => rel === ignored || rel.startsWith(`${ignored}/`));
+      const root = rel.split(/[\\/]/)[0];
+      return !PREPARE_EXCLUDED_ROOTS.has(root);
     },
   });
 

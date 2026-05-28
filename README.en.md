@@ -26,8 +26,8 @@ idea / rough draft
   -> /write-prd
   -> /spec-init
   -> /prd
-  -> optional /spec-backbone
-  -> /spec-design FT-001
+  -> /spec-design
+  -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
   -> /execute TASK-001
   -> /verify TASK-001
@@ -43,8 +43,8 @@ In plain terms:
 - `/write-prd` captures a clear PRD.
 - `/spec-init` creates the SDD Design Specs Index route map without inventing authoritative specs.
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
-- `/spec-backbone` is optional after `/prd`, not another mandatory heavy phase. Use it when multiple features share domain/model/contracts/state/security/runtime design, or when T2/T3 work likely needs shared design. Skip it for small independent T0/T1 features. It updates only backbone SDD specs and `spec-index`; it does not create tasks or replace `/spec-design`.
-- `/spec-design FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
+- `/spec-design` is mandatory after `/prd`, but adaptive in depth. Small independent T0/T1 projects get a minimal backbone with irrelevant areas marked `not_applicable`; shared/T2/T3 projects get normal architecture backbone decisions. If key decisions are unresolved, it records blockers and stops downstream.
+- `/spec-improve FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
 - `/prd-to-tasks FT-001` creates JSON tasks for one feature.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
 - `/red-verify` adds the required adversarial semantic pass for T2/T3 work.
@@ -83,7 +83,7 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` or `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> optional `/spec-backbone` -> `/spec-design FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
+or go straight into the manual flow: `/analysis` or `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
 
 ## More detail
 
