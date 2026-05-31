@@ -738,14 +738,16 @@ status: active
 - Read this index before creating new specs or doing serious T2/T3 work.
 - If a design area is not needed, mark it \`not_applicable\` with a short reason.
 - Do not create authoritative specs unless PRD/user/spec evidence contains the decision.
+- Keep this file as routing only: short labels, statuses, links, and gaps; detailed rules/rationale belong in linked specs or ADRs.
 
 ## Hard rules
 - Do not create a new spec before checking existing specs through this index.
 - \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable from PRD/brief/existing-spec evidence, but must not interview for or invent authoritative architecture/contracts/states/data specs.
 - \`/spec-init\` does not own global backbone status, source-of-truth hierarchy, OpenAPI policy, diagrams, or global design decisions.
-- \`/spec-design\` is mandatory after \`/prd\`. It consumes this lightweight route map, creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status, owns the source-of-truth hierarchy and global design decisions, and routes shared backbone specs through this index. Simple T0/T1 scope may use \`minimal\` with explicit \`not_applicable\` areas. It does not replace per-feature \`/spec-improve FT-<NNN>\`.
+- \`/spec-design\` is mandatory after \`/prd\`. It consumes this lightweight route map, creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status, writes source-of-truth/global decisions into authoritative specs or ADRs, and routes shared backbone specs through this index with short labels and links. Simple T0/T1 scope may use \`minimal\` with explicit \`not_applicable\` areas. It does not replace per-feature \`/spec-improve FT-<NNN>\`.
 - \`/spec-improve FT-<NNN>\` owns feature-level design before \`/prd-to-tasks FT-<NNN>\`.
 - \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
+- Detailed decision body, rationale, constraints, invariants, API rules, state transitions, data schemas, and testing gate details must live in linked specs or ADRs, not in this index.
 
 ## Existing authoritative specs
 - [.memory-bank/glossary.md](glossary.md): Термины и agreed vocabulary.
@@ -758,9 +760,9 @@ status: active
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
 
 ## Expected backbone/spec locations
-- [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Global architecture with Mermaid diagrams when useful.
-- [.memory-bank/architecture/source-of-truth.md](architecture/source-of-truth.md): Ownership and SSOT rules.
-- [.memory-bank/architecture/module-boundaries.md](architecture/module-boundaries.md): Module/service boundaries.
+- [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Default global architecture hub for global architecture decisions/invariants, source-of-truth/module-boundary sections, and Mermaid diagrams when useful. Keep detailed API schemas, lifecycle state machines, message contracts, and feature-local behavior in contracts/states/domains/tech-specs instead.
+- Optional split architecture docs: \`.memory-bank/architecture/source-of-truth.md\`, \`.memory-bank/architecture/module-boundaries.md\`, or \`.memory-bank/architecture/<boundary>.md\` only when \`/spec-design\` selects split core docs or split by boundary/topic.
+- Recommended \`system-architecture.md\` sections: Scope, Architecture Overview, Source Of Truth, Module Boundaries, External/Runtime Boundaries, Data Flow, Downstream Requirements.
 - [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md): Runtime data model.
 - [.memory-bank/contracts/api-guidelines.md](contracts/api-guidelines.md): HTTP/API rules when HTTP boundary exists.
 - [.memory-bank/guides/frontend-component-guide.md](guides/frontend-component-guide.md): Frontend component/design behavior when UI component system is in scope.
@@ -797,7 +799,7 @@ status: active
 - TBD
 
 ## Handoff to /spec-design
-- \`/spec-design\` fills real backbone status, source-of-truth hierarchy, OpenAPI/API policy, diagrams, and global decisions after \`/prd\`.
+- \`/spec-design\` fills real backbone status and writes source-of-truth hierarchy, OpenAPI/API policy, diagrams, and global decisions into authoritative specs after \`/prd\`; this index only routes to them.
 - Blocking uncertainty from this preflight should be listed above as gaps/open questions.
 
 ## Compatibility note

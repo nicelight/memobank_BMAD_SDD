@@ -71,7 +71,9 @@ Autonomous decision rules:
 - prefer existing specs over new files
 - choose the smallest reversible design that satisfies PRD/Constitution/requirements
 - do not ask user questions
-- record assumptions in the feature design hub or spec-index
+- record assumptions in the feature design hub or linked authoritative spec; keep `.memory-bank/spec-index.md` to short status/gap labels and links
+- for global architecture docs, prefer one `.memory-bank/architecture/system-architecture.md` by default; split `architecture/*` only when existing docs, project size, or boundary complexity makes the split clearly useful
+- keep `architecture/*` to global architecture invariants; put detailed API schemas/contracts in `contracts/*`, lifecycle state machines in `states/*`, domain schemas in `domains/*`, and feature-local design in `tech-specs/*`
 - do not invent external contracts, security posture, migrations, or irreversible data behavior
 - set `spec_design_status: complete` only when every feature-relevant SDD design area either has a concrete linked spec file routed through `.memory-bank/spec-index.md` as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for this feature
 - do not set `complete` while any feature-relevant design area remains planned, candidate, unknown, conflicting, or otherwise unresolved; instead set `spec_design_status: blocked` or leave the feature without `complete`, and record the gap/open question in `.memory-bank/spec-index.md`

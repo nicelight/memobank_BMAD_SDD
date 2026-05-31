@@ -96,7 +96,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** `spec-index`, global backbone status, source-of-truth hierarchy, architecture/source-of-truth/module-boundary/data/API/testing specs по необходимости. Потребляет lightweight route map из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
+   **Создает/обновляет:** `spec-index`, global backbone status и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет lightweight route map из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
 
    **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
 
