@@ -672,6 +672,7 @@ status: active
 - [.memory-bank/workflows/tier-policy.md](workflows/tier-policy.md): Tier policy for TASK routing and protocol depth.
 
 - [.memory-bank/spec-index.md](spec-index.md): Lightweight SDD route map for existing specs, planned/candidate/unknown areas, and \`/spec-design\` handoff.
+- [.memory-bank/user-scenarios.md](user-scenarios.md): User scenarios and architecture implications when created by \`/spec-design\`.
 - [.memory-bank/glossary.md](glossary.md): Общий словарь терминов и доменных значений.
 - [.memory-bank/invariants.md](invariants.md): Глобальные MUST/NEVER правила.
 - [.memory-bank/architecture/](architecture/): Duo + boundaries (WHAT/WHY).
@@ -744,8 +745,11 @@ status: active
 - Do not create a new spec before checking existing specs through this index.
 - \`/spec-init\` may mark areas as planned/candidate/unknown/not_applicable from PRD/brief/existing-spec evidence, but must not interview for or invent authoritative architecture/contracts/states/data specs.
 - \`/spec-init\` does not own global backbone status, source-of-truth hierarchy, OpenAPI policy, diagrams, or global design decisions.
-- \`/spec-design\` is mandatory after \`/prd\`. It consumes this lightweight route map, creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status, writes source-of-truth/global decisions into authoritative specs or ADRs, and routes shared backbone specs through this index with short labels and links. Simple T0/T1 scope may use \`minimal\` with explicit \`not_applicable\` areas. It does not replace per-feature \`/spec-improve FT-<NNN>\`.
+- \`/spec-design\` is mandatory after \`/prd\`. It consumes this lightweight route map, creates \`complete\`, \`minimal\`, or \`blocked\` global backbone status, writes AI-first implementation guardrails into authoritative specs or ADRs, and routes shared backbone specs through this index with short labels and links. Simple T0/T1 scope may use \`minimal\` only with explicit \`not_applicable\` areas and rationale. It does not replace per-feature \`/spec-improve FT-<NNN>\`.
 - \`/spec-improve FT-<NNN>\` owns feature-level design before \`/prd-to-tasks FT-<NNN>\`.
+- Global \`complete\` means every relevant/global Backbone Area Matrix row has an authoritative linked source or explicit \`not_applicable\`; no \`unknown\`, \`planned\`, \`candidate\`, or \`blocked\` remains in global/shared areas.
+- Global \`minimal\` is only for explicit T0/T1-like scope with \`not_applicable\` rationale for unnecessary global/shared areas.
+- Global \`blocked\` means unsafe ambiguity, source conflict, missing brownfield baseline, or unresolved shared decision remains.
 - \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
 - Detailed decision body, rationale, constraints, invariants, API rules, state transitions, data schemas, and testing gate details must live in linked specs or ADRs, not in this index.
 
@@ -759,12 +763,40 @@ status: active
 - [.memory-bank/runbooks/](runbooks/): Operational procedures.
 - [.memory-bank/testing/index.md](testing/index.md): Verification basis и quality gates.
 
+## Global backbone status
+- Status: blocked
+- Mode: standard_ai_first
+- Architecture artifact strategy: single-file
+- Notes: \`/spec-design\` has not completed the global AI-first architecture guardrails yet.
+
+## Backbone Area Matrix
+| Area | Status | Authoritative source | Notes |
+|---|---|---|---|
+| architecture_style | blocked | - | Decide in \`/spec-design\`. |
+| source_of_truth | blocked | - | Use precedence: Constitution/user decision > production code/baseline > ADRs > contracts/specs > PRD/requirements/features > user scenarios > task records > agent assumptions. |
+| module_boundaries | blocked | - | Decide in \`/spec-design\`. |
+| user_scenarios | blocked | [.memory-bank/user-scenarios.md](user-scenarios.md) | Draft/review if scenarios affect architecture. |
+| constraints | blocked | - | Decide in \`/spec-design\`. |
+| non_goals | blocked | - | Decide in \`/spec-design\`. |
+| data_flow | blocked | - | Decide in \`/spec-design\`. |
+| storage | blocked | - | Decide in \`/spec-design\`. |
+| api_contracts | blocked | - | Decide \`authoritative\`, \`needed_before_tasks\`, \`not_applicable\`, or \`blocked\`. |
+| event_message_contracts | blocked | - | Decide \`authoritative\`, \`needed_before_tasks\`, \`not_applicable\`, or \`blocked\`. |
+| agent_io_contracts | blocked | - | Decide \`authoritative\`, \`needed_before_tasks\`, \`not_applicable\`, or \`blocked\`. |
+| security_safety | blocked | - | Decide in \`/spec-design\`. |
+| testing_strategy | blocked | [.memory-bank/testing/index.md](testing/index.md) | Decide in \`/spec-design\`. |
+| deployment | blocked | - | Decide in \`/spec-design\`. |
+| risks | blocked | - | Decide in \`/spec-design\`. |
+| open_questions | blocked | - | Resolve or keep global status blocked. |
+
 ## Expected backbone/spec locations
-- [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Default global architecture hub for global architecture decisions/invariants, source-of-truth/module-boundary sections, and Mermaid diagrams when useful. Keep detailed API schemas, lifecycle state machines, message contracts, and feature-local behavior in contracts/states/domains/tech-specs instead.
+- [.memory-bank/user-scenarios.md](user-scenarios.md): Primary actors, core scenarios, out-of-scope scenarios, review status, and architecture implications.
+- [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Default global architecture hub for global architecture guardrails, source-of-truth/module-boundary sections, and Mermaid diagrams when useful. Keep detailed API schemas, lifecycle state machines, message contracts, and feature-local behavior in contracts/states/domains/tech-specs instead.
 - Optional split architecture docs: \`.memory-bank/architecture/source-of-truth.md\`, \`.memory-bank/architecture/module-boundaries.md\`, or \`.memory-bank/architecture/<boundary>.md\` only when \`/spec-design\` selects split core docs or split by boundary/topic.
-- Recommended \`system-architecture.md\` sections: Scope, Architecture Overview, Source Of Truth, Module Boundaries, External/Runtime Boundaries, Data Flow, Downstream Requirements.
+- Recommended \`system-architecture.md\` sections: System goal, Main constraints, Non-goals, Architecture style, Main modules / bounded contexts, Data flow, External integrations, Storage decisions, API / contract boundaries, Security / safety constraints, Testing strategy, Deployment assumptions, Risks, Open questions.
 - [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md): Runtime data model.
 - [.memory-bank/contracts/api-guidelines.md](contracts/api-guidelines.md): HTTP/API rules when HTTP boundary exists.
+- Contract routes when relevant: OpenAPI, JSON Schema, Pydantic models or equivalent stack schemas, DB schema/migrations, event/message schemas, and agent input/output schemas.
 - [.memory-bank/guides/frontend-component-guide.md](guides/frontend-component-guide.md): Frontend component/design behavior when UI component system is in scope.
 - [.memory-bank/testing/index.md](testing/index.md): Required verification gates.
 
@@ -778,7 +810,8 @@ status: active
 - TBD
 
 ## Not applicable areas
-- TBD
+- Use explicit lines only, for example: \`event_message_contracts: not_applicable - no event/message boundary in T0/T1 scope.\`
+- For \`minimal\` readiness, the same explicit lines must appear inside \`## Global backbone status\` under \`- Not applicable areas:\`; this section may mirror them for routing clarity.
 
 ## Feature design status map
 | Feature | spec_design_status | Linked specs | Notes |
@@ -800,6 +833,7 @@ status: active
 
 ## Handoff to /spec-design
 - \`/spec-design\` fills real backbone status and writes source-of-truth hierarchy, OpenAPI/API policy, diagrams, and global decisions into authoritative specs after \`/prd\`; this index only routes to them.
+- If meaningful brownfield code exists without a mapped baseline, \`/spec-design\` should route to \`/map-codebase\` first unless the scope is explicitly local/safe.
 - Blocking uncertainty from this preflight should be listed above as gaps/open questions.
 
 ## Compatibility note
