@@ -750,6 +750,7 @@ status: active
 - Global \`complete\` means every relevant/global Backbone Area Matrix row has an authoritative linked source or explicit \`not_applicable\`; no \`unknown\`, \`planned\`, \`candidate\`, or \`blocked\` remains in global/shared areas.
 - Global \`minimal\` is only for explicit T0/T1-like scope with \`not_applicable\` rationale for unnecessary global/shared areas.
 - Global \`blocked\` means unsafe ambiguity, source conflict, missing brownfield baseline, or unresolved shared decision remains.
+- \`spec_design_status: complete\` means every feature-relevant SDD design area either has a concrete linked spec file routed through this index as an authoritative, evidence-backed source of truth, or is explicitly \`not_applicable\` for that feature. Do not mark complete while feature-relevant areas remain planned, candidate, unknown, conflicting, or unresolved.
 - \`T2\` / \`T3\` tasks must carry relevant linked specs in task richer fields.
 - Detailed decision body, rationale, constraints, invariants, API rules, state transitions, data schemas, and testing gate details must live in linked specs or ADRs, not in this index.
 
@@ -778,6 +779,7 @@ status: active
 | user_scenarios | blocked | [.memory-bank/user-scenarios.md](user-scenarios.md) | Draft/review if scenarios affect architecture. |
 | constraints | blocked | - | Decide in \`/spec-design\`. |
 | non_goals | blocked | - | Decide in \`/spec-design\`. |
+| domain_model | blocked | [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md) | Decide \`authoritative\`, \`needed_before_tasks\`, \`not_applicable\`, or \`blocked\`; create a minimal Domain Spec only when shared domain rules affect modules/contracts/storage/states/security or likely T2/T3 tasks. |
 | data_flow | blocked | - | Decide in \`/spec-design\`. |
 | storage | blocked | - | Decide in \`/spec-design\`. |
 | api_contracts | blocked | - | Decide \`authoritative\`, \`needed_before_tasks\`, \`not_applicable\`, or \`blocked\`. |
@@ -794,7 +796,7 @@ status: active
 - [.memory-bank/architecture/system-architecture.md](architecture/system-architecture.md): Default global architecture hub for global architecture guardrails, source-of-truth/module-boundary sections, and Mermaid diagrams when useful. Keep detailed API schemas, lifecycle state machines, message contracts, and feature-local behavior in contracts/states/domains/tech-specs instead.
 - Optional split architecture docs: \`.memory-bank/architecture/source-of-truth.md\`, \`.memory-bank/architecture/module-boundaries.md\`, or \`.memory-bank/architecture/<boundary>.md\` only when \`/spec-design\` selects split core docs or split by boundary/topic.
 - Recommended \`system-architecture.md\` sections: System goal, Main constraints, Non-goals, Architecture style, Main modules / bounded contexts, Data flow, External integrations, Storage decisions, API / contract boundaries, Security / safety constraints, Testing strategy, Deployment assumptions, Risks, Open questions.
-- [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md): Runtime data model.
+- [.memory-bank/domains/runtime-data-model.md](domains/runtime-data-model.md): Runtime data model and shared domain model/rules when they affect modules, contracts, storage, states, security/safety, or likely T2/T3 tasks.
 - [.memory-bank/contracts/api-guidelines.md](contracts/api-guidelines.md): HTTP/API rules when HTTP boundary exists.
 - Contract routes when relevant: OpenAPI, JSON Schema, Pydantic models or equivalent stack schemas, DB schema/migrations, event/message schemas, and agent input/output schemas.
 - [.memory-bank/guides/frontend-component-guide.md](guides/frontend-component-guide.md): Frontend component/design behavior when UI component system is in scope.

@@ -149,6 +149,7 @@ Required areas:
 - `user_scenarios`
 - `constraints`
 - `non_goals`
+- `domain_model`
 - `data_flow`
 - `storage`
 - `api_contracts`
@@ -234,7 +235,29 @@ Architecture docs content boundary:
 - do not put detailed API schemas, endpoint contracts, lifecycle state machines, message/event envelope contracts, or feature-local implementation design in `architecture/*`
 - route those details to `.memory-bank/contracts/`, `.memory-bank/states/`, `.memory-bank/domains/`, or feature-level `.memory-bank/tech-specs/`
 
-## 10) Phase B - write initial global specs
+## 10) Domain Spec routing
+Route domain model work through the Backbone Area Matrix as `domain_model` with status `authoritative`, `needed_before_tasks`, `not_applicable`, or `blocked`.
+
+Domain Spec is not a mandatory heavy phase for every project:
+- If the scope is simple T0/T1 and PRD/requirements/features already define the needed vocabulary and rules clearly enough, set `domain_model: not_applicable` with a short rationale, or link the authoritative PRD/requirements/features source.
+- If domain logic is feature-local, route it to `/spec-improve FT-<NNN>` and the feature tech-spec instead of creating a global Domain Spec.
+- If the domain model affects modules, contracts, storage, states, security/safety, or likely T2/T3 tasks, `/spec-design` creates or updates a minimal `.memory-bank/domains/<domain>.md` or `.memory-bank/domains/runtime-data-model.md` as the global/shared authoritative source.
+
+Minimal Domain Spec sections:
+- main entities
+- user roles
+- business rules
+- entity states
+- lifecycle
+- domain constraints
+- links to contracts, states, and storage specs
+
+Boundaries:
+- Domain Spec owns domain vocabulary, model, and business rules.
+- Detailed state machines live in `.memory-bank/states/*`.
+- DB schemas, migrations, and runtime data details live in `.memory-bank/domains/runtime-data-model.md` or schema/contract docs.
+
+## 11) Phase B - write initial global specs
 Write or update only relevant backbone artifacts:
 - `.memory-bank/spec-index.md`
 - `.memory-bank/user-scenarios.md` when scenario evidence exists or a scenario gap must be explicit
@@ -243,6 +266,7 @@ Write or update only relevant backbone artifacts:
 - `.memory-bank/architecture/module-boundaries.md` only when Split core docs or Split by boundary/topic was selected, or when boundary rules are too large/reused to keep in `system-architecture.md`
 - `.memory-bank/architecture/<boundary>.md` only for a complex dedicated architecture boundary that cannot stay readable inside `system-architecture.md`
 - `.memory-bank/domains/runtime-data-model.md`
+- `.memory-bank/domains/<domain>.md` only when shared domain vocabulary/model/rules are needed before tasks
 - `.memory-bank/contracts/api-guidelines.md`
 - `.memory-bank/contracts/http-api.md` or `.memory-bank/contracts/openapi.md` only when a separate HTTP boundary spec is needed
 - `.memory-bank/contracts/agent-chat-bus.md` if agent/event/chat boundary exists
@@ -265,7 +289,7 @@ Do not create:
 - separate diagrams folders; diagrams belong as Mermaid sections in `.memory-bank/architecture/system-architecture.md`
 - extra architecture files just because a standard filename exists in this command
 
-## 11) Verifiable contracts routing
+## 12) Verifiable contracts routing
 For AI-first architecture, route concrete contracts to verifiable artifacts when relevant:
 - OpenAPI
 - JSON Schema
@@ -286,7 +310,7 @@ Rules:
 - do not write a large hand-written `openapi.yaml` before architecture design
 - gate: generated OpenAPI validates and critical endpoints have integration/contract tests
 
-## 12) Phase C - targeted follow-up interviews
+## 13) Phase C - targeted follow-up interviews
 While writing boundary/data/testing specs, ask follow-up questions only for unresolved branch decisions that block truthful specs.
 
 Examples:
@@ -298,7 +322,7 @@ Examples:
 
 If the answer is unavailable and a safe assumption is not possible, mark backbone status `blocked` and stop.
 
-## 13) Update routing
+## 14) Update routing
 Update `.memory-bank/spec-index.md`:
 - exact `## Global backbone status` section and `- Status: complete|minimal|blocked` line
 - Backbone Area Matrix with authoritative links or explicit `not_applicable` rationale
@@ -314,7 +338,7 @@ For affected feature docs:
 - do not set `spec_design_status: complete` unless feature-local `/spec-improve` criteria are already fully satisfied
 - do not mark `not_required` for features that still depend on shared T2/T3 backbone decisions
 
-## 14) Handoff
+## 15) Handoff
 Report:
 - backbone status: `complete`, `minimal`, or `blocked`
 - architecture mode and evidence
