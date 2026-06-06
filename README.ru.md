@@ -41,8 +41,8 @@ Memory Bank помогает вести разработку как повтор
   -> Brainstorming       Интервью -> brief.md
   -> Constitution         Принципы проекта и non-negotiables
   -> PRD
-  -> SDD spec index       Карта design specs
-  -> features            + проработка /clarify
+  -> /spec-init           Pre-PRD framing для безопасной нарезки
+  -> /prd                 requirements, epics, features
   -> /spec-design         обязательный адаптивный SDD backbone
   -> feature design       /spec-improve для выбранной feature
   -> JSON tasks          с градацией сложности и риска 
@@ -80,9 +80,11 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после clarified PRD, до `/prd`.
 
-   **Создает/обновляет:** минимальный `.memory-bank/spec-index.md` как lightweight SDD route map: planned/candidate/unknown/not_applicable areas, gaps, expected spec locations только по evidence из PRD/brief/existing specs. Не проводит architecture interview, не проектирует architecture и не создает authoritative specs.
+   **Зачем:** проверяет, достаточно ли из PRD понятны actors, scenarios, domain boundaries, lifecycles, constraints и non-goals, чтобы `/prd` мог безопасно вывести requirements, epics и features.
 
-   **Дальше:** запустить `/prd`.
+   **Создает/обновляет:** pre-PRD spec framing: `.memory-bank/spec-backbone.md` с `Pre-PRD Spec Status: ready_for_prd|blocked`, чистый registry `.memory-bank/spec-index.md`, а при evidence или явных gaps — `user-scenarios.md`, `domains/<domain>.md`, `invariants.md`, optional `contracts/boundary-map.md` и `states/lifecycle-map.md`. При PASS состояние означает: pre-PRD framing готов для `/prd`, а Global Backbone Status намеренно ожидает `/spec-design`. Если PRD уже содержит достаточные evidence, `/spec-init` может просто сослаться на PRD вместо отдельного файла. Не проводит architecture interview, не проектирует full architecture и не создает features/tasks.
+
+   **Дальше:** запустить `/prd` только при `ready_for_prd`; при `blocked` сначала уточнить PRD/framing gaps.
 
 5. `/prd`
 
@@ -96,7 +98,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** `spec-index`, global backbone status и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет lightweight route map из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
+   **Создает/обновляет:** `spec-backbone` с Global Backbone Status и Backbone Area Matrix, чистый `spec-index` только как registry, и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет pre-PRD framing из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
 
    **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
 

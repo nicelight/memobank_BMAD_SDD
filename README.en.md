@@ -83,7 +83,9 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` or `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
+or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
+
+`/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. After PASS, the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
 
 ## More detail
 

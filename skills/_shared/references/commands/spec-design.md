@@ -30,6 +30,7 @@ Supported arguments:
 - `--all`: same as no argument; explicit for autonomous or batch flow
 
 Required inputs:
+- `.memory-bank/spec-backbone.md`
 - `.memory-bank/spec-index.md`
 - `.memory-bank/requirements.md`
 - `.memory-bank/epics/`
@@ -37,7 +38,7 @@ Required inputs:
 - `.memory-bank/user-scenarios.md` when present
 - existing relevant specs under `.memory-bank/architecture/`, `.memory-bank/guides/`, `.memory-bank/domains/`, `.memory-bank/contracts/`, `.memory-bank/states/`, `.memory-bank/adrs/`, `.memory-bank/testing/`, and `.memory-bank/runbooks/`
 
-Never skip the command. For small independent T0/T1-only scope, write the minimal backbone status and mark non-applicable areas instead of expanding architecture.
+Never skip the command. Read `.memory-bank/spec-backbone.md` as the pre-PRD framing from `/spec-init`. For small independent T0/T1-only scope, write the minimal backbone status and mark non-applicable areas instead of expanding architecture.
 
 ## 1) Source-of-truth precedence
 Use this precedence when deciding what is authoritative:
@@ -68,7 +69,9 @@ Autonomous mode:
 ## 3) User scenarios preflight
 Check `.memory-bank/user-scenarios.md`.
 
-If scenarios are visible in PRD/requirements/features/existing specs, create or update a draft and ask the user to review/add before relying on scenario-sensitive architecture decisions.
+After `/spec-init` PASS, creating or reviewing `.memory-bank/user-scenarios.md` is only required when architecture decisions are scenario-sensitive. This is not a `/spec-init` failure; if PRD, requirements, features, or spec-backbone evidence is enough, link that evidence and continue.
+
+If scenarios are visible in PRD/requirements/features/existing specs and architecture decisions depend on them, create or update a draft and ask the user to review/add before relying on those scenario-sensitive decisions.
 
 If scenarios are absent and materially affect architecture, record a blocker/gap instead of guessing.
 
@@ -102,10 +105,10 @@ After reading PRD/requirements/features and current specs, ask one initial archi
 Recommend the mode from evidence; the user may override. Preserve the rule that `/prd-to-tasks` may route back to `/spec-design` or `/spec-improve` if T2/T3 indicators appear during task slicing.
 
 ## 5) Backbone status gate
-Update `.memory-bank/spec-index.md` with this exact contract:
+Update `.memory-bank/spec-backbone.md` with this exact contract:
 
 ```markdown
-## Global backbone status
+## Global Backbone Status
 - Status: complete|minimal|blocked
 - Mode: minimal_t0_t1|standard_ai_first|strict_t2_t3
 - Architecture artifact strategy: single-file|split-core-docs|split-by-boundary-topic
@@ -114,12 +117,7 @@ Update `.memory-bank/spec-index.md` with this exact contract:
 - Notes:
 ```
 
-For `minimal`, explicit not-applicable global/shared lines must appear inside `## Global backbone status` under `- Not applicable areas:` for readiness-gate compatibility. They may also be mirrored in `## Not applicable areas` for routing clarity.
-
-```markdown
-## Not applicable areas
-- event_message_contracts: not_applicable - no event/message boundary in T0/T1 scope.
-```
+For `minimal`, explicit not-applicable global/shared lines must appear inside `.memory-bank/spec-backbone.md` `## Global Backbone Status` under `- Not applicable areas:` for readiness-gate compatibility. Do not use a separate heading as the authoritative source for minimal readiness; if a non-authoritative mirror exists elsewhere, the status gate still reads the lines under `## Global Backbone Status`.
 
 Do not use `TBD`, `none`, or empty placeholders as a substitute for `not_applicable` rationale.
 
@@ -135,7 +133,7 @@ If status is `blocked`, stop downstream work. Record:
 - next question or owner needed
 
 ## 6) Backbone Area Matrix
-Maintain a concise matrix in `.memory-bank/spec-index.md`. The index holds only labels, status, links, and gaps; detailed rules live in linked specs or ADRs.
+Maintain a concise matrix in `.memory-bank/spec-backbone.md`. It holds only labels, status, links, and gaps; detailed rules live in linked specs or ADRs.
 
 Required columns:
 
@@ -164,26 +162,36 @@ Required areas:
 Allowed area statuses: `authoritative`, `needed_before_tasks`, `not_applicable`, `blocked`.
 Use `needed_before_tasks` only as a temporary working status; final `complete|minimal` cannot contain it for relevant/global areas.
 
-## 7) Spec-index content boundary
-`.memory-bank/spec-index.md` is an index and route map, not an authoritative design spec.
+## 7) Spec-index and spec-backbone content boundary
+`.memory-bank/spec-index.md` is a pure spec registry/index, not an authoritative design spec or readiness/status file.
 
 Allowed in `spec-index.md`:
-- global backbone status, blockers, and next command routing
-- short decision labels, such as `Architecture: local layered modular monolith`
-- Backbone Area Matrix with links and short notes
-- links to authoritative specs/ADRs and one-line scope notes
-- feature-to-spec routing
+- Spec Registry table
+- Planned Specs table
+- Broken / Missing Links
+- concise Update Rules
 
 Not allowed in `spec-index.md`:
+- global backbone status, blockers, next command routing, or Backbone Area Matrix
+- feature design status map; feature `spec_design_status` remains in feature frontmatter
 - decision body, rationale, trade-off analysis, or architecture rules
 - API naming/status/error/auth/upload rules
 - state transitions, data schemas, event/message envelope rules, safety policy, or testing gate details
 - duplicated content that already belongs in `.memory-bank/architecture/`, `.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`, `.memory-bank/testing/`, `.memory-bank/invariants.md`, or `.memory-bank/adrs/`
 
-If a decision needs more than a short label plus link, write it in the relevant authoritative spec or ADR and route it from `spec-index.md`. If `spec-index.md` already contains detailed decision content, summarize it into labels and move the body to the linked spec.
+Allowed in `.memory-bank/spec-backbone.md`:
+- Pre-PRD Spec Status and Decomposition Inputs from `/spec-init`
+- Open Design Questions
+- Backbone Area Matrix
+- Handoff To `/prd`
+- Handoff To `/spec-design`
+- Global Backbone Status after `/spec-design`
+- Not applicable areas and concise blockers/handoff notes
+
+If a decision needs more than a short label plus link, write it in the relevant authoritative spec or ADR and route it from `spec-index.md`; summarize route/state in `spec-backbone.md`. If `spec-index.md` already contains old backbone/status content, migrate that state to `spec-backbone.md` and leave only registry rows and planned specs in the index.
 
 ## 8) Phase A - staged architecture decision interview
-Do not use a long questionnaire. Ask one question at a time with 2-3 options, a preferred option, and a short rationale. After each answer, record the decision body and rationale in the relevant authoritative spec or ADR. Update `.memory-bank/spec-index.md` only with the short decision label, status, and link.
+Do not use a long questionnaire. Ask one question at a time with 2-3 options, a preferred option, and a short rationale. After each answer, record the decision body and rationale in the relevant authoritative spec or ADR. Update `.memory-bank/spec-index.md` only as a registry/planned-spec index and update `.memory-bank/spec-backbone.md` with concise backbone state, status, matrix, and handoff notes.
 
 Confirm or choose only decisions that affect the current PRD:
 - architecture style
@@ -259,6 +267,7 @@ Boundaries:
 
 ## 11) Phase B - write initial global specs
 Write or update only relevant backbone artifacts:
+- `.memory-bank/spec-backbone.md`
 - `.memory-bank/spec-index.md`
 - `.memory-bank/user-scenarios.md` when scenario evidence exists or a scenario gap must be explicit
 - `.memory-bank/architecture/system-architecture.md` as the default architecture hub, using the Single-file KISS sections above and Mermaid C4/context/container/component, data flow, and sequence diagrams when useful
@@ -323,15 +332,20 @@ Examples:
 If the answer is unavailable and a safe assumption is not possible, mark backbone status `blocked` and stop.
 
 ## 14) Update routing
-Update `.memory-bank/spec-index.md`:
-- exact `## Global backbone status` section and `- Status: complete|minimal|blocked` line
+Update `.memory-bank/spec-backbone.md`:
+- exact `## Global Backbone Status` section and `- Status: complete|minimal|blocked` line
 - Backbone Area Matrix with authoritative links or explicit `not_applicable` rationale
 - source-of-truth route labels and links; detailed hierarchy/rules live in the selected architecture artifact (`system-architecture.md` by default, or `source-of-truth.md` when split)
 - global backbone blockers and next command routing
 - architecture artifact strategy and baseline backbone specs with their scope
 - short backbone decision labels only, never decision body/rationale/rules
-- feature-to-backbone routing
-- expected spec locations
+- handoff to `/spec-improve` or `/spec-auto`
+
+Update `.memory-bank/spec-index.md` only as a pure registry:
+- add or update authoritative spec rows
+- add or update planned spec rows
+- record broken/missing links
+- keep update rules concise
 
 For affected feature docs:
 - add SDD Design Gate notes with normative backbone links where evidence exists
@@ -348,6 +362,8 @@ Report:
 - not_applicable areas and rationale for simple projects
 - affected features and normative links
 - blockers/open questions
-- next command: `/spec-improve FT-<NNN>` for manual flow, or `/spec-auto --all` before `/prd-to-tasks --all` in autonomous flow
+- next command routing:
+  - if status is `complete`, or valid `minimal` with explicit `not_applicable` areas: `/spec-improve FT-<NNN>` for manual flow, or `/spec-auto --all` before `/prd-to-tasks --all` in autonomous flow
+  - if status is `blocked`: no downstream command; resolve the blocker, user decision, or spec gap, then rerun `/spec-design`
 
 </process>

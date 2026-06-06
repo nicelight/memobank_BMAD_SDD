@@ -61,8 +61,8 @@ For `--all`:
 `/clarify-feature` does not assign tier. Tier remains mandatory here and is assigned during task decomposition.
 
 ## 1.1) SDD design preflight
-Before decomposition, read `.memory-bank/spec-index.md` and the target feature doc.
-Block before task generation unless the global backbone status is `complete` or `minimal` with explicit `not_applicable` areas. If backbone status is missing or `blocked`, route to `/spec-design` and stop.
+Before decomposition, read `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and the target feature doc.
+Block before task generation unless the global backbone status in `.memory-bank/spec-backbone.md` is `complete` or `minimal` with explicit `not_applicable` areas. If backbone status is missing or `blocked`, route to `/spec-design` and stop.
 
 Feature frontmatter may include:
 
@@ -103,8 +103,9 @@ Do not remove the current `.protocols/FT-<NNN>/decision-log.md` behavior; the no
 - соответствующий epic
 - requirements RTM
 - `.memory-bank/constitution.md`, если есть
+- `.memory-bank/spec-backbone.md`, если есть
 - `.memory-bank/spec-index.md`, если есть
-- linked SDD design specs from the feature and spec-index, if any
+- linked SDD design specs from the feature, spec-backbone, and spec-index, if any
 - `.memory-bank/workflows/tier-policy.md`, если есть
 
 ## 4) Напиши Implementation Plan
@@ -202,6 +203,11 @@ Tier assignment:
 - If uncertain between two tiers, choose the higher tier.
 - If scope grows during planning, update `tier` before handing the task to execution.
 
+Persistence rule:
+- If the feature includes mutable runtime state, storage, persistence, read-model authority, seed data, or migrations, create at least one task that explicitly names the DB-backed storage path, not only schema or migration files.
+- That task must include a runtime smoke or repository integration verification target that exercises read/write through the persistence boundary.
+- If persistence is truly not needed, mark the storage/persistence area `not_applicable` in the relevant spec instead of creating a fake DB task.
+
 Эти ключи обязательны в task records; когда есть достаточно evidence и это реально помогает downstream deterministic execution, заполняй их содержимым:
 - `source_artifacts`
 - `normative_inputs`
@@ -212,8 +218,8 @@ Tier assignment:
 Важно:
 - ключи обязательны, но значения могут быть пустыми массивами, если evidence нет
 - не выдумывай содержимое без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
-- for `T2` / `T3`, include relevant linked SDD specs from `spec_design_links` and `spec-index.md` in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
-- include relevant backbone specs from `spec-index.md` whenever they constrain source of truth, module boundaries, runtime data model, API behavior, events/messages, frontend component behavior, invariants, or testing gates
+- for `T2` / `T3`, include relevant linked SDD specs from `spec_design_links`, `.memory-bank/spec-backbone.md`, and `spec-index.md` in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
+- include relevant backbone specs from `.memory-bank/spec-backbone.md` and `spec-index.md` whenever they constrain source of truth, module boundaries, runtime data model, API behavior, events/messages, frontend component behavior, invariants, or testing gates
 - if a planned `T2` / `T3` task has no relevant linked SDD spec to include, stop and route back to `/spec-improve FT-<NNN>` instead of creating a weak task record
 
 Обнови `.memory-bank/tasks/index.json` только ссылками:

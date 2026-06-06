@@ -32,6 +32,8 @@ If the repository exposes another documented wrapper for the same script, use th
 
 Default mode may emit warnings for incomplete scheduler readiness evidence that should be fixed before unattended execution. These warnings do not invalidate KISS manual closure. Strict mode promotes those readiness gaps to errors where autonomous/autopilot progression would be unsafe.
 
+After `/spec-init` PASS, `.memory-bank/spec-backbone.md` may correctly have `Pre-PRD Spec Status: ready_for_prd` while Global Backbone Status is still absent, `blocked`, or otherwise incomplete. In default mode, report this as "prepared for `/prd`; Global Backbone Status intentionally pending until `/spec-design`" rather than a fix-now problem. The machine-readable finding code may remain `SPEC_BACKBONE_NOT_READY`; the meaning is downstream task/autonomous readiness, not failure of `/spec-init`.
+
 Use `--strict` before `/autopilot` or the scheduler phase of `/autonomous`, before each task-selection pass, and after each `/mb-sync` before promoting dependents or declaring success.
 
 Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonomous` own closure/failure/blocking decisions, T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass`, and T3 scheduler closure also requires exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`. In manual mode, `/verify PASS` may close only T0/T1 with explicit closure ownership; T2/T3 require `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
@@ -56,7 +58,11 @@ Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonom
 - In `--strict`, `T2` / `T3` `done` tasks have full protocol files, `PASS` verification evidence/verdict in `task.verify` or protocol/artifacts, and closure-eligible red-verify evidence with `SEMANTIC_VERDICT: semantic-pass`.
 - In `--strict`, `T3` `done` tasks also have exact standalone marker lines: `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - `T2` / `T3` `failed` tasks have full protocol files and `FAIL` / `error` evidence/verdict in `task.verify` or protocol/artifacts.
-- In `--strict`, `.memory-bank/spec-index.md` records mandatory `/spec-design` status `complete`, or `minimal` with explicit `not_applicable` areas. `blocked`, `unknown`, or missing backbone status is not autonomous-ready.
+- In `--strict`, `.memory-bank/spec-backbone.md` records mandatory `/spec-design` status `complete`, or `minimal` with explicit `not_applicable` areas. `blocked`, `unknown`, or missing backbone status is not autonomous-ready.
+- For `complete`, every `## Backbone Area Matrix` row in `.memory-bank/spec-backbone.md` has status `authoritative` or `not_applicable`; missing, `blocked`, `needed_before_tasks`, `unknown`, `planned`, `candidate`, or any other status is not autonomous-ready.
+- For `minimal`, at least one real child item under `## Global Backbone Status` → `- Not applicable areas:` has `not_applicable` plus rationale. Other `not_applicable` text elsewhere does not satisfy readiness.
+- If `.memory-bank/spec-backbone.md` is missing but an old `.memory-bank/spec-index.md` contains `## Global backbone status`, report a migration hint instead of treating the old index shape as ready.
+- If `.memory-bank/spec-backbone.md` exists, `.memory-bank/spec-index.md` remains a pure registry and does not contain old non-index sections: `Feature Design Status Map`, `Global backbone status` / `Global Backbone Status`, or `Backbone Area Matrix`.
 - Other `done` / `failed` tasks have the minimum evidence/protocol basis required by their tier and mode.
 - `failed` tasks have either a bug doc in `.memory-bank/bugs/` mentioning the task id or an indexed follow-up task depending on/referencing the failed task.
 - Direct dependents of failed tasks are marked `blocked`.
@@ -102,7 +108,11 @@ Errors block autonomous/autopilot progression:
 - `TASK_REQUIREMENT_NOT_FOUND` in `--strict`
 - `TASK_FEATURE_FILE_MISSING` in `--strict`
 - `TASK_SDD_SPEC_LINK_MISSING` in `--strict`
+- `TASK_SDD_SPEC_GUIDE_ONLY` in `--strict`
 - `TASK_BACKLOG_MD_PRESENT`
+- `SPEC_BACKBONE_NOT_READY` in `--strict`
+- `SPEC_BACKBONE_MATRIX_NOT_READY` in `--strict`
+- `SPEC_INDEX_NOT_PURE` in `--strict`
 
 Structural lint details such as invalid legacy `risk`, dependency cycles, and schema-level task field violations are surfaced through `MB_LINT_FAILED` with captured `mb-lint` output.
 
@@ -129,6 +139,10 @@ Warnings identify non-blocking quality risks in default mode:
 - `TASK_REQUIREMENT_NOT_FOUND`
 - `TASK_FEATURE_FILE_MISSING`
 - `TASK_SDD_SPEC_LINK_MISSING`
+- `TASK_SDD_SPEC_GUIDE_ONLY`
+- `SPEC_BACKBONE_NOT_READY`
+- `SPEC_BACKBONE_MATRIX_NOT_READY`
+- `SPEC_INDEX_NOT_PURE`
 - `TASK_PLANNED_READY_CANDIDATE`
 - `TASK_BLOCKED_BY_UPSTREAM`
 - `TASK_QUEUE_NO_EXECUTABLE_READY`
