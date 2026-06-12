@@ -138,10 +138,25 @@ function collectSkillsAddArgs({ defaultSkillAll = false } = {}) {
   return withDefaultSkill.includes('--yes') ? withDefaultSkill : [...withDefaultSkill, '--yes'];
 }
 
+function isWindowsCommandShim(command) {
+  return process.platform === 'win32' && /\.(?:cmd|bat)$/i.test(command);
+}
+
+function spawnInstallerCommand(command, commandArgs, options) {
+  if (!isWindowsCommandShim(command)) {
+    return spawnSync(command, commandArgs, options);
+  }
+
+  return spawnSync(
+    process.env.ComSpec || 'cmd.exe',
+    ['/d', '/s', '/c', 'call', command, ...commandArgs],
+    options,
+  );
+}
+
 function run(command, commandArgs, options = {}) {
-  const result = spawnSync(command, commandArgs, {
+  const result = spawnInstallerCommand(command, commandArgs, {
     stdio: 'inherit',
-    shell: process.platform === 'win32',
     ...options,
   });
 
@@ -153,9 +168,8 @@ function run(command, commandArgs, options = {}) {
 }
 
 function runCapture(command, commandArgs, options = {}) {
-  return spawnSync(command, commandArgs, {
+  return spawnInstallerCommand(command, commandArgs, {
     encoding: 'utf8',
-    shell: process.platform === 'win32',
     ...options,
   });
 }
