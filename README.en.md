@@ -29,6 +29,10 @@ idea / rough draft
   -> /spec-design
   -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
+  -> /prd-to-tasks FT-002
+  -> ...
+  -> /prd-to-tasks FT-N
+  -> /verify task cards/artifacts
   -> /execute TASK-001
   -> /verify TASK-001
   -> /red-verify TASK-001 for T2/T3 work
@@ -45,7 +49,7 @@ In plain terms:
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
 - `/spec-design` is mandatory after `/prd`, but adaptive in depth. Small independent T0/T1 projects get a minimal backbone with irrelevant areas marked `not_applicable`; shared/T2/T3 projects get normal architecture backbone decisions. If key decisions are unresolved, it records blockers and stops downstream.
 - `/spec-improve FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
-- `/prd-to-tasks FT-001` creates JSON tasks for one feature.
+- `/prd-to-tasks FT-001` creates JSON tasks for one feature. After the full `FT-*` set is decomposed, run `/verify` on the generated task cards/artifacts, then start `/execute`.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
 - `/red-verify` adds the required adversarial semantic pass for T2/T3 work.
 
@@ -83,9 +87,9 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/execute TASK-001`.
+or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/prd-to-tasks FT-002` -> ... -> `/prd-to-tasks FT-N` -> `/verify task cards/artifacts` -> `/execute TASK-001`.
 
-`/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. After PASS, the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
+`/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. After the full `FT-*` set is broken down and the generated task cards/artifacts are reviewed, the project is ready for `/execute`. After PASS, the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
 
 ## More detail
 

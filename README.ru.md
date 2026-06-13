@@ -124,7 +124,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** `.protocols/FT-001/plan.md`, `.protocols/FT-001/decision-log.md`, `.memory-bank/tasks/plans/IMPL-FT-001.md`, task records в `.memory-bank/tasks/*.task.json` и индекс `.memory-bank/tasks/index.json`.
 
-   **Дальше:** взять первую готовую задачу и выполнить `/execute TASK-001`.
+   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным task cards / artifacts и только потом взять первую готовую задачу и выполнить `/execute TASK-*`.
 
 10. `/execute TASK-001`
 
@@ -201,7 +201,7 @@ proxy skills, runtime scripts и может синхронизировать `AG
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.

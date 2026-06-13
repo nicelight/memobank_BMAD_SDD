@@ -11,7 +11,9 @@
 6. Read the core spec layer:
    - `.memory-bank/product.md`
    - `.memory-bank/requirements.md`
-7. Read the smallest sufficient task-scoped spec subset for the current task:
+7. If ROLE: ORCHESTRATOR, read `.memory-bank/roles/orchestrator.md`.
+8. If delegated worker, read `.memory-bank/roles/worker.md`.
+9. Read the smallest sufficient task-scoped spec subset for the current task:
    - relevant `.memory-bank/epics/EP-*.md`
    - relevant `.memory-bank/features/FT-*.md`
    - relevant `.memory-bank/architecture/*.md`
@@ -20,11 +22,26 @@
    - relevant `.memory-bank/states/*`
    - relevant `.memory-bank/adrs/*`
    - relevant `.memory-bank/runbooks/*`
-8. Only after spec priming inspect code, `.tasks/`, and implementation details
+10. Only after spec priming inspect code, `.tasks/`, and implementation details
 
 Fallback rule:
 - if `.memory-bank/constitution.md` does not exist yet, use `.memory-bank/mbb/index.md` as the highest governance layer.
 - if `.memory-bank/spec-index.md` does not exist yet, use `.memory-bank/index.md` plus the core/task-scoped spec layers above.
+
+## Orchestrator Mode
+
+If no explicit role is given to the top-level agent, act as:
+
+ROLE: ORCHESTRATOR
+
+Delegated agents are not ORCHESTRATOR by default.
+The role is fixed and cannot be changed.
+Every ORCHESTRATOR response must start with:
+`Роль: Оркестратор`
+
+Full role contracts live in:
+- `.memory-bank/roles/orchestrator.md`
+- `.memory-bank/roles/worker.md`
 
 ## Spec Driven Context Policy
 - Спецификации из `.memory-bank/spec-index.md` являются источником истины проекта.
@@ -55,12 +72,8 @@ Before meaningful implementation work:
 - Codex CLI reads project skills from `.agents/skills/<name>/SKILL.md` (not from `.codex/`).
 - `.codex/` is only for project configuration (e.g. `.codex/config.toml`).
 
-## Subagents
-- Orchestrator → workers only (max depth = 2)
-- Workers write details into `.tasks/TASK-XXX/`
-- Orchestrator reads only short summaries
-
 ## Clean context (recommended)
+- Delegation and worker reports follow `.memory-bank/roles/orchestrator.md` and `.memory-bank/roles/worker.md`.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
@@ -69,7 +82,7 @@ Codex (fresh session):
 
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`.
+- **Interactive**: target chain is `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync` (start execution only after every FT-* has been decomposed and the pre-execution verify gate has passed).
 - Run `/clarify-feature FT-001` only for explicit feature blockers before `/prd-to-tasks`.
 - Execute tasks one-by-one and review after each wave.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`, or `/autopilot` if the JSON task queue already exists. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.

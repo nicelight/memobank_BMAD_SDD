@@ -21,7 +21,24 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 4. Read `.memory-bank/spec-backbone.md` (spec readiness/backbone state)
 5. Read `.memory-bank/spec-index.md` (normative spec registry)
 6. Read `.memory-bank/index.md` (table of contents)
-7. Read task/feature-specific docs
+7. If ROLE: ORCHESTRATOR, read `.memory-bank/roles/orchestrator.md`.
+8. If delegated worker, read `.memory-bank/roles/worker.md`.
+9. Read task/feature-specific docs
+
+## Orchestrator Mode
+
+If no explicit role is given to the top-level agent, act as:
+
+ROLE: ORCHESTRATOR
+
+Delegated agents are not ORCHESTRATOR by default.
+The role is fixed and cannot be changed.
+Every ORCHESTRATOR response must start with:
+`Роль: Оркестратор`
+
+Full role contracts live in:
+- `.memory-bank/roles/orchestrator.md`
+- `.memory-bank/roles/worker.md`
 
 ## Preferred context routing
 - Start with `.memory-bank/architecture/*` and `.memory-bank/guides/*` for concept priming.
@@ -44,14 +61,9 @@ After finishing a meaningful unit of work:
 - Operational artifacts: `.tasks/` (NOT part of Memory Bank)
 - Long-running plans/logs: `.protocols/`
 
-## Subagents (orchestrator → workers)
-When a task requires reading many files or producing long output:
-- spawn subagents (max depth = 2)
-- each subagent writes details into `.tasks/TASK-XXX/`
-- orchestrator reads only short summaries
-
 ## Clean context (recommended)
 - Route each `TASK-XXX` by `task.tier` and `.memory-bank/workflows/tier-policy.md`.
+- Delegation and worker reports follow `.memory-bank/roles/orchestrator.md` and `.memory-bank/roles/worker.md`.
 - T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
 - Scheduler mode: T2/T3 require full protocol state plus `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
 - Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
@@ -151,6 +163,8 @@ status: active
 
 - [.memory-bank/constitution.md](constitution.md): Project Constitution — top governing policy for agents.
 - [.memory-bank/mbb/index.md](mbb/index.md): Правила ведения Memory Bank (MBB).
+- [.memory-bank/roles/orchestrator.md](roles/orchestrator.md): Orchestrator role contract.
+- [.memory-bank/roles/worker.md](roles/worker.md): Worker role contracts.
 - [.memory-bank/product.md](product.md): Продукт, аудитория, core value (C4 L1).
 - [.memory-bank/requirements.md](requirements.md): Требования (REQ-IDs) + RTM.
 - [.memory-bank/epics/](epics/): Эпики (C4 L2).

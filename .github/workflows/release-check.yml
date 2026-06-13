@@ -36,6 +36,8 @@ jobs:
           test -f skills/_shared/references/commands/analysis.md
           test -f skills/_shared/references/commands/brainstorm.md
           test -f skills/_shared/references/commands/brief.md
+          test -f skills/_shared/references/roles/orchestrator.md
+          test -f skills/_shared/references/roles/worker.md
 
       - name: Syntax check helper scripts
         shell: bash
@@ -60,6 +62,8 @@ jobs:
             node "$GITHUB_WORKSPACE/scripts/install-framework.mjs" --skill '*' --yes
 
             test -f .agents/skills/cold-start/references/shared-structure-template.md
+            test -f .agents/skills/cold-start/references/shared-roles-orchestrator.md
+            test -f .agents/skills/cold-start/references/shared-roles-worker.md
             test -f .agents/skills/cold-start/agents/shared-repo-scanner.md
             test -f .agents/skills/cold-start/scripts/shared-init-mb.js
             test -f .agents/skills/mb-execute/references/shared-protocols-context-template.md
@@ -76,6 +80,8 @@ jobs:
             node ../.agents/skills/mb-init/scripts/shared-init-mb.js
 
             test -f .memory-bank/commands/analysis.md
+            test -f .memory-bank/roles/orchestrator.md
+            test -f .memory-bank/roles/worker.md
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
@@ -95,6 +101,8 @@ jobs:
             test -f scripts/mb-lint.mjs
             test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
+            grep -q 'roles/orchestrator.md' .memory-bank/index.md
+            grep -q 'roles/worker.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md
             test ! -e .specify
             node -e 'const fs = require("node:fs"); const schema = JSON.parse(fs.readFileSync(".memory-bank/schemas/task.schema.json", "utf8")); const required = schema.required || []; const tier = schema.properties?.tier; if (!required.includes("tier")) throw new Error("task schema must require tier"); if (!tier || tier.type !== "string") throw new Error("task schema tier must be a string"); const expected = ["T0", "T1", "T2", "T3"]; if (JSON.stringify(tier.enum) !== JSON.stringify(expected)) throw new Error("task schema tier enum must be T0/T1/T2/T3"); if (JSON.stringify(schema).includes("risk")) throw new Error("task schema must not contain risk");'
@@ -166,6 +174,8 @@ jobs:
 
           test -f "$TARGET/.memory-bank/tasks/index.json"
           test -f "$TARGET/AGENTS.md"
+          test -f "$TARGET/.memory-bank/roles/orchestrator.md"
+          test -f "$TARGET/.memory-bank/roles/worker.md"
           test -f "$TARGET/.memory-bank/commands/cold-start.md"
           test -f "$TARGET/.memory-bank/commands/spec-design.md"
           test -f "$TARGET/.claude/skills/spec-design/SKILL.md"
@@ -190,6 +200,8 @@ jobs:
             node "$GITHUB_WORKSPACE/skills/_shared/scripts/init-mb.js" --sync
 
             test -f .memory-bank/commands/analysis.md
+            test -f .memory-bank/roles/orchestrator.md
+            test -f .memory-bank/roles/worker.md
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
@@ -209,6 +221,8 @@ jobs:
             test -f scripts/mb-lint.mjs
             test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
+            grep -q 'roles/orchestrator.md' .memory-bank/index.md
+            grep -q 'roles/worker.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md
             test ! -e .specify
             node -e 'const fs = require("node:fs"); const schema = JSON.parse(fs.readFileSync(".memory-bank/schemas/task.schema.json", "utf8")); const required = schema.required || []; const tier = schema.properties?.tier; if (!required.includes("tier")) throw new Error("task schema must require tier"); if (!tier || tier.type !== "string") throw new Error("task schema tier must be a string"); const expected = ["T0", "T1", "T2", "T3"]; if (JSON.stringify(tier.enum) !== JSON.stringify(expected)) throw new Error("task schema tier enum must be T0/T1/T2/T3"); if (JSON.stringify(schema).includes("risk")) throw new Error("task schema must not contain risk");'

@@ -19,34 +19,26 @@
 - `IMPROVING-PRJ-PRMPT/` содержит входные пожелания/брифы пользователя и не является частью целевого продукта, если пользователь явно не сказал обратное.
 - Не путай Memory Bank framework, который разрабатывается в этом репозитории, с runtime memory текущего агента. В этом repo Memory Bank files are product source files.
 
-# Поведение ОРКЕСТРАТОРА
-ОРКЕСТРАТОР отвечает только за стратегию и координацию.
+# Orchestrator Mode
 
-Разрешено:
-- читать ключевые документы для понимания задачи;
-- формировать план, декомпозицию, риски и границы scope;
-- создавать/обновлять planning artifacts, например `CHANGES_PLAN.md`;
-- запускать сабагентов для поиска, анализа, реализации, тестов и ревью;
-- задавать сабагентам роли, зоны ответственности и разрешенные файлы;
-- принимать результаты, выявлять конфликты, gaps и риски;
-- докладывать пользователю статус и решения.
+- Если top-level agent не получил явную роль, он действует как `ROLE: ORCHESTRATOR`.
+- Delegated agents не являются ORCHESTRATOR по умолчанию.
+- Роль фиксируется после назначения и не может быть изменена.
+- Каждый ответ ORCHESTRATOR начинается с `Роль: Оркестратор`.
 
-Запрещено:
-- самому менять код, docs workflow, skills, scripts, CI, tests, README и package files;
-- самому брать ownership исполнительских зон вроде core code path, lint/CI, docs update, tests;
-- самому запускать build/lint/test/install smoke как часть реализации или проверки;
-- исправлять результаты сабагентов локальными правками.
+Подробные контракты ролей для этого source-only repo:
+- `skills/_shared/references/roles/orchestrator.md`
+- `skills/_shared/references/roles/worker.md`
 
-Любая исполнительская работа выполняется сабагентом.
+Early priming:
+- If `ROLE: ORCHESTRATOR`, read `skills/_shared/references/roles/orchestrator.md`.
+- If delegated worker, read `skills/_shared/references/roles/worker.md`.
 
-Исключение: ОРКЕСТРАТОР может делать локальные правки или проверки только если пользователь сказал "ОРКЕСТРАТОР, сделай" или прямо разрешил конкретное действие.
+Bootstrap/sync целевых проектов разворачивает эти контракты в:
+- `.memory-bank/roles/orchestrator.md`
+- `.memory-bank/roles/worker.md`
 
-Не запускай несколько параллельно работающих сабагентов, если нет четкого понимания, что сферы влияния этих агентов на кодовую базу не пересекаются.
-При запуске какого либо агента, указывай ему его роль.
-
-# Поведение в любой роли, кроме ОРКЕСТРАТОРА
-Не запускай сабагентов.
-Анализируй, к каким последствиям может привести твоя работа и в случае обнаружения потенциальных или явных проблем, информируй об этом.
+Для любой роли, кроме ORCHESTRATOR: не запускай сабагентов; анализируй последствия работы и сообщай о потенциальных или явных проблемах.
 
 # Стратегия разработки
 Do not overengineer. Придерживайся KISS. Лучшнее враг хорошего, мы делаем хорошо, но не идеально.
@@ -60,7 +52,7 @@ Do not overengineer. Придерживайся KISS. Лучшнее враг х
 - `skills/_shared/` — единственный canonical source для общих prompts, references и scripts.
 - В рабочем дереве намеренно нет package-local файлов `skills/*/{agents,references,scripts}/shared-*`.
 - При установке фреймворка эти файлы разворачиваются автоматически во временной копии репозитория.
-- Ожидаемый масштаб разворота: 550 generated `shared-*` файлов.
+- Ожидаемый масштаб разворота: 627 generated `shared-*` файлов.
 - Разворот выполняется цепочкой `scripts/install-framework.mjs` → временная копия repo → `scripts/vendor-shared.mjs` → `npx -y skills add <prepared-temp-repo> ...`.
 - Прямой `npx skills add <repo>` для source-only форка использовать нельзя, если перед этим не был запущен vendoring.
 
@@ -82,8 +74,11 @@ find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | w
 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-Если нужно посмотреть временно развернутые 550 файлов, запускай:
+Если нужно посмотреть временно развернутые 627 файлов, запускай:
 
 ```bash
 MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes
 ```
+
+## Canonical Interactive Chain
+- `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`
