@@ -79,7 +79,7 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init`, mandatory `/spec-design --all`, and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
@@ -575,7 +575,7 @@ status: draft
 
 ## 6b) Example task record template
 
-The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design` is `complete|minimal` and `/spec-improve FT-<NNN>` has completed, blocked, or marked SDD design `not_required`.
+The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real feature `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design` is `complete|minimal` and `/spec-improve FT-<NNN>` has completed, blocked, or marked SDD design `not_required`. Exception: `/spec-design` may create one first foundation task, preferably `TASK-000`, with `feature: "FOUNDATION"`, `wave: "W0"`, and `status: "ready"` when a minimum executable baseline is needed before business features.
 
 ```json
 {

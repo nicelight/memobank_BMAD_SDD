@@ -578,8 +578,8 @@ Claude (fresh session):
 - \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\` (start execution only after every FT-* has been decomposed and the generated task artifacts have passed the pre-execution verify gate).
-- \`/spec-design\` is mandatory after \`/prd\`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas \`not_applicable\`; it does not replace per-feature \`/spec-improve FT-001\`.
+- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\` (start execution only after every FT-* has been decomposed and the generated task artifacts have passed the pre-execution verify gate).
+- \`/spec-design\` is mandatory after \`/prd\`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas \`not_applicable\`; it may also create one first foundation task when a minimum executable baseline is needed. It does not replace per-feature \`/spec-improve FT-001\`.
 - Use \`/brainstorm\` before \`/brief\` only when the idea is raw.
 - Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
 - **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`; it runs \`/spec-auto --init\` after \`/write-prd\`, \`/spec-design --all\` after \`/prd\`, and \`/spec-auto --all\` after the backbone gate. Use \`/autopilot\` only if JSON task records and required SDD spec links already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
@@ -1081,9 +1081,9 @@ status: active
 - \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
 - \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
 - \`/spec-init\` creates the lightweight SDD route map after \`/write-prd\` and before \`/prd\`.
-- \`/spec-design\` is mandatory after \`/prd\`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, and it does not replace per-feature \`/spec-improve\`.
+- \`/spec-design\` is mandatory after \`/prd\`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, may create one first foundation task when a minimum executable baseline is needed, and does not replace per-feature \`/spec-improve\`.
 - \`/spec-improve FT-<NNN>\` completes or marks unnecessary feature-level design before task decomposition.
-- Tasks are created **per feature** via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready. After the full FT-* set is decomposed, run \`/verify\` on the generated task cards/artifacts, then start \`/execute\`.
+- Feature tasks are created via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready. The only earlier task exception is a first foundation task from \`/spec-design\` when a minimum executable baseline is needed. After the full FT-* set is decomposed, run \`/verify\` on the generated task cards/artifacts, then start \`/execute\`.
 
 ## Interactive mode (you stay)
 1) \`/analysis -> /brief\` when idea discovery is needed; use \`/brainstorm\` before \`/brief\` only for raw ideas
@@ -1097,7 +1097,7 @@ status: active
 9) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
 10) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
 11) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
-   - \`/verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync\`
+   - \`/verify task cards/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\`
    - start \`/execute\` only after all targeted FT-* have been decomposed and the pre-execution \`/verify\` gate has passed
 12) After each wave: \`/review\` (fresh context)
 

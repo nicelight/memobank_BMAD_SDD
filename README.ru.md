@@ -98,7 +98,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** `spec-backbone` с Global Backbone Status и Backbone Area Matrix, чистый `spec-index` только как registry, и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет pre-PRD framing из `/spec-init`, не создает tasks и не заменяет feature-level `/spec-improve`.
+   **Создает/обновляет:** `spec-backbone` с Global Backbone Status и Backbone Area Matrix, чистый `spec-index` только как registry, и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет pre-PRD framing из `/spec-init`, не создает обычные feature tasks и не заменяет feature-level `/spec-improve`. Исключение: может создать одну первую foundation task, если до бизнес-фич нужен минимальный executable baseline.
 
    **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
 
@@ -126,23 +126,23 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным task cards / artifacts и только потом взять первую готовую задачу и выполнить `/execute TASK-*`.
 
-10. `/execute TASK-001`
+10. `/execute TASK-*`
 
    **Когда:** для реализации одной конкретной задачи из task record.
 
-   **Создает/обновляет:** код или документацию по scope задачи, protocol state в `.protocols/TASK-001/`, evidence и handoff в `.tasks/TASK-001/`.
+   **Создает/обновляет:** код или документацию по scope задачи, protocol state в `.protocols/TASK-*/`, evidence и handoff в `.tasks/TASK-*/`.
 
-   **Дальше:** запустить `/verify TASK-001`.
+   **Дальше:** запустить `/verify TASK-*`.
 
-11. `/verify TASK-001`
+11. `/verify TASK-*`
 
    **Когда:** после реализации задачи.
 
    **Создает/обновляет:** verification evidence, verdict `PASS` или `FAIL`, task/protocol state по результату проверки.
 
-   **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-001`; иначе перейти к `/mb-sync`.
+   **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-*`; иначе перейти к `/mb-sync`.
 
-12. `/red-verify TASK-001`
+12. `/red-verify TASK-*`
 
    **Когда:** обязательно для T2/T3 перед финальным закрытием; особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
@@ -201,7 +201,7 @@ proxy skills, runtime scripts и может синхронизировать `AG
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute first indexed TASK -> /verify same TASK -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.
