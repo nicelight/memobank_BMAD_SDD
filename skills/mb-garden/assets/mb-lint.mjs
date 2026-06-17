@@ -80,6 +80,13 @@ const REQUIRED_TASK_FIELDS = [
   'invariants',
   'verification_targets',
 ];
+const OPTIONAL_TASK_FIELDS = [
+  'purpose',
+  'success_outcome',
+  'anti_goals',
+  'runtime_context',
+];
+const TASK_TOP_LEVEL_KEYS = new Set([...REQUIRED_TASK_FIELDS, ...OPTIONAL_TASK_FIELDS]);
 
 const errors = [];
 const warnings = [];
@@ -936,6 +943,7 @@ function checkTaskRecords() {
         errors.push(`${rel}: missing required field '${field}'`);
       }
     }
+    checkExactKeys(rel, task, TASK_TOP_LEVEL_KEYS, 'top-level task record');
 
     if (task.id !== id) {
       errors.push(`${rel}: task id '${task.id}' does not match index id '${id}'`);

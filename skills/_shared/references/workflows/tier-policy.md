@@ -61,7 +61,8 @@ indexed task record, linked SDD specs, or this tier policy as source of truth.
 
 Rules:
 - `T0` / `T1` tasks usually do not need packets.
-- `T2` / `T3` tasks SHOULD use packets when they help execution context.
+- `T2` / `T3` tasks may use packets when linked specs/context are too large,
+  ambiguous, or needed for safe executable context.
 - A packet is mandatory only when the indexed task record sets
   `runtime_context.packet_required: true`.
 - Do not infer `packet_required` from tier alone.

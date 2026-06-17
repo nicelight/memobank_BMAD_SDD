@@ -89,7 +89,9 @@ Prime in this order:
 3. tests, logs, screenshots, traces, and other evidence
 4. task/packet purpose, success outcome, anti-goals, allowed scope, forbidden
    scope, and stop conditions when present
-5. linked SDD specs and neighboring constraints (`contracts/*`, `states/*`, `domains/*`, `runbooks/*`, invariants)
+5. linked SDD specs and neighboring constraints only when they are linked
+   through task provenance fields, feature `spec_design_links`, or
+   `runtime_context` evidence
 6. broader spec reconciliation
 
 This keeps the verifier from merely confirming the workflow surface.
@@ -139,13 +141,18 @@ Challenge the solution from multiple angles:
 ### 3) Reconcile with specs only after forming independent concerns
 Then inspect the smallest sufficient spec subset:
 - `.memory-bank/spec-index.md` and linked SDD specs for `T2` / `T3`
-- relevant `contracts/*`
-- `domains/*`
-- `states/*`
-- `runbooks/*`
-- `requirements.md`
-- `invariants.md`
-- related feature/epic docs
+- docs linked through existing task fields: `source_artifacts`,
+  `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
+- feature `spec_design_links`
+- docs used to populate `runtime_context` fields
+- `requirements.md` only for referenced `REQ-*` reconciliation
+- related feature/epic docs for task intent
+
+Do not discover boundary-map/contracts implicitly. Read
+`.memory-bank/contracts/boundary-map.md`, other `contracts/*`, `domains/*`,
+`states/*`, `runbooks/*`, `guides/*`, or `invariants.md` only when they are
+linked through the provenance fields above, feature spec links, or
+runtime_context evidence.
 
 If code and specs disagree, record the drift explicitly rather than silently choosing one side.
 

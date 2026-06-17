@@ -370,7 +370,6 @@ evidence:
   "anti_goals": [],
   "runtime_context": {
     "packet_required": false,
-    "packet_ref": ".memory-bank/packets/TASK-001.packet.json",
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -378,9 +377,11 @@ evidence:
 }
 ```
 
-`packet_required` defaults to false/absent. T2/T3 tasks SHOULD use packets when
-context is useful, but only explicit `runtime_context.packet_required: true`
-makes `/mb-packet` a mandatory pre-execute gate.
+`packet_required` defaults to false/absent. T2/T3 tasks may use packets when
+linked specs/context are too large, ambiguous, or needed for safe executable
+context, but only explicit `runtime_context.packet_required: true` makes
+`/mb-packet` a mandatory pre-execute gate.
+When `packet_required` is false or absent, omit `packet_ref`.
 
 Boundary notes live in `.memory-bank/contracts/boundary-map.md` as a normal
 contract/spec document. Tasks reference it through existing source/normative/

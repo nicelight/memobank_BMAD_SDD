@@ -43,9 +43,8 @@ Manual mode:
 1) Прочитай минимум:
 - `.memory-bank/tasks/index.json`
 - `.memory-bank/tasks/TASK-<ID>.task.json`
-- `.memory-bank/packets/TASK-<ID>.packet.json` when
-  `runtime_context.packet_required` is true, or as optional advisory input when
-  `packet_required` is not true and `packet_ref` is present
+- `.memory-bank/packets/TASK-<ID>.packet.json` only when
+  `runtime_context.packet_required` is true
 - `.protocols/TASK-<ID>/context.md`
 - `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
@@ -65,12 +64,9 @@ blocked, or has a `source_task_hash` that does not match the current task
 record hash, do not verify as if context were complete. Return
 `VERDICT: NEEDS-CLARIFICATION` or `VERDICT: FAIL` according to active
 verification ownership/mode, with reason `packet required but absent/stale`.
-If `runtime_context.packet_required` is not true but `packet_ref` exists, the
-packet is advisory only. Use its packet verification/scope checks only when the
-packet is fresh, valid, status `ready` or `ready_with_gaps`, and has a matching
-`source_task_hash`. If that optional packet is missing, stale, blocked,
-malformed, or hash-mismatched, record a warning and ignore the packet; do not
-prioritize it or block verification.
+When `packet_required` is false or absent, `packet_ref` should normally be
+omitted; do not make optional packets part of the verification path unless the
+user explicitly asks for that packet to be inspected.
 Authoritative SDD spec links are links in task richer fields or linked feature
 `spec_design_links` that point to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
@@ -105,8 +101,7 @@ Status ownership:
 5. `normative_inputs`, если они явно перечислены и релевантны проверке
 6. classic acceptance criteria из feature doc
 7. RTM / REQ IDs
-8. optional packet verification/scope checks only when packet_ref is fresh,
-   valid, ready, and hash-matched; treat them as advisory cross-checks
+8. required packet verification/scope checks when `packet_required` is true
 9. tests, logs, screenshots и иные evidence artifacts в `.tasks/TASK-<ID>/`
 
 Важно:

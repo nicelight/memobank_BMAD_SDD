@@ -101,6 +101,7 @@ jobs:
             test -f .memory-bank/commands/autonomous.md
             test -d .memory-bank/packets
             test -f .memory-bank/contracts/boundary-map.md
+            test ! -e .memory-bank/boundaries
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
             test -f .memory-bank/tasks/index.json
@@ -192,6 +193,7 @@ jobs:
           test -f "$TARGET/.memory-bank/commands/mb-packet.md"
           test -f "$TARGET/.memory-bank/commands/spec-design.md"
           test -f "$TARGET/.memory-bank/contracts/boundary-map.md"
+          test ! -e "$TARGET/.memory-bank/boundaries"
           test -f "$TARGET/.claude/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.agents/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.claude/skills/spec-design/SKILL.md"
@@ -233,6 +235,7 @@ jobs:
             test ! -e .memory-bank/commands/clarify.md
             test -d .memory-bank/packets
             test -f .memory-bank/contracts/boundary-map.md
+            test ! -e .memory-bank/boundaries
             test -f .memory-bank/workflows/autonomy-policy.md
             test -f .memory-bank/workflows/tier-policy.md
             test -f .memory-bank/schemas/task.schema.json
@@ -419,6 +422,10 @@ jobs:
             node scripts/mb-doctor.mjs --json >"$TMP_DIR/blocked-packet-doctor.json"
             grep -q 'TASK_PACKET_NOT_READY' "$TMP_DIR/blocked-packet-doctor.json"
 
+            write_packet_smoke_packet stale
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/stale-status-packet-doctor.json"
+            grep -q 'TASK_PACKET_NOT_READY' "$TMP_DIR/stale-status-packet-doctor.json"
+
             printf '{"schema_version":1,"task_id":"TASK-997","status":"ready"}\n' > .memory-bank/packets/TASK-997.packet.json
             node scripts/mb-doctor.mjs --json >"$TMP_DIR/empty-ready-packet-doctor.json"
             grep -q 'TASK_PACKET_INVALID' "$TMP_DIR/empty-ready-packet-doctor.json"
@@ -440,6 +447,11 @@ jobs:
             write_packet_smoke_packet ready 'sha256:0000000000000000000000000000000000000000000000000000000000000000'
             node scripts/mb-doctor.mjs --json >"$TMP_DIR/stale-hash-packet-doctor.json"
             grep -q 'TASK_PACKET_STALE' "$TMP_DIR/stale-hash-packet-doctor.json"
+
+            write_packet_smoke_packet ready 'not-a-sha256-hash'
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/malformed-hash-packet-doctor.json"
+            grep -q 'TASK_PACKET_STALE' "$TMP_DIR/malformed-hash-packet-doctor.json"
+            grep -q 'malformed' "$TMP_DIR/malformed-hash-packet-doctor.json"
 
             current_hash="$(packet_smoke_task_hash)"
             write_packet_smoke_packet ready "$current_hash"
@@ -497,6 +509,11 @@ jobs:
             node scripts/mb-lint.mjs
             node scripts/mb-doctor.mjs --strict --json >"$TMP_DIR/complete-clarification-doctor.json"
             rm -f .memory-bank/tasks/TASK-998.task.json
+
+            write_smoke_task planned '[]' '[]'
+            node -e 'const fs = require("node:fs"); const task = JSON.parse(fs.readFileSync(".memory-bank/tasks/TASK-999.task.json", "utf8")); task.unexpected_top_level = true; fs.writeFileSync(".memory-bank/tasks/TASK-999.task.json", `${JSON.stringify(task, null, 2)}\n`);'
+            expect_lint_failure unexpected-top-level-task-key
+            grep -q 'top-level task record must not contain extra keys: unexpected_top_level' "$TMP_DIR/unexpected-top-level-task-key.out"
 
             write_smoke_task planned '[{}]' '[]'
             expect_lint_failure malformed-gate

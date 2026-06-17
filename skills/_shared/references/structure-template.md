@@ -75,10 +75,10 @@ After finishing a meaningful unit of work:
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 Claude (fresh session):
-- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md + task record + tier-policy. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
 - **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
@@ -422,7 +422,7 @@ After meaningful changes, agents MUST synchronize affected Memory Bank docs, tas
 - Amendments must include rationale and update affected docs if needed.
 - Constitution should stay short. Put concrete project rules into `invariants.md`, `contracts/*`, `states/*`, or workflow policy docs.
 
-**Version**: 1 | **Ratified**: YYYY-MM-DD | **Last updated**: YYYY-MM-DD
+**Version**: 1 | **Ratified**: not ratified | **Last updated**: YYYY-MM-DD
 ```
 
 ---
@@ -658,7 +658,6 @@ The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real 
   ],
   "runtime_context": {
     "packet_required": false,
-    "packet_ref": ".memory-bank/packets/TASK-001.packet.json",
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -678,7 +677,7 @@ Optional runtime context rules:
 - `purpose`, `success_outcome`, `anti_goals`, and `runtime_context` are optional; existing tasks without them remain valid.
 - `runtime_context.packet_required` defaults to false when absent.
 - Do not infer packet requirement from `tier`. A packet is required only when the task record says `runtime_context.packet_required === true`.
-- When `packet_required === true`, `packet_ref` should point to `.memory-bank/packets/<TASK_ID>.packet.json`.
+- When `packet_required === true`, `packet_ref` should point to `.memory-bank/packets/<TASK_ID>.packet.json`; omit `packet_ref` when `packet_required` is false/absent.
 - `allowed_write_scope`, `forbidden_scope`, and `stop_conditions` are preflight/evidence contracts. They do not replace sandbox permissions or role write-scope instructions.
 
 ### 6c) `.memory-bank/packets/`

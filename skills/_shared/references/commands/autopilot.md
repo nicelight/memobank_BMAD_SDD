@@ -157,19 +157,19 @@ Every fresh-session worker prompt must include:
 
 ```bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record including runtime_context, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read the indexed JSON task record including runtime_context and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ### Claude (fresh session per TASK)
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record including runtime_context, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read the indexed JSON task record including runtime_context and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ## Terminal states

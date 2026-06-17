@@ -104,10 +104,11 @@ Read:
 - `.protocols/<TASK_ID>/plan.md`
 - `.protocols/<TASK_ID>/progress.md`
 - acceptance criteria source docs
-- `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
-  task record or linked feature contains SDD spec links, for any tier
-- `.memory-bank/packets/<TASK_ID>.packet.json` when
-  `runtime_context.packet_required` is true or `packet_ref` is present
+- `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and all linked
+  authoritative SDD specs when the task record or linked feature contains SDD
+  spec links, for any tier
+- `.memory-bank/packets/<TASK_ID>.packet.json` only when
+  `runtime_context.packet_required` is true
 
 Before verifying, validate the authoritative task record:
 - the task is present in `.memory-bank/tasks/index.json`

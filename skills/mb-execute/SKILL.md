@@ -46,13 +46,14 @@ Manual mode:
 - task `tier: T0|T1|T2|T3`
 - feature or epic docs referenced by the task
 - `.memory-bank/requirements.md` / REQ IDs when relevant
-- `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
-  task record or linked feature contains SDD spec links, for any tier
+- `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and all linked
+  authoritative SDD specs when the task record or linked feature contains SDD
+  spec links, for any tier
 - richer task fields when present: `source_artifacts`, `normative_inputs`,
   `constraints`, `invariants`, `verification_targets`, `purpose`,
   `success_outcome`, `anti_goals`, `runtime_context`
 - `.memory-bank/packets/<TASK_ID>.packet.json` when
-  `runtime_context.packet_required` is true or `packet_ref` is present
+  `runtime_context.packet_required` is true
 
 Authoritative SDD spec links are links to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
@@ -104,8 +105,9 @@ Record whether these markers are present or still needed; do not close the task.
 ## Implementation Rules
 - Keep scope bounded to the task and its acceptance criteria.
 - For any tier, if the task record or linked feature contains authoritative SDD
-  spec links, read `.memory-bank/spec-index.md` and all linked authoritative SDD
-  specs before editing; treat them as normative inputs.
+  spec links, read `.memory-bank/spec-backbone.md`,
+  `.memory-bank/spec-index.md`, and all linked authoritative SDD specs before
+  editing; treat them as normative inputs.
 - Record Goal Interpretation before broad edits:
   - Purpose
   - Success outcome

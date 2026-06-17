@@ -80,7 +80,7 @@ Rules:
 - If decomposition reveals any T2/T3 task would be needed and `spec_design_status` is missing, `blocked`, `not_required`, or `complete` without linked specs, stop and route to `/spec-improve FT-<NNN>` (or `/spec-auto FT-<NNN>` in autonomous flow).
 - If multiple targeted features need the same missing shared domain/contract/state/API/security/data/runtime decision, stop and route to `/spec-design` before `/spec-improve`.
 - Do not create new specs here. This command only consumes the design surface and routes to `/spec-improve` when needed.
-- Design specs are normative source of truth for task cards. If feature/task interpretation conflicts with linked SDD specs, stop with a blocker instead of resolving locally.
+- Design specs are normative source of truth for task records. If feature/task interpretation conflicts with linked SDD specs, stop with a blocker instead of resolving locally.
 
 T2/T3 indicators include:
 - cross-module behavior
@@ -200,7 +200,6 @@ testing docs:
   ],
   "runtime_context": {
     "packet_required": false,
-    "packet_ref": ".memory-bank/packets/TASK-001.packet.json",
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -216,13 +215,16 @@ Rules for optional purpose/runtime fields:
   `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or
   `verification_targets`; do not add boundary-specific task fields
 - `T0` / `T1` tasks may omit runtime context entirely
-- `T2` / `T3` SHOULD use an Execution Packet, but tier alone does not make a
-  packet mandatory
+- `T2` / `T3` may use an Execution Packet when the task needs compact runtime
+  context, but tier alone and linked specs alone do not make a packet mandatory
 - set `runtime_context.packet_required: true` only when at least one is true:
-  - cross-module contract/state/data/security/runtime behavior is involved
-  - the task has linked SDD specs
-  - `success_outcome` cannot be verified from the task record alone
-  - `allowed_write_scope` matters for safe execution
+  - linked specs or task context are too large for safe execution handoff
+  - linked specs or task context are ambiguous enough that a packet must freeze
+    the executable interpretation for this run
+  - `success_outcome` or verification targets need a compact executable summary
+    to avoid false success
+  - `allowed_write_scope`, `forbidden_scope`, or `stop_conditions` are needed
+    as safe executable context for the implementer/verifier
 - when `packet_required` is true, set `packet_ref` to
   `.memory-bank/packets/TASK-<NNN>.packet.json`
 - `allowed_write_scope` may default from `touched_files` when that scope is

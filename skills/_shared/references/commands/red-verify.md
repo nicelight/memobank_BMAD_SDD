@@ -83,8 +83,8 @@ Status ownership:
 1) Не anchor слишком рано на full spec surface
 Сначала прочитай в таком порядке:
 - task intent из `.memory-bank/tasks/TASK-<ID>.task.json` через `.memory-bank/tasks/index.json`
-- packet intent/scope from `.memory-bank/packets/TASK-<ID>.packet.json` when
-  `runtime_context.packet_required` is true or `packet_ref` is present
+- packet intent/scope from `.memory-bank/packets/TASK-<ID>.packet.json` only
+  when `runtime_context.packet_required` is true
 - linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
 - `.protocols/TASK-<ID>/verification.md`, если уже есть
@@ -93,15 +93,18 @@ Status ownership:
   - тесты
   - логи, screenshots, traces и другие artifacts в `.tasks/TASK-<ID>/`
 
-Только после этого подтягивай:
+Только после этого подтягивай the smallest sufficient provenance-linked context:
 - `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and linked SDD specs for `T2` / `T3`
-- релевантные `contracts/*`
-- `states/*`
-- `guides/*` when a guide is normative for frontend/component behavior or operating procedure
-- `runbooks/*`
-- `invariants.md`
-- `requirements.md`
-- другие spec docs, если они нужны для reconciliation
+- docs linked through existing task fields: `source_artifacts`,
+  `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
+- feature `spec_design_links`
+- docs used to populate `runtime_context` fields
+- `requirements.md` only for referenced `REQ-*` reconciliation
+
+Do not discover boundary-map/contracts implicitly. Read
+`.memory-bank/contracts/boundary-map.md`, other `contracts/*`, `states/*`,
+`guides/*`, `runbooks/*`, or `invariants.md` only when they are linked through
+the provenance fields above, feature spec links, or runtime_context evidence.
 
 Важно:
 - if the task record has no `tier`, stop with an explicit error
@@ -131,7 +134,7 @@ Status ownership:
 - не скрывает ли weak task/packet context semantic problem, который нельзя
   честно принять без уточнения
 - нет ли local optimization с системным вредом
-- не нарушены ли implicit boundaries, invariants, contracts, state transitions
+- не нарушены ли linked boundaries, invariants, contracts, or state transitions
 - не стал ли код хрупче, сложнее или дороже в сопровождении без достаточной причины
 - не создаёт ли решение ложную уверенность за счёт слишком узких тестов/AC
 

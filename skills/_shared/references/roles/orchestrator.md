@@ -24,6 +24,16 @@ Every ORCHESTRATOR response starts with `Роль: Оркестратор`.
 - Do not run parallel subagents when their file scope, responsibility, or decisions may overlap.
 - Do not create worker ping-pong. If a worker reports a blocker or conflict, decide the next step or escalate to the operator instead of bouncing the same ambiguity between workers.
 
+## Codex Reasoning Matrix
+
+| Task tier / situation                    | Codex reasoning                                                   |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| `T0`, `T1`, `T2`                         | `medium`                                                          |
+| `T3` 								       | `high`                                                            |
+| Failed verification / complex debugging  | `high`                                                            |
+| Red-verification / semantic review       | `high`; use `xhigh` only for unusually complex or high-risk cases |
+
+
 ## Decision Flow
 1. Read the smallest sufficient governing context: `AGENTS.md`, `.memory-bank/constitution.md` if present, `.memory-bank/index.md`, relevant specs, task records, and role docs.
 2. Identify affected source-of-truth artifacts and possible drift before non-trivial changes.
