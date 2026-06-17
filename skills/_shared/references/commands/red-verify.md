@@ -83,6 +83,8 @@ Status ownership:
 1) Не anchor слишком рано на full spec surface
 Сначала прочитай в таком порядке:
 - task intent из `.memory-bank/tasks/TASK-<ID>.task.json` через `.memory-bank/tasks/index.json`
+- packet intent/scope from `.memory-bank/packets/TASK-<ID>.packet.json` when
+  `runtime_context.packet_required` is true or `packet_ref` is present
 - linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
 - `.protocols/TASK-<ID>/verification.md`, если уже есть
@@ -104,6 +106,9 @@ Status ownership:
 Важно:
 - if the task record has no `tier`, stop with an explicit error
 - authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used
+- if `runtime_context.packet_required` is true and the packet is missing,
+  stale, blocked, or inconsistent with the current task record, stop with
+  `semantic-concern` and record the packet blocker
 - if `task.tier` is `T2` or `T3` and no linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`, stop with a blocker; semantic verification must not bless serious work against AC alone
 - if the task record, implementation, or verify verdict conflicts with linked SDD specs or the global backbone in `.memory-bank/spec-backbone.md`, stop with `semantic-concern` or `semantic-fail` instead of choosing locally
 - не начинай с предположения, что task record и verify verdict уже доказывают correctness
@@ -113,6 +118,18 @@ Status ownership:
 2) Построй hostile hypothesis list
 Проверь как минимум:
 - решена ли реальная задача, а не её удобная локальная интерпретация
+- не создала ли реализация false success: local AC passed, but
+  `purpose` / `success_outcome` is still not actually achieved
+- не нарушены ли `anti_goals`
+- не вышла ли реализация за допустимую autonomy/scope boundary from task or
+  packet `allowed_write_scope`
+- не был ли затронут `forbidden_scope`
+- не сдвинула ли реализация responsibility boundary from linked
+  `.memory-bank/contracts/boundary-map.md` or contracts without an explicit spec
+  update
+- не спрятан ли boundary drift behind passing tests or narrow AC
+- не скрывает ли weak task/packet context semantic problem, который нельзя
+  честно принять без уточнения
 - нет ли local optimization с системным вредом
 - не нарушены ли implicit boundaries, invariants, contracts, state transitions
 - не стал ли код хрупче, сложнее или дороже в сопровождении без достаточной причины
@@ -121,6 +138,7 @@ Status ownership:
 3) Проверь cross-boundary substance
 Отдельно оцени:
 - cross-feature/module impact
+- responsibility/boundary drift against linked boundary-map/contracts
 - architectural drift
 - state/data consistency
 - operational behavior (retries, observability, migrations, failure modes)
@@ -138,6 +156,9 @@ Status ownership:
 Отчёт должен быть коротким, но содержать:
 - semantic verdict
 - top substance risks
+- false-success / purpose-fit assessment
+- anti-goal and scope/autonomy assessment
+- weak-context questions that could change the verdict
 - hidden assumptions
 - cross-boundary impact
 - architectural concerns
@@ -146,6 +167,20 @@ Status ownership:
 - future maintenance cost
 - "how this could still be wrong"
 - counterproposal / escalation path
+
+Do not create a separate Failure Packet. When a packet/spec/task gap blocks a
+credible semantic verdict, use the existing report plus this block:
+
+```md
+## Failure / Blocker
+- Status: blocked|failed
+- Where: command/protocol/file
+- Expected:
+- Observed:
+- Likely category: code|spec|task|packet|verification|tool|unknown
+- Recommended next action:
+- Requires replan: yes/no
+```
 
 5) Сохрани короткий артефакт в `.tasks/TASK-<ID>/`
 Например:

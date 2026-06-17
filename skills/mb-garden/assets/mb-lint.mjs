@@ -45,6 +45,14 @@ const INDEX_TOP_LEVEL_KEYS = new Set(['version', 'tasks']);
 const INDEX_TASK_ENTRY_KEYS = new Set(['id', 'file']);
 const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const GATE_KEYS = new Set(['name', 'command', 'required']);
+const RUNTIME_CONTEXT_KEYS = new Set([
+  'packet_required',
+  'packet_ref',
+  'allowed_write_scope',
+  'forbidden_scope',
+  'stop_conditions',
+]);
+const RUNTIME_CONTEXT_ARRAY_FIELDS = ['allowed_write_scope', 'forbidden_scope', 'stop_conditions'];
 const LEGACY_TASK_RISK_KEYS = new Set(['risk', 'risk.level', 'risk_level', 'riskLevel']);
 const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
 const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
@@ -559,6 +567,75 @@ function checkArrayField(rel, task, field) {
   }
 }
 
+function checkOptionalStringField(rel, object, field) {
+  if (!hasOwn(object, field)) return;
+  if (typeof object[field] !== 'string') {
+    errors.push(`${rel}: '${field}' must be a string when present`);
+  }
+}
+
+function checkOptionalStringArrayField(rel, object, field, label = field) {
+  if (!hasOwn(object, field)) return;
+  if (!Array.isArray(object[field])) {
+    errors.push(`${rel}: '${label}' must be an array when present`);
+    return;
+  }
+
+  object[field].forEach((item, index) => {
+    if (typeof item !== 'string') {
+      errors.push(`${rel}: '${label}[${index}]' must be a string`);
+    }
+  });
+}
+
+function normalizePacketRef(value) {
+  return normalizeRel(String(value ?? '').trim()).replace(/^\.\//, '');
+}
+
+function canonicalPacketRef(taskId) {
+  return `.memory-bank/packets/${taskId}.packet.json`;
+}
+
+function checkOptionalTaskRuntimeContext(rel, task) {
+  checkOptionalStringField(rel, task, 'purpose');
+  checkOptionalStringField(rel, task, 'success_outcome');
+  checkOptionalStringArrayField(rel, task, 'anti_goals');
+
+  if (!hasOwn(task, 'runtime_context')) return;
+
+  const runtimeContext = task.runtime_context;
+  if (!runtimeContext || typeof runtimeContext !== 'object' || Array.isArray(runtimeContext)) {
+    errors.push(`${rel}: 'runtime_context' must be an object when present`);
+    return;
+  }
+
+  checkExactKeys(rel, runtimeContext, RUNTIME_CONTEXT_KEYS, 'runtime_context');
+
+  if (hasOwn(runtimeContext, 'packet_required') && typeof runtimeContext.packet_required !== 'boolean') {
+    errors.push(`${rel}: 'runtime_context.packet_required' must be a boolean when present`);
+  }
+  if (hasOwn(runtimeContext, 'packet_ref') && typeof runtimeContext.packet_ref !== 'string') {
+    errors.push(`${rel}: 'runtime_context.packet_ref' must be a string when present`);
+  }
+  for (const field of RUNTIME_CONTEXT_ARRAY_FIELDS) {
+    checkOptionalStringArrayField(rel, runtimeContext, field, `runtime_context.${field}`);
+  }
+
+  if (runtimeContext.packet_required !== true) return;
+
+  if (typeof runtimeContext.packet_ref !== 'string' || !runtimeContext.packet_ref.trim()) {
+    errors.push(`${rel}: runtime_context.packet_required true requires non-empty runtime_context.packet_ref`);
+    return;
+  }
+
+  const packetRef = normalizePacketRef(runtimeContext.packet_ref);
+  if (packetRef !== canonicalPacketRef(task.id)) {
+    errors.push(
+      `${rel}: runtime_context.packet_ref for required packet must be ${canonicalPacketRef(task.id)}`
+    );
+  }
+}
+
 function checkExactKeys(rel, object, allowedKeys, label) {
   const keys = Object.keys(object);
   const extraKeys = keys.filter((key) => !allowedKeys.has(key));
@@ -875,6 +952,7 @@ function checkTaskRecords() {
       errors.push(`${rel}: invalid tier '${task.tier}' (allowed: T0|T1|T2|T3)`);
     }
     checkLegacyTaskRiskKeys(rel, task);
+    checkOptionalTaskRuntimeContext(rel, task);
 
     for (const field of [
       'reqs',

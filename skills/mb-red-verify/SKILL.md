@@ -57,6 +57,9 @@ Manual mode:
 - For non-trivial tasks, `mb-verify` should usually run first.
 - The indexed task record contains `tier`. Authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
 - For `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-improve` or `/spec-auto`.
+- If `runtime_context.packet_required` is true, the packet must exist, be
+  usable (`ready` or `ready_with_gaps`), and match the current task record hash;
+  otherwise record a semantic blocker instead of blessing the work.
 - In scheduler mode, `T2` / `T3` require this pass before scheduler marks `done`.
 - In manual mode, this pass is required for `T2` / `T3` after `mb-verify PASS` and before final closure/`/mb-sync`; `T0` / `T1` usually skip it unless their real scope grew beyond the recorded tier.
 - `T0` / `T1` usually skip it unless scope has grown and the tier is updated first.
@@ -84,8 +87,10 @@ Prime in this order:
 1. task intent and expected real-world outcome
 2. actual code changes / diff / touched runtime behavior
 3. tests, logs, screenshots, traces, and other evidence
-4. linked SDD specs and neighboring constraints (`contracts/*`, `states/*`, `domains/*`, `runbooks/*`, invariants)
-5. broader spec reconciliation
+4. task/packet purpose, success outcome, anti-goals, allowed scope, forbidden
+   scope, and stop conditions when present
+5. linked SDD specs and neighboring constraints (`contracts/*`, `states/*`, `domains/*`, `runbooks/*`, invariants)
+6. broader spec reconciliation
 
 This keeps the verifier from merely confirming the workflow surface.
 
@@ -118,6 +123,11 @@ Read only what you need:
 ### 2) Build a hostile hypothesis list
 Challenge the solution from multiple angles:
 - wrong problem solved
+- false success: AC passed but `purpose` / `success_outcome` remains unmet
+- anti-goal violation
+- autonomy/scope violation beyond allowed task or packet scope
+- forbidden scope touched
+- weak task/packet context hiding a semantic problem
 - local optimization with systemic harm
 - hidden assumptions
 - cross-boundary regression risk
@@ -143,6 +153,9 @@ If code and specs disagree, record the drift explicitly rather than silently cho
 The output must be concise and high-signal. Include:
 - semantic verdict
 - top substance risks
+- false-success / purpose-fit assessment
+- anti-goal and scope/autonomy assessment
+- weak-context questions that could change the verdict
 - hidden assumptions
 - cross-boundary impact
 - architectural concerns
@@ -153,6 +166,20 @@ The output must be concise and high-signal. Include:
 - counterproposal or escalation path
 
 For `T3`, also cover critical/security/runtime/recovery concerns and confirm exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` are present before closure.
+
+Do not create a separate Failure Packet. When a packet/spec/task gap blocks a
+credible semantic verdict, use the existing red-verification report and add:
+
+```md
+## Failure / Blocker
+- Status: blocked|failed
+- Where: command/protocol/file
+- Expected:
+- Observed:
+- Likely category: code|spec|task|packet|verification|tool|unknown
+- Recommended next action:
+- Requires replan: yes/no
+```
 
 ### 5) Take action from the verdict
 - `semantic-pass`: no substantive concerns found; scheduler closure-eligible when `mb-verify` also has `PASS`; manual `T2` / `T3` closure is eligible when `mb-verify` also has `PASS`

@@ -53,11 +53,24 @@ Required sources:
   spec links, for any tier
 
 Use richer task fields when present:
+- `purpose`
+- `success_outcome`
+- `anti_goals`
 - `source_artifacts`
 - `normative_inputs`
 - `constraints`
 - `invariants`
 - `verification_targets`
+- `runtime_context`
+
+If `runtime_context.packet_required` is true, required packet source:
+- `runtime_context.packet_ref`, normally
+  `.memory-bank/packets/TASK-<ID>.packet.json`
+
+Boundary notes are not a separate artifact flow. If the task links
+`.memory-bank/contracts/boundary-map.md` or other boundary/contract specs
+through existing task fields, read them as part of the authoritative context and
+copy only task-relevant executable limits into the protocol notes.
 
 Scan richer task fields and linked feature `spec_design_links` for authoritative
 SDD spec links. For this rule, authoritative SDD spec links are links to
@@ -81,12 +94,24 @@ Stop with an explicit error if:
 - `tier` is not `T0`, `T1`, `T2`, or `T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or has status other than `done`
+- `runtime_context.packet_required` is true and `packet_ref` is absent
+- `runtime_context.packet_required` is true and the packet is missing
+- `runtime_context.packet_required` is true and packet `status` is `stale` or
+  `blocked`
+- `runtime_context.packet_required` is true and packet `source_task_hash` does
+  not match the current task record hash
 - `tier` is `T2` or `T3` and task/feature/spec-backbone/spec-index provide no concrete linked SDD spec in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 - the task record, implementation plan, or feature doc contradicts linked SDD specs or a non-blocked global backbone decision
 
 Do not block `T0` / `T1` only because SDD spec links are absent.
 Authoritative routing is only `task.tier`. Do not use legacy `risk` /
 `risk.level`.
+
+If `runtime_context.packet_required` is true and the packet is missing, stale,
+or blocked, stop before implementation and route to `/mb-packet TASK-<ID>` or
+the blocker owner. `ready` and `ready_with_gaps` are usable packet statuses;
+record gaps before editing. If a packet exists but is not required, read it when
+useful and treat it as advisory derivative context.
 
 ## 2) Protocol By Tier
 Create `.tasks/TASK-<ID>/` for runtime evidence and reports.
@@ -116,6 +141,18 @@ Use protocol templates when available. In `plan.md` or compact `run.md`, record:
 - task tier and authoritative task record path
 - richer inputs found
 - fallback basis used when richer inputs are absent
+- packet path/status/source_task_hash when packet is required or present
+- Goal Interpretation:
+  - Purpose:
+  - Success outcome:
+  - Anti-goals:
+  - Allowed write scope:
+  - Forbidden scope:
+  - Stop conditions:
+- Boundary Notes:
+  - Linked boundary/contracts:
+  - Responsibility boundary:
+  - Boundary drift risk:
 - intended local gates
 - MB-SYNC handoff / owner
 
@@ -133,6 +170,13 @@ Rules:
 - preserve unrelated user changes
 - do not edit generated `skills/*/{agents,references,scripts}/shared-*` files
 - update protocol/progress with what changed and where evidence lives
+- when linked boundary-map/contracts exist, keep implementation aligned with the
+  recorded responsibility boundary; if the task needs a different boundary,
+  stop and report the required spec/task update instead of widening locally
+- keep changed files inside `runtime_context.allowed_write_scope` when present;
+  if implementation requires wider scope, stop and report the needed owner
+- do not touch `runtime_context.forbidden_scope`; if forbidden scope was touched
+  accidentally, stop and record it as a blocker
 - if fan-out is necessary, use narrow non-overlapping worker scopes and collect
   reports in `.tasks/TASK-<ID>/`
 
@@ -147,6 +191,8 @@ Run local implementation gates relevant to the touched code:
 - lint / typecheck when applicable
 - unit tests for touched behavior
 - integration/e2e checks only when relevant
+- packet `verification.commands` and `verification.success_checks` when a
+  packet is required or present and the checks apply to this task
 
 Record for each gate:
 - command
@@ -163,6 +209,9 @@ Return a concise handoff report containing:
 - local gates run and results
 - evidence paths under `.tasks/TASK-<ID>/`
 - verification targets and notes for `/verify` or `/red-verify`
+- scope compliance: yes/no
+- forbidden scope touched: yes/no
+- packet verification commands/checks run or explicitly not run with reason
 - MB-SYNC handoff notes for scheduler or explicit standalone owner
 - blockers, unresolved questions, or FAIL reason if any
 - recommended next owner

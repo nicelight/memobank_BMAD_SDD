@@ -4,6 +4,12 @@
 - После scheduler записал closure/failure/blocking decision, final task status, and evidence links в authoritative indexed `.memory-bank/tasks/TASK-*.task.json` (`/autopilot` / `/autonomous`) и выполнения required `/verify` / `/red-verify` gates.
 - После manual `/verify`, если он изменил durable task/docs state.
 - После `/red-verify`, если выполнялась семантическая adversarial-проверка и она изменила или требует reconcile task/docs state.
+- После task run с Execution Packet, если task record/protocol/evidence уже
+  содержит `runtime_context.packet_ref` или packet-related evidence links.
+- После changes that materially affect responsibility boundaries or HOW docs,
+  reconcile existing `.memory-bank/contracts/boundary-map.md`, related
+  `.memory-bank/contracts/*`, or `.memory-bank/guides/*` as normal Memory Bank
+  docs; do not introduce a new boundary lifecycle.
 - После значимых рефакторингов или архитектурных изменений.
 - Перед `/review` (чтобы reviewer видел актуальное состояние).
 - При ощущении drift между кодом и документацией.
@@ -41,6 +47,9 @@ Manual mode:
 - [ ] Если используется классическая duo-модель, каждый `architecture/<concept>.md` имеет парный `guides/<concept>.md` (и наоборот).
 - [ ] Взаимные ссылки между duo docs актуальны, если используется классическая пара.
 - [ ] Если используются spec-driven support docs, они явно маршрутизированы через `spec-index.md` и не противоречат `architecture/*`, `guides/*`, `contracts/*`, `states/*`, `runbooks/*`, `testing/*`.
+- [ ] If responsibility/scope boundaries changed, existing
+  `contracts/boundary-map.md` or related contracts are updated/recommended;
+  task records still use existing link fields plus `runtime_context`.
 
 ### 2) RTM (traceability)
 - [ ] `requirements.md` RTM таблица отражает реальный `Lifecycle` (planned/implemented/verified).
@@ -58,6 +67,10 @@ Manual mode:
 - [ ] Новые задачи (из багов, из новых требований) добавлены как schema-backed task records.
 - [ ] В scheduler mode closure/failure/blocking decision уже записан в indexed `.task.json`; если нет, report consistency gap and stop for explicit scheduler or standalone owner decision.
 - [ ] В manual mode manual closure sync имеет already-recorded explicit owner decision в task record или direct instruction for this sync; иначе report consistency gap and do not infer closure.
+- [ ] Если использовался Execution Packet, reconcile только уже записанные
+  `runtime_context.packet_ref`, protocol links и evidence paths. Не строить
+  packet, не обновлять его статус и не выводить closure/promotion decision из
+  packet status.
 - [ ] Promotion/dependent block/unblock не выполняется внутри `/mb-sync`; это отдельный scheduler pass после sync + strict doctor.
 
 ### 5) Changelog

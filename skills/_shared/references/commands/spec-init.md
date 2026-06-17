@@ -90,7 +90,7 @@ Omit sections that do not affect decomposition, or mark them `Not applicable` wi
 - Domain Constraints
 - Links To Contracts/States/Storage
 
-`contracts/boundary-map.md`:
+`contracts/boundary-map.md` (seeded skeleton file; update only with evidence):
 - Boundary
 - Purpose
 - Direction

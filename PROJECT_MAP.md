@@ -57,7 +57,7 @@ Canonical shared source:
 
 - `skills/_shared/agents/*.md`: shared worker/reviewer prompts.
 - `skills/_shared/references/commands/*.md`: command specs copied into generated Memory Bank skeletons.
-- `skills/_shared/references/protocols/*.md`: protocol templates.
+- `skills/_shared/references/protocols/*`: protocol templates and derivative artifact templates such as `packet-template.json`.
 - `skills/_shared/references/structure-template.md`: Memory Bank structure reference.
 - `skills/_shared/scripts/init-mb.js`: Memory Bank bootstrap/sync generator.
 
@@ -95,6 +95,7 @@ For updates that change the JSON-only task registry or indexed task record model
 - `skills/_shared/references/commands/write-prd.md`
 - `skills/_shared/references/commands/clarify-feature.md`
 - `skills/_shared/references/commands/prd-to-tasks.md`
+- `skills/_shared/references/commands/mb-packet.md`
 - `skills/_shared/references/commands/autopilot.md`
 - `skills/_shared/references/commands/autonomous.md`
 - `skills/_shared/references/commands/execute.md`
@@ -105,6 +106,35 @@ For updates that change the JSON-only task registry or indexed task record model
 - `.github/workflows/release-check.yml`
 - `README.en.md`, `README.ru.md`
 
+## Task Runtime Context / Execution Packet Hotspots
+
+Execution Packets are derivative runtime artifacts under
+`.memory-bank/packets/TASK-*.packet.json`. They summarize task/spec context for
+one run but never replace JSON task records or linked SDD specs as source of
+truth.
+
+Primary source files for this behavior:
+
+- `skills/_shared/references/commands/prd-to-tasks.md` for copying
+  boundary-map/contract evidence into existing task link fields and
+  `runtime_context`
+- `skills/_shared/references/commands/mb-packet.md`
+- `skills/_shared/references/protocols/packet-template.json`
+- `skills/_shared/references/commands/execute.md`
+- `skills/_shared/references/commands/verify.md`
+- `skills/_shared/references/commands/red-verify.md`
+- `skills/_shared/references/commands/autopilot.md`
+- `skills/_shared/references/commands/autonomous.md`
+- `skills/_shared/references/workflows/tier-policy.md`
+- `skills/_shared/references/workflows/mb-sync.md`
+- `skills/mb-execute/SKILL.md`
+- `skills/mb-verify/SKILL.md`
+- `skills/mb-red-verify/SKILL.md`
+
+Do not add `.memory-bank/modules/`, `.memory-bank/graph/`,
+`.memory-bank/verification/`, Failure Packet artifacts, or new task lifecycle
+statuses for this flow.
+
 Task planning is JSON-only: `.memory-bank/tasks/index.json` indexes `.memory-bank/tasks/TASK-*.task.json` records, and commands must treat those records as the only task model.
 
 ## Verification Commands
@@ -113,10 +143,11 @@ Fast syntax/source-only check:
 
 ```bash
 npm run check:syntax --silent
+node -e 'JSON.parse(require("node:fs").readFileSync("skills/_shared/references/protocols/packet-template.json", "utf8")); console.log("packet template ok")'
 find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
 ```
 
-The second command should print `0` in the source-only working tree.
+The source-only count command should print `0` in the source-only working tree.
 
 Install smoke without mutating the working repository:
 

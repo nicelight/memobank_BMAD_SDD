@@ -11,6 +11,8 @@
 Основные области:
 
 - `.memory-bank/` - знания и состояние проекта: продукт, требования, epics, features, архитектура, task records, индексы и правила работы.
+- `.memory-bank/contracts/boundary-map.md` - легкие responsibility/scope boundary notes, которые используются через существующие task поля и `runtime_context`.
+- `.memory-bank/packets/` - optional derivative Execution Packets с компактным runtime context для отдельных задач.
 - `.protocols/` - планы, прогресс и verification по конкретным задачам или features.
 - `.tasks/` - runtime evidence, отчеты, handoff-файлы и материалы, которые помогают передавать работу между агентами.
 - `.memory-bank/tasks/*.task.json` - task records. Это источник правды для задач.
@@ -46,6 +48,7 @@ Memory Bank помогает вести разработку как повтор
   -> /spec-design         обязательный адаптивный SDD backbone
   -> feature design       /spec-improve для выбранной feature
   -> JSON tasks          с градацией сложности и риска 
+  -> mb-packet           если task явно требует runtime packet
   -> execute             можно все сразу в авторежиме
   -> verify              + red-verify
   -> sync
@@ -124,9 +127,17 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** `.protocols/FT-001/plan.md`, `.protocols/FT-001/decision-log.md`, `.memory-bank/tasks/plans/IMPL-FT-001.md`, task records в `.memory-bank/tasks/*.task.json` и индекс `.memory-bank/tasks/index.json`.
 
-   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным task cards / artifacts и только потом взять первую готовую задачу и выполнить `/execute TASK-*`.
+   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным task cards / artifacts, затем для первой готовой задачи выполнить `/mb-packet TASK-*`, если task явно требует packet, и перейти к `/execute TASK-*`.
 
-10. `/execute TASK-*`
+10. `/mb-packet TASK-*`
+
+   **Когда:** если task record явно содержит `runtime_context.packet_required: true`.
+
+   **Создает/обновляет:** `.memory-bank/packets/TASK-*.packet.json` как derivative packet из task record и linked specs.
+
+   **Дальше:** если packet `ready` или `ready_with_gaps`, перейти к `/execute`; при `blocked` или `stale` сначала устранить причину. Packet не заменяет task/specs и не вводит новый lifecycle status.
+
+11. `/execute TASK-*`
 
    **Когда:** для реализации одной конкретной задачи из task record.
 
@@ -134,7 +145,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** запустить `/verify TASK-*`.
 
-11. `/verify TASK-*`
+12. `/verify TASK-*`
 
    **Когда:** после реализации задачи.
 
@@ -142,7 +153,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-*`; иначе перейти к `/mb-sync`.
 
-12. `/red-verify TASK-*`
+13. `/red-verify TASK-*`
 
    **Когда:** обязательно для T2/T3 перед финальным закрытием; особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
@@ -150,7 +161,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** при проблемах вернуть задачу в доработку; при успешной проверке перейти к `/mb-sync`.
 
-13. `/mb-sync`
+14. `/mb-sync`
 
    **Когда:** после результата задачи, особенно если менялись требования, task status, changelog, RTM или durable Memory Bank docs.
 
@@ -158,18 +169,19 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** выбрать следующую задачу или feature.
 
-14. Повторять цикл
+15. Повторять цикл
 
     **Когда:** пока features и tasks не доведены до нужного состояния.
 
     **Создает/обновляет:** последовательные изменения в продукте, документах, task records и evidence.
 
-    **Дальше:** продолжать `/prd-to-tasks` для следующих features или `/execute` для следующих tasks.
+    **Дальше:** продолжать `/prd-to-tasks` для следующих features или `/mb-packet` при необходимости + `/execute` для следующих tasks.
 
 ## 🛠️ Команды вне основного ручного цикла
 
 - `/cold-start` - выбирает стартовый сценарий для нового или существующего репозитория: greenfield, brownfield, skeleton-only.
 - `/mb-init` - создает skeleton Memory Bank, `.tasks/`, `.protocols/`, `AGENTS.md` и project command proxies.
+- `/mb-packet` - строит или обновляет derivative Execution Packet для task, если он явно требуется runtime context.
 - `/map-codebase` - описывает существующий код как as-is baseline в Memory Bank.
 - `/review` - запускает fresh-context review Memory Bank и фиксирует найденные gaps.
 - `/mb-garden` - обслуживает Memory Bank: lint, чистка, устранение drift, архивирование.
@@ -201,10 +213,10 @@ proxy skills, runtime scripts и может синхронизировать `AG
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute first indexed TASK -> /verify same TASK -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /mb-packet TASK when required -> /execute first indexed TASK -> /verify same TASK -> /mb-sync
 ```
 
-Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow.
+Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow. Оба режима соблюдают `runtime_context.packet_required`, но не делают packet обязательным только из-за tier.
 
 ## 📚 Подробная механика
 

@@ -49,7 +49,10 @@ Manual mode:
 - `.memory-bank/spec-index.md` and all linked authoritative SDD specs when the
   task record or linked feature contains SDD spec links, for any tier
 - richer task fields when present: `source_artifacts`, `normative_inputs`,
-  `constraints`, `invariants`, `verification_targets`
+  `constraints`, `invariants`, `verification_targets`, `purpose`,
+  `success_outcome`, `anti_goals`, `runtime_context`
+- `.memory-bank/packets/<TASK_ID>.packet.json` when
+  `runtime_context.packet_required` is true or `packet_ref` is present
 
 Authoritative SDD spec links are links to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
@@ -67,18 +70,25 @@ Stop with an explicit handoff error if:
 - `tier` is missing or is not `T0|T1|T2|T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or is not `done`
+- `runtime_context.packet_required` is true and `packet_ref` is absent
+- `runtime_context.packet_required` is true and the packet is missing, stale,
+  blocked, or hash-mismatched against the current task record
 - `tier` is `T2` / `T3` and neither task richer fields nor linked feature
   `spec_design_links` include relevant SDD spec links
 
 Do not block `T0` / `T1` only because SDD spec links are absent.
 Route only by `task.tier`. Do not use legacy `risk` / `risk.level`.
+Do not infer packet requirement from tier. Required packets must be usable
+(`ready` or `ready_with_gaps`) before implementation; otherwise route to
+`/mb-packet TASK_ID` or stop with a handoff blocker.
 
 ## Protocol Routing
 Create `.tasks/<TASK_ID>/` for runtime artifacts.
 
 `T0` / `T1`: use compact protocol:
 - `.protocols/<TASK_ID>/run.md`; record tier, goal, context, plan, changes,
-  gates, evidence, and handoff notes
+  gates, evidence, Goal Interpretation, packet status when present, and handoff
+  notes
 - `VERDICT: PASS|FAIL|BLOCKED` is a local evidence marker only, not task closure
 
 `T2` / `T3`: use full protocol:
@@ -96,7 +106,17 @@ Record whether these markers are present or still needed; do not close the task.
 - For any tier, if the task record or linked feature contains authoritative SDD
   spec links, read `.memory-bank/spec-index.md` and all linked authoritative SDD
   specs before editing; treat them as normative inputs.
-- Record goal, non-goals, constraints, touched areas, and gates before broad edits.
+- Record Goal Interpretation before broad edits:
+  - Purpose
+  - Success outcome
+  - Anti-goals
+  - Allowed write scope
+  - Forbidden scope
+  - Stop conditions
+- Record constraints, touched areas, packet verification checks, and gates.
+- Stay inside `runtime_context.allowed_write_scope` when present.
+- Do not touch `runtime_context.forbidden_scope`; if it was touched, stop and
+  record a blocker.
 - If fan-out is needed, use narrow non-overlapping worker scopes.
 - Preserve unrelated changes and do not rewrite generated `shared-*` files.
 - Keep protocol notes factual: what changed, what was checked, where evidence is.
@@ -104,6 +124,8 @@ Record whether these markers are present or still needed; do not close the task.
 ## Local Gates
 Run relevant local gates from project instructions: lint/typecheck, unit tests,
 and integration/e2e checks only when relevant.
+When a packet is required or present, run applicable packet
+`verification.commands` / `success_checks`, or record why each could not run.
 
 If a gate cannot run or fails, record command, result, evidence path, and the
 blocker in the protocol/handoff. Do not convert that into final task status.
@@ -115,6 +137,9 @@ Finish with:
 - local gates run and results
 - evidence paths under `.tasks/<TASK_ID>/`
 - verification targets and risk notes for verifier/reviewer
+- packet path/status and packet checks run or skipped with reason
+- scope compliance: yes/no
+- forbidden scope touched: yes/no
 - MB-SYNC handoff notes: what should be synchronized and by whom
 - recommended next owner: scheduler, verifier, red-verifier, explicit standalone owner, or human
 

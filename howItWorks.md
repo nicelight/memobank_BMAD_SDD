@@ -12,6 +12,8 @@
 
 ```text
 .memory-bank/  durable project knowledge и generated command specs
+.memory-bank/contracts/boundary-map.md lightweight responsibility/scope boundary notes
+.memory-bank/packets/ optional derivative Execution Packets for task runtime context
 .protocols/   resumable execution и verification protocols
 .tasks/       runtime evidence, reports и handoff material
 ```
@@ -143,6 +145,7 @@ node scripts/install-framework.mjs --bootstrap --target /path/to/project --yes
   commands/index.md
   constitution.md
   contracts/
+  contracts/boundary-map.md
   domains/
   epics/
   features/
@@ -151,6 +154,7 @@ node scripts/install-framework.mjs --bootstrap --target /path/to/project --yes
   index.md
   invariants.md
   mbb/index.md
+  packets/
   product.md
   quality/
   requirements.md
@@ -211,6 +215,7 @@ idea / rough draft
   -> /spec-design
   -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
+  -> /mb-packet TASK-001 when runtime_context.packet_required is true
   -> /execute TASK-001
   -> /verify TASK-001
   -> /red-verify TASK-001 для T2/T3
@@ -255,10 +260,13 @@ idea / rough draft
 Interactive mode для одной задачи:
 
 ```text
-/execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync
+/mb-packet TASK-001 when required -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync
 ```
 
 В manual mode T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence. Для T2/T3 `/verify PASS` не является финальным done: перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`; для T3 сохраняются human/recovery markers.
+`/mb-packet` нужен только если task record явно содержит
+`runtime_context.packet_required: true`; packet является производным runtime
+контекстом и не заменяет task/specs.
 
 ### Scheduler mode: `/autopilot`
 
@@ -271,6 +279,9 @@ Preconditions:
 - последний `/review` вернул `APPROVE`;
 - `node scripts/mb-doctor.mjs --strict` проходит;
 - ни одна task-linked feature не имеет pending или blocked clarification.
+- required packets are usable when a task explicitly sets
+  `runtime_context.packet_required: true`; `/autopilot` does not infer packet
+  requirement from tier alone.
 
 `/autopilot` не запускает `/write-prd`, `/prd`, `/prd-to-tasks` и не создает task queue.
 
@@ -349,6 +360,33 @@ Allowed `tier`: `T0`, `T1`, `T2`, `T3`.
 
 Legacy `risk` и `risk.level` удалены. Execution, verification, red-verification, scheduler routing и doctor checks должны использовать только `task.tier`.
 
+Optional task runtime context may be present when backed by PRD/feature/spec
+evidence:
+
+```json
+{
+  "purpose": "Why this task exists.",
+  "success_outcome": "Observable result that proves real success.",
+  "anti_goals": [],
+  "runtime_context": {
+    "packet_required": false,
+    "packet_ref": ".memory-bank/packets/TASK-001.packet.json",
+    "allowed_write_scope": [],
+    "forbidden_scope": [],
+    "stop_conditions": []
+  }
+}
+```
+
+`packet_required` defaults to false/absent. T2/T3 tasks SHOULD use packets when
+context is useful, but only explicit `runtime_context.packet_required: true`
+makes `/mb-packet` a mandatory pre-execute gate.
+
+Boundary notes live in `.memory-bank/contracts/boundary-map.md` as a normal
+contract/spec document. Tasks reference it through existing source/normative/
+constraint/verification fields and copy executable limits into
+`runtime_context`; there are no boundary-specific task fields.
+
 ## 8. Manual mode vs scheduler mode
 
 Владение статусами отличается по mode.
@@ -367,6 +405,9 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 - `/verify` не закрывает, не fail-ит и не promote-ит dependents;
 - `/red-verify` не закрывает, не fail-ит и не promote-ит dependents;
 - scheduler записывает closure/failure/blocking decision, final status и evidence links в authoritative `.task.json` до `/mb-sync`;
+- before `/execute`, scheduler ensures a usable packet only when
+  `runtime_context.packet_required: true`; missing/stale/blocked required
+  packets are `HALT_QUALITY_GATES`;
 - `/mb-sync` только synchronizes/reconciles already-written task state и не принимает closure/promotion decisions сам;
 - после `/mb-sync` и strict doctor scheduler выполняет отдельный promotion/dependent blocking pass.
 
@@ -382,6 +423,10 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 | `T3` | auth, security, secrets, prod/deploy, irreversible/data-loss, payments, compliance | full protocol required | `/verify` + `/red-verify` + human/recovery evidence | требования T2 + точные `HUMAN_CHECKPOINT: done` и `ROLLBACK_RECOVERY_NOTE: present` |
 
 Если scope растет, поднимите tier перед передачей task дальше. Если сомневаетесь между двумя tiers, выбирайте более высокий.
+
+Execution Packet statuses are local to packet files only:
+`ready|ready_with_gaps|blocked|stale`. They are not task lifecycle statuses.
+The task lifecycle remains `planned|ready|in_progress|blocked|done|failed`.
 
 ## 10. Generated command reference
 
@@ -401,7 +446,8 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 | `/spec-improve` | Feature-level SDD design | needed tech-specs/architecture/contracts/domains/states/ADR/testing links, feature `spec_design_status` | не дублирует existing specs; не выдумывает decisions | `/prd-to-tasks FT-*` |
 | `/spec-auto` | Autonomous SDD init/design | spec-index, feature design status, assumptions/blockers | не спрашивает пользователя; не игнорирует unsafe ambiguity | `/prd` или `/prd-to-tasks --all` |
 | `/clarify-feature` | Resolve feature-level blockers | target `.memory-bank/features/FT-*.md` clarification metadata/answers | не назначает tier; не создает task records | `/spec-improve FT-*` |
-| `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не проходит pending blockers or missing T2/T3 SDD specs | `/execute` вручную или `/review`/`/autopilot` |
+| `/prd-to-tasks` | Feature -> implementation plan + JSON tasks | `.memory-bank/tasks/plans/IMPL-FT-*.md`, indexed `TASK-*.task.json` | не запускает execution; не проходит pending blockers or missing T2/T3 SDD specs | `/mb-packet` if required, then `/execute`; or `/review`/`/autopilot` |
+| `/mb-packet` | Build or refresh derivative task runtime context | `.memory-bank/packets/TASK-*.packet.json` | не создает tasks/specs, не реализует code, не закрывает task, не вводит module graph/Failure Packet | `/execute` или resolve packet blocker |
 | `/execute` | Implement one scoped task | `.protocols/<TASK>/...`, `.tasks/<TASK>/...`, code/docs в task scope | не закрывает task; не запускает verify/red-verify/mb-sync | `/verify` |
 | `/verify` | Functional acceptance/evidence verification | verification protocol/evidence, task `verify` entries, possible bugs/follow-ups | в scheduler mode не закрывает/fail-ит/promote-ит | manual close или `/red-verify`/scheduler decision |
 | `/red-verify` | Adversarial semantic verification | `.protocols/<TASK>/red-verification.md`, `.tasks/<TASK>/...`, bugs/follow-ups при необходимости | не дублирует `/verify`; в scheduler mode не закрывает | `/mb-sync` или scheduler decision |

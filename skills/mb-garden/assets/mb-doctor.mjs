@@ -7,6 +7,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -28,10 +29,14 @@ const LINK_REQUIRED_TIERS = new Set(['T1', 'T2', 'T3']);
 const TERMINAL_STATUSES = new Set(['done', 'failed']);
 const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
 const SDD_SPEC_REQUIRED_TIERS = new Set(['T2', 'T3']);
+const VALID_PACKET_STATUSES = new Set(['ready', 'ready_with_gaps', 'blocked', 'stale']);
+const BLOCKING_PACKET_STATUSES = new Set(['blocked', 'stale']);
+const USABLE_PACKET_STATUSES = new Set(['ready', 'ready_with_gaps']);
 const FULL_PROTOCOL_STATUSES = new Set(['in_progress', 'done', 'failed']);
 const FULL_PROTOCOL_FILES = ['context.md', 'plan.md', 'progress.md', 'verification.md', 'handoff.md'];
 const REQ_ID_RE = /^REQ-[0-9]{3,}$/;
 const FT_ID_RE = /^FT-[0-9]{3,}$/;
+const SOURCE_TASK_HASH_RE = /^sha256:[0-9a-f]{64}$/;
 const SDD_SPEC_DIRS = ['tech-specs', 'architecture', 'contracts', 'domains', 'states', 'adrs', 'testing', 'guides', 'runbooks'];
 const SDD_SPEC_PATH_RE = /(?:\.\/)?\.memory-bank\/(?:tech-specs|architecture|contracts|domains|states|adrs|testing|guides|runbooks)\/[^\s"'`]+/i;
 const EVIDENCE_WORD_RE = /\b(evidence|result|fail|failed|error|output|log|artifact|report)\b/i;
@@ -474,6 +479,7 @@ function checkTaskReadiness() {
     checkTerminalEvidence(record);
     checkReqFeatureLinkage(record);
     checkSddSpecLinkage(record);
+    checkRequiredExecutionPacket(record);
   }
 
   checkFailedTaskClosure(orderedRecords);
@@ -836,6 +842,171 @@ function checkSddSpecLinkage(record) {
       missing_feature_spec_design_links: featureSpec?.links.missing ?? [],
     },
     suggested_fix: `Run /spec-improve ${featureId ?? 'FT-<NNN>'} or /spec-auto, then add relevant SDD spec links to source_artifacts, normative_inputs, constraints, invariants, or verification_targets.`,
+  });
+}
+
+function checkRequiredExecutionPacket(record) {
+  const { id, rel, task } = record;
+  const runtimeContext = task.runtime_context;
+  if (!runtimeContext || typeof runtimeContext !== 'object' || Array.isArray(runtimeContext)) return;
+  if (runtimeContext.packet_required !== true) return;
+
+  const severity = options.strict ? 'error' : 'warning';
+  if (typeof runtimeContext.packet_ref !== 'string' || !runtimeContext.packet_ref.trim()) {
+    addFinding(severity, 'TASK_PACKET_REF_MISSING', `${rel}: required execution packet has no packet_ref.`, {
+      path: rel,
+      task_id: id,
+      suggested_fix: `Run /mb-packet ${id} or set runtime_context.packet_ref to .memory-bank/packets/${id}.packet.json.`,
+    });
+    return;
+  }
+
+  const packetRef = normalizePacketRef(runtimeContext.packet_ref);
+  if (!isSafePacketRef(packetRef)) {
+    addFinding(severity, 'TASK_PACKET_REF_INVALID', `${rel}: required execution packet_ref is invalid.`, {
+      path: rel,
+      task_id: id,
+      details: { packet_ref: runtimeContext.packet_ref },
+      suggested_fix: `Use .memory-bank/packets/${id}.packet.json and rerun /mb-packet ${id}.`,
+    });
+    return;
+  }
+
+  if (!isFile(path.join(ROOT, packetRef))) {
+    addFinding(severity, 'TASK_PACKET_MISSING', `${packetRef} not found for required execution packet.`, {
+      path: packetRef,
+      task_id: id,
+      suggested_fix: `Run /mb-packet ${id} before /execute.`,
+    });
+    return;
+  }
+
+  const packetRead = readJson(packetRef);
+  if (!packetRead.ok || !packetRead.value || typeof packetRead.value !== 'object' || Array.isArray(packetRead.value)) {
+    addFinding(severity, 'TASK_PACKET_INVALID', `${packetRef}: execution packet JSON is invalid.`, {
+      path: packetRef,
+      task_id: id,
+      details: { error: packetRead.message },
+      suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
+    });
+    return;
+  }
+
+  const packet = packetRead.value;
+  if (packet.task_id !== id) {
+    addFinding(severity, 'TASK_PACKET_INVALID', `${packetRef}: execution packet task_id does not match ${id}.`, {
+      path: packetRef,
+      task_id: id,
+      details: { packet_task_id: packet.task_id },
+      suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
+    });
+  }
+
+  if (!VALID_PACKET_STATUSES.has(packet.status)) {
+    addFinding(severity, 'TASK_PACKET_INVALID', `${packetRef}: execution packet status is invalid.`, {
+      path: packetRef,
+      task_id: id,
+      details: { status: packet.status, allowed: [...VALID_PACKET_STATUSES] },
+      suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
+    });
+    return;
+  }
+
+  if (!checkPacketMinimalShape({ id, packet, packetRef, severity })) return;
+
+  if (BLOCKING_PACKET_STATUSES.has(packet.status)) {
+    addFinding(severity, 'TASK_PACKET_NOT_READY', `${packetRef}: execution packet is ${packet.status}.`, {
+      path: packetRef,
+      task_id: id,
+      details: { status: packet.status },
+      suggested_fix: packet.status === 'stale'
+        ? `Refresh the packet with /mb-packet ${id}.`
+        : 'Resolve packet blockers before /execute.',
+    });
+    return;
+  }
+
+  if (USABLE_PACKET_STATUSES.has(packet.status)) {
+    checkPacketSourceTaskHash({ id, rel, packet, packetRef, severity });
+  }
+}
+
+function checkPacketMinimalShape({ id, packet, packetRef, severity }) {
+  const issues = [];
+
+  if (!isPlainObject(packet.source_refs)) {
+    issues.push('source_refs must be an object');
+  } else {
+    if (!nonEmptyString(packet.source_refs.task)) issues.push('source_refs.task must be a non-empty string');
+    if (typeof packet.source_refs.feature !== 'string') issues.push('source_refs.feature must be a string');
+    for (const key of ['specs', 'guides', 'protocols']) {
+      if (!isStringArray(packet.source_refs[key])) issues.push(`source_refs.${key} must be an array of strings`);
+    }
+  }
+
+  if (!isPlainObject(packet.scope)) {
+    issues.push('scope must be an object');
+  } else {
+    for (const key of ['allowed_write_scope', 'forbidden_scope']) {
+      if (!isStringArray(packet.scope[key])) issues.push(`scope.${key} must be an array of strings`);
+    }
+  }
+
+  if (!isPlainObject(packet.verification)) {
+    issues.push('verification must be an object');
+  } else {
+    for (const key of ['commands', 'success_checks', 'evidence_required']) {
+      if (!isStringArray(packet.verification[key])) issues.push(`verification.${key} must be an array of strings`);
+    }
+  }
+
+  if (!isStringArray(packet.stop_conditions)) issues.push('stop_conditions must be an array of strings');
+  if (!isStringArray(packet.required_handoff) || packet.required_handoff.length === 0) {
+    issues.push('required_handoff must be a non-empty array of strings');
+  }
+
+  if (!issues.length) return true;
+
+  addFinding(severity, 'TASK_PACKET_INVALID', `${packetRef}: execution packet is missing required structure.`, {
+    path: packetRef,
+    task_id: id,
+    details: { issues },
+    suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
+  });
+  return false;
+}
+
+function checkPacketSourceTaskHash({ id, rel, packet, packetRef, severity }) {
+  const actualHash = hashRawFile(rel);
+  if (!actualHash) {
+    addFinding(severity, 'TASK_PACKET_STALE', `${packetRef}: cannot verify source_task_hash because task record could not be read.`, {
+      path: packetRef,
+      task_id: id,
+      details: { source_task: rel },
+      suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
+    });
+    return;
+  }
+
+  const packetHash = typeof packet.source_task_hash === 'string' ? packet.source_task_hash : '';
+  if (packetHash && SOURCE_TASK_HASH_RE.test(packetHash) && packetHash === actualHash) return;
+
+  const issue = !packetHash
+    ? 'missing'
+    : SOURCE_TASK_HASH_RE.test(packetHash)
+      ? 'mismatched'
+      : 'malformed';
+
+  addFinding(severity, 'TASK_PACKET_STALE', `${packetRef}: execution packet source_task_hash is ${issue}.`, {
+    path: packetRef,
+    task_id: id,
+    details: {
+      issue,
+      source_task: rel,
+      expected: actualHash,
+      actual: packetHash || undefined,
+    },
+    suggested_fix: `Refresh the packet with /mb-packet ${id}.`,
   });
 }
 
@@ -1515,6 +1686,15 @@ function readJson(rel) {
   }
 }
 
+function hashRawFile(rel) {
+  const abs = path.join(ROOT, rel);
+  try {
+    return `sha256:${createHash('sha256').update(fs.readFileSync(abs)).digest('hex')}`;
+  } catch {
+    return null;
+  }
+}
+
 function isFile(absPath) {
   try {
     return fs.statSync(absPath).isFile();
@@ -1550,6 +1730,28 @@ function splitLines(text) {
     .replace(/\r\n/g, '\n')
     .split('\n')
     .filter((line) => line.length > 0);
+}
+
+function isPlainObject(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function nonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isStringArray(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function normalizePacketRef(value) {
+  return normalizeRel(String(value ?? '').trim()).replace(/^\.\//, '');
+}
+
+function isSafePacketRef(value) {
+  const rel = normalizeRel(value);
+  if (path.isAbsolute(rel) || rel.includes('..')) return false;
+  return rel.startsWith('.memory-bank/packets/') && rel.endsWith('.packet.json');
 }
 
 function normalizeRel(p) {

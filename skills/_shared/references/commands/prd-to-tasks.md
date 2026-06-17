@@ -187,6 +187,57 @@ JSON task records are the source of truth:
 }
 ```
 
+Optional runtime context fields may be added only when there is evidence in the
+PRD, feature docs, linked specs, baseline docs, contracts, states, runbooks, or
+testing docs:
+
+```json
+{
+  "purpose": "Why this task exists.",
+  "success_outcome": "Observable result that proves real success.",
+  "anti_goals": [
+    "What must not be changed or optimized away."
+  ],
+  "runtime_context": {
+    "packet_required": false,
+    "packet_ref": ".memory-bank/packets/TASK-001.packet.json",
+    "allowed_write_scope": [],
+    "forbidden_scope": [],
+    "stop_conditions": []
+  }
+}
+```
+
+Rules for optional purpose/runtime fields:
+- do not invent `purpose`, `success_outcome`, `anti_goals`, or
+  `runtime_context` without evidence
+- when boundary evidence exists in `.memory-bank/contracts/boundary-map.md` or
+  other contracts/specs, link those docs through existing fields such as
+  `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or
+  `verification_targets`; do not add boundary-specific task fields
+- `T0` / `T1` tasks may omit runtime context entirely
+- `T2` / `T3` SHOULD use an Execution Packet, but tier alone does not make a
+  packet mandatory
+- set `runtime_context.packet_required: true` only when at least one is true:
+  - cross-module contract/state/data/security/runtime behavior is involved
+  - the task has linked SDD specs
+  - `success_outcome` cannot be verified from the task record alone
+  - `allowed_write_scope` matters for safe execution
+- when `packet_required` is true, set `packet_ref` to
+  `.memory-bank/packets/TASK-<NNN>.packet.json`
+- `allowed_write_scope` may default from `touched_files` when that scope is
+  already evidenced by the task plan
+- `allowed_write_scope`, `forbidden_scope`, and `stop_conditions` may be copied
+  from linked boundary notes/contracts only when the task needs executable
+  scope constraints
+- use `forbidden_scope` only for concrete risks
+- keep `stop_conditions` short, for example:
+  - linked spec contradicts task goal
+  - needed public contract is missing
+  - implementation requires scope outside `allowed_write_scope`
+  - verification cannot prove `success_outcome`
+  - security/runtime decision is unclear
+
 Required enums:
 - `status`: `planned|ready|in_progress|blocked|done|failed`
 - `tier`: `T0|T1|T2|T3`
@@ -246,6 +297,9 @@ Persistence rule:
 - проверь что acceptance criteria из FT покрыты задачами
 - обнови RTM при необходимости
 - если richer fields были добавлены, проверь что они не противоречат feature doc и RTM
+- если `runtime_context.packet_required` установлен, проверь что `packet_ref`
+  указывает на expected `.memory-bank/packets/TASK-*.packet.json`; сам packet
+  строит `/mb-packet`, а не `/prd-to-tasks`
 
 Если используется `--all`:
 - пройдись по всем `FT-*` в порядке приоритета

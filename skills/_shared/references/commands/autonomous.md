@@ -135,6 +135,9 @@ Block `/prd-to-tasks --all` when any targeted feature has:
   - `docs`
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - T2/T3 task records must include relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
+- Do not infer `runtime_context.packet_required` from tier alone. `T2` / `T3`
+  tasks SHOULD use Execution Packets, but packets are mandatory only when the
+  indexed task record sets `runtime_context.packet_required: true`.
 
 ## 6.1) Review gate по JSON task records
 Сразу после `/prd-to-tasks --all` и до scheduler execution запусти `/review` именно по task planning surface:
@@ -187,7 +190,7 @@ Manual mode:
 - Manual closure is allowed only when an explicit closure owner exists.
 - T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
 - T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
-- If `/red-verify` is run later and finds semantic issues, it may change status `done -> blocked`, `done -> failed`, or create a bug/follow-up task.
+- If required T2/T3 `/red-verify` returns anything other than `semantic-pass`, leave closure pending or blocked, not done; optional T0/T1 red-verify does not make their normal verify-based closure stricter.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -213,19 +216,44 @@ Manual mode:
 
 ## 8) Execution loop per TASK
 Для каждого выбранного `TASK-*`:
-1) scheduler writes `ready -> in_progress`
-2) `/execute TASK-<ID>`
-3) `/verify TASK-<ID>` by `task.tier` from the JSON record:
+1) reread `task.tier` and `runtime_context` from the JSON record and route only
+   by those authoritative values
+2) before writing `ready -> in_progress`, if `runtime_context.packet_required`
+   is true, ensure a usable packet while the task remains `ready`:
+   - use `runtime_context.packet_ref` when present
+   - if missing or stale, run/route `/mb-packet TASK-<ID>` once without
+     changing task status
+   - usable packet status is `ready` or `ready_with_gaps` with matching
+     `source_task_hash`
+   - if the packet is still missing, stale, blocked, malformed, or
+     hash-mismatched after that one attempt, leave the task `ready`, record the
+     clear halt reason in `.protocols/AUTONOMOUS-RUN/status.md`, and stop with
+     `HALT_QUALITY_GATES`
+3) only after the required packet gate passes, scheduler writes `ready -> in_progress`
+4) `/execute TASK-<ID>`
+5) `/verify TASK-<ID>` by `task.tier` from the JSON record:
    - `T0` / `T1`: compact protocol/evidence allowed according to tier policy
    - `T2` / `T3`: full protocol path is required
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
-4) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
-5) scheduler records the closure/failure/blocking decision, final task status, and evidence links in the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`
-6) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
-7) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
-8) scheduler performs a separate promotion/dependent blocking pass and writes any `planned -> ready` / downstream `blocked` changes to their `.task.json` records
+6) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
+7) scheduler records the closure/failure/blocking decision, final task status, and evidence links in the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`
+8) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
+9) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
+10) scheduler performs a separate promotion/dependent blocking pass and writes any `planned -> ready` / downstream `blocked` changes to their `.task.json` records
 
-After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → scheduler writes final task decision/status/evidence to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` + `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
+Per-task command order is exactly: required packet readiness gate while task is
+still `ready` (`/mb-packet` only when `runtime_context.packet_required` needs
+it) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
+`/red-verify` if required → scheduler writes final task decision/status/evidence
+to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` +
+`/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
+
+Fresh-session worker prompts for Codex/Claude must include: read
+`runtime_context` from the indexed task record; if
+`runtime_context.packet_required: true`, read `runtime_context.packet_ref`;
+respect packet `scope`, `verification`, and `stop_conditions`; treat the task
+record and linked authoritative specs as source of truth, with the packet only
+as derivative runtime context.
 
 Переходы состояния:
 - `ready -> in_progress`

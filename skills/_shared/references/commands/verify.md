@@ -43,6 +43,9 @@ Manual mode:
 1) Прочитай минимум:
 - `.memory-bank/tasks/index.json`
 - `.memory-bank/tasks/TASK-<ID>.task.json`
+- `.memory-bank/packets/TASK-<ID>.packet.json` when
+  `runtime_context.packet_required` is true, or as optional advisory input when
+  `packet_required` is not true and `packet_ref` is present
 - `.protocols/TASK-<ID>/context.md`
 - `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
@@ -55,11 +58,28 @@ Manual mode:
 
 If the task record is missing, stop with an explicit error.
 If the task record has no `tier`, stop with an explicit error. Authoritative verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
+Task records and linked authoritative specs remain source of truth. Execution
+Packets are derivative runtime context and must not override task/spec evidence.
+If `runtime_context.packet_required` is true and the packet is missing, stale,
+blocked, or has a `source_task_hash` that does not match the current task
+record hash, do not verify as if context were complete. Return
+`VERDICT: NEEDS-CLARIFICATION` or `VERDICT: FAIL` according to active
+verification ownership/mode, with reason `packet required but absent/stale`.
+If `runtime_context.packet_required` is not true but `packet_ref` exists, the
+packet is advisory only. Use its packet verification/scope checks only when the
+packet is fresh, valid, status `ready` or `ready_with_gaps`, and has a matching
+`source_task_hash`. If that optional packet is missing, stale, blocked,
+malformed, or hash-mismatched, record a warning and ignore the packet; do not
+prioritize it or block verification.
 Authoritative SDD spec links are links in task richer fields or linked feature
 `spec_design_links` that point to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
 `.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`,
 `.memory-bank/adrs/`, `.memory-bank/testing/`, `.memory-bank/guides/`, or `.memory-bank/runbooks/`.
+Use `.memory-bank/contracts/boundary-map.md` and other boundary/contract docs
+only when they are linked through those existing fields or provide the source
+for `runtime_context` scope. Do not require or invent boundary-specific task
+fields.
 If `tier` is `T2` or `T3` and no linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`, stop and report a blocker instead of verifying against classic AC alone.
 Do not block `T0` / `T1` only because SDD spec links are absent.
 If task/AC wording conflicts with linked SDD specs or the global backbone in `.memory-bank/spec-backbone.md`, stop with a blocker instead of verifying against the task alone.
@@ -78,11 +98,16 @@ Status ownership:
 
 Приоритет basis для verify:
 1. linked authoritative SDD specs for any tier, when present
-2. `verification_targets`, если они явно указаны в task record / IMPL plan / feature doc
-3. `normative_inputs`, если они явно перечислены и релевантны проверке
-4. classic acceptance criteria из feature doc
-5. RTM / REQ IDs
-6. tests, logs, screenshots и иные evidence artifacts в `.tasks/TASK-<ID>/`
+2. required packet verification commands/checks/evidence when the required
+   packet is usable
+3. `purpose`, `success_outcome`, and `anti_goals` when present in task record
+4. `verification_targets`, если они явно указаны в task record / IMPL plan / feature doc
+5. `normative_inputs`, если они явно перечислены и релевантны проверке
+6. classic acceptance criteria из feature doc
+7. RTM / REQ IDs
+8. optional packet verification/scope checks only when packet_ref is fresh,
+   valid, ready, and hash-matched; treat them as advisory cross-checks
+9. tests, logs, screenshots и иные evidence artifacts в `.tasks/TASK-<ID>/`
 
 Важно:
 - отсутствие richer verification fields не является ошибкой
@@ -102,6 +127,19 @@ Status ownership:
   - что сделал
   - команды
   - где evidence (в `.tasks/TASK-<ID>/`)
+
+If purpose/runtime fields are present:
+- verify `purpose` was actually served, not merely that local edits happened
+- verify `success_outcome` is observable from evidence
+- verify every `anti_goals` item was respected
+- verify changed files stayed within `allowed_write_scope` when present
+- verify `forbidden_scope` was not touched
+- verify linked boundary-map/contracts were respected when they are part of the
+  task's source/normative/constraint/verification basis
+- verify required packet `verification.commands`, `success_checks`, and
+  `evidence_required` were covered or record a blocker for each gap
+- when an optional advisory packet is usable, cover relevant packet checks as
+  cross-checks; when it is not usable, warn and continue without it
 
 Если richer verification targets заданы:
 - сначала проверь их

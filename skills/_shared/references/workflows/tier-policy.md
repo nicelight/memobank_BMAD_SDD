@@ -47,6 +47,31 @@ Tier summary:
 - T3: human checkpoint + rollback/recovery before scheduler marks done.
 - Manual mode: T0/T1 may close on /verify PASS only with explicit closure ownership; T2/T3 require /red-verify semantic-pass before closure.
 
+## Execution Packets
+
+Execution Packets are optional derivative runtime artifacts:
+
+```text
+.memory-bank/packets/TASK-XXX.packet.json
+```
+
+They summarize task purpose, linked specs, allowed/forbidden scope,
+verification checks, and stop conditions for one run. They never replace the
+indexed task record, linked SDD specs, or this tier policy as source of truth.
+
+Rules:
+- `T0` / `T1` tasks usually do not need packets.
+- `T2` / `T3` tasks SHOULD use packets when they help execution context.
+- A packet is mandatory only when the indexed task record sets
+  `runtime_context.packet_required: true`.
+- Do not infer `packet_required` from tier alone.
+- If `packet_required` is true, `/execute`, `/autopilot`, and `/autonomous`
+  must block on missing, stale, blocked, or hash-mismatched packets.
+- Packet statuses are local packet statuses only:
+  `ready|ready_with_gaps|blocked|stale`.
+- Packet statuses are not task lifecycle statuses and must not be added to the
+  task `status` enum.
+
 ## T0 - trivial / docs-only
 
 Use for typos, formatting, broken links, or safe documentation changes with no runtime, contract, state, data, security, or test impact.

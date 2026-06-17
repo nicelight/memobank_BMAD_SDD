@@ -41,6 +41,14 @@ Manual mode:
 - If a closure/failure/blocking decision is only present in the current agent/scheduler context and is not written to the indexed `.task.json`, `/mb-sync` must report a consistency gap and stop for an explicit scheduler or standalone owner decision.
 - In standalone/manual mode, `/mb-sync` may sync a manual closure only if the explicit owner decision is already recorded in the task record or supplied as a direct instruction for this sync. Otherwise it must report a consistency gap and must not infer closure.
 - `/mb-sync` must not silently claim scheduler ownership, become the closure owner, or advance dependents on its own.
+- If Execution Packet flow was used, `/mb-sync` only reconciles already-written
+  `runtime_context.packet_ref`, packet evidence references, and protocol links.
+  It does not build packets, refresh packets, decide packet status, or infer task
+  closure from packet status.
+- If boundary responsibilities or guide-level HOW changed materially, recommend
+  updating existing `.memory-bank/contracts/boundary-map.md`, related
+  `.memory-bank/contracts/*`, or `.memory-bank/guides/*`. Do not create a new
+  boundary lifecycle, status model, or artifact family.
 
 Минимальный чеклист:
 - [ ] Обновить релевантные `.memory-bank/*` (WHY/WHERE, без псевдокода)
@@ -51,6 +59,11 @@ Manual mode:
 - [ ] Если у EP/FT есть `lifecycle`, синхронизировать его отдельно от document `status`
 - [ ] Проверить, что task records не ссылаются на features с `clarification_status: pending|blocked`
 - [ ] Reconcile authoritative task records in `.memory-bank/tasks/index.json` and indexed `*.task.json`; write/sync status only when an explicit standalone owner decision is already recorded or supplied as a direct instruction, or synchronize status already written by the scheduler
+- [ ] If packet flow was used, reconcile existing `runtime_context.packet_ref`,
+      protocol links, and evidence paths; do not run `/mb-packet` or create a
+      closure decision from packet data
+- [ ] If boundary/guide docs were materially affected, update or recommend
+      updates to existing contracts/guides only; no new boundary status/lifecycle
 - [ ] Записать changelog `.memory-bank/changelog.md`
 - [ ] Для `/autonomous` и `/autopilot`: `/mb-doctor --strict` после sync — blocking gate, не optional
 

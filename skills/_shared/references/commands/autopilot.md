@@ -26,6 +26,9 @@ status: active
 - Every `T2` / `T3` task has relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
 - `.memory-bank/spec-backbone.md` records mandatory `/spec-design` status `complete`, or `minimal` with explicit `not_applicable` areas.
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
+- Do not infer `runtime_context.packet_required` from tier alone. `T2` / `T3`
+  tasks SHOULD use Execution Packets, but packets are mandatory only when the
+  indexed task record sets `runtime_context.packet_required: true`.
 - Нет unresolved blocking questions в `.protocols/AUTONOMOUS-RUN/status.md` или equivalent run protocol.
 - `/mb-doctor --strict` passes before the run starts.
 
@@ -100,48 +103,73 @@ Manual mode:
 
 ## TASK loop
 Для каждой выбранной задачи:
-1) переведи в task record `status: ready -> in_progress`
-2) перечитай `task.tier` из JSON record and route only by that value
-3) выполни `/execute TASK-<ID>`
-4) выполни `/verify TASK-<ID>` by tier:
+1) перечитай `task.tier` и `runtime_context` из JSON record and route only by
+   those authoritative values
+2) before writing `ready -> in_progress`, if `runtime_context.packet_required`
+   is true, ensure a usable packet while the task remains `ready`:
+   - use `runtime_context.packet_ref` when present
+   - if missing or stale, run/route `/mb-packet TASK-<ID>` once without
+     changing task status
+   - usable packet status is `ready` or `ready_with_gaps` with matching
+     `source_task_hash`
+   - if the packet is still missing, stale, blocked, malformed, or
+     hash-mismatched after that one attempt, leave the task `ready`, record the
+     clear halt reason in run status, and stop with `HALT_QUALITY_GATES`
+3) only after the required packet gate passes, write `status: ready -> in_progress`
+4) выполни `/execute TASK-<ID>`
+5) выполни `/verify TASK-<ID>` by tier:
    - `T0` / `T1`: compact protocol/evidence allowed according to tier policy
    - `T2` / `T3`: full path is required
    - `T3`: require exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`; no silent autonomous closure
-5) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
-6) scheduler writes closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`:
+6) run `/red-verify TASK-<ID>` if required by tier (`T2` / `T3`)
+7) scheduler writes closure/failure/blocking decision, final task status, and evidence links to the authoritative indexed `.memory-bank/tasks/TASK-*.task.json`:
    - `T0` / `T1`: normal `done` allowed after compact evidence / functional `VERDICT: PASS`
    - `T2` / `T3`: `done` allowed only after `/verify` `VERDICT: PASS` evidence and `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
    - `semantic-concern`: never normal `done`; write `blocked` or `in_progress` pending human review with owner/reason/follow-up evidence
    - `FAIL` or `semantic-fail`: write `status: failed`, create bug + follow-up task, and record failure budget impact
-7) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
-8) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
-9) apply a separate scheduler promotion/dependent blocking pass:
+8) run `/mb-sync` to synchronize the already-written task state; if the task record does not contain the scheduler decision/status/evidence, `/mb-sync` reports a consistency gap and stops
+9) run `node scripts/mb-lint.mjs`, then `/mb-doctor --strict`
+10) apply a separate scheduler promotion/dependent blocking pass:
    - promote dependents через explicit `planned -> ready`, если все их deps закрыты и нет blockers / blocking review rejects / unresolved semantic-concern
    - block dependents if upstream is `failed` / blocking / unresolved `semantic-concern`
    - write every promotion/blocking result to the affected `.task.json` records
 
-After `ready -> in_progress`, command order is exactly: `/execute` → `/verify` → `/red-verify` if required → scheduler writes final task decision/status/evidence to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` + `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
+Per-task command order is exactly: required packet readiness gate while task is
+still `ready` (`/mb-packet` only when `runtime_context.packet_required` needs
+it) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
+`/red-verify` if required → scheduler writes final task decision/status/evidence
+to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` +
+`/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
 
 Новые follow-up задачи, созданные во время verify, должны подхватываться **в том же run** на следующей итерации.
+
+## Fresh-session packet context
+Every fresh-session worker prompt must include:
+- read `runtime_context` from the indexed JSON task record
+- if `runtime_context.packet_required: true`, read `runtime_context.packet_ref`
+  before implementation/verification
+- respect packet `scope`, `verification`, and `stop_conditions`
+- treat the task record and linked authoritative specs as source of truth; the
+  packet is derivative runtime context and must not override them
 
 ## Concrete task-level commands
 ### Codex (fresh session per TASK)
 
 ```bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record, and the tier-selected protocol path. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record including runtime_context, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read the indexed JSON task record including runtime_context and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ### Claude (fresh session per TASK)
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record, and the tier-selected protocol path. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, the indexed JSON task record including runtime_context, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read the indexed JSON task record and linked acceptance criteria. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read the indexed JSON task record including runtime_context and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ## Terminal states

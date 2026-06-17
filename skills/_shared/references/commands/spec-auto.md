@@ -46,7 +46,7 @@ Perform `/spec-init` behavior:
 - read Constitution, Product Brief, PRD, existing spec-backbone, existing spec-index, and existing specs
 - update `.memory-bank/spec-index.md` as a pure spec registry/index
 - update `.memory-bank/spec-backbone.md` with pre-PRD decomposition inputs and `Pre-PRD Spec Status: ready_for_prd|blocked`
-- create/update small pre-PRD artifacts only when evidence exists or a blocking question must be explicit: `user-scenarios.md`, `domains/<domain>.md`, `invariants.md`, optional `contracts/boundary-map.md`, optional `states/lifecycle-map.md`
+- create/update small pre-PRD artifacts only when evidence exists or a blocking question must be explicit: `user-scenarios.md`, `domains/<domain>.md`, `invariants.md`, seeded `contracts/boundary-map.md`, optional `states/lifecycle-map.md`
 - record assumptions and open questions in `.memory-bank/spec-backbone.md`
 - do not run architecture design, set post-PRD Global Backbone Status, create diagrams, define source-of-truth hierarchy, or create authoritative design specs unless existing evidence already contains the decision
 
