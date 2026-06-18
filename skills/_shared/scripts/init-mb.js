@@ -582,17 +582,17 @@ After finishing a meaningful unit of work:
 - Scheduler mode: T2/T3 require full protocol state plus \`/verify\` \`VERDICT: PASS\` and \`/red-verify\` \`SEMANTIC_VERDICT: semantic-pass\` before scheduler marks \`done\`.
 - Manual mode: T0/T1 may close after \`/verify PASS\` only with explicit closure ownership and completed evidence; T2/T3 must run \`/red-verify\` before final closure/\`/mb-sync\`.
 - T3 also requires a human-aware checkpoint and rollback/recovery note.
-- Packet requirement is explicit only: if \`task.runtime_context.packet_required === true\`, verify \`task.runtime_context.packet_ref\` before \`/execute\`; never infer packet requirement from tier.
+- Packet requirement: T2/T3 require canonical \`.memory-bank/packets/TASK-<ID>.packet.json\`; T0/T1 require packets only when \`task.runtime_context.packet_required === true\`.
 - Required packets are derivative runtime artifacts under \`.memory-bank/packets/\`; if missing, blocked, stale, invalid, or mismatched, run \`/mb-packet TASK-XXX\` or stop before implementation.
 - If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using tier-appropriate \`.protocols/TASK-XXX/\` state.
 - If running in **Codex**: you can run each \`TASK-XXX\` in a fresh session via \`codex exec\` (see \`/execute\`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
+- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 Claude (fresh session):
-- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
+- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
 - **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\` (start execution only after every FT-* has been decomposed and the generated task records/artifacts have passed the pre-execution verify gate).
@@ -1146,14 +1146,14 @@ status: active
 11) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
    - \`/verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\`
    - start \`/execute\` only after all targeted FT-* have been decomposed and the pre-execution \`/verify\` gate has passed
-   - if \`task.runtime_context.packet_required === true\`, validate \`packet_ref\` before \`/execute\`; do not infer packet requirement from tier
+   - for T2/T3, validate canonical \`.memory-bank/packets/TASK-XXX.packet.json\` before \`/execute\`; for T0/T1, validate a packet only when \`task.runtime_context.packet_required === true\`
 12) After each wave: \`/review\` (fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) \`/autonomous\`
 2) command runs \`/write-prd -> /spec-auto --init -> /prd -> /spec-design --all -> /spec-auto --all -> /prd-to-tasks --all\`, then schedules ready TASKs
 3) run \`/mb-doctor --strict\` before scheduler execution; T2/T3 tasks without SDD spec links are blockers
-4) before \`/execute\`, scheduler checks required packets only when \`task.runtime_context.packet_required === true\`; missing/blocked/stale/invalid packets stop execution and require \`/mb-packet TASK-XXX\` or blocker resolution
+4) before \`/execute\`, scheduler checks required packets for every T2/T3 task and explicit T0/T1 packet requirement; missing/blocked/stale/invalid packets stop execution and require \`/mb-packet TASK-XXX\` or blocker resolution
 5) each TASK runs in **fresh CLI sessions**
 6) after each \`/mb-sync\`, run \`/mb-doctor --strict\` before promoting dependents
 7) after each wave: \`/review\`
@@ -1168,7 +1168,7 @@ If JSON task records already exist and review gate already passed, use:
 Codex (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \\
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before implementation; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \\
   'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL.'
@@ -1177,7 +1177,7 @@ codex exec --ephemeral --full-auto -m gpt-5.2-high \\
 Claude (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before implementation; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
   'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'

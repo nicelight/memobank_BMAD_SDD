@@ -43,7 +43,8 @@ Manual mode:
 1) Прочитай минимум:
 - `.memory-bank/tasks/index.json`
 - `.memory-bank/tasks/TASK-<ID>.task.json`
-- `.memory-bank/packets/TASK-<ID>.packet.json` only when
+- `.memory-bank/packets/TASK-<ID>.packet.json` when required by tier/policy:
+  all `T2` / `T3`, and `T0` / `T1` only when
   `runtime_context.packet_required` is true
 - `.protocols/TASK-<ID>/context.md`
 - `.protocols/TASK-<ID>/plan.md`
@@ -59,14 +60,17 @@ If the task record is missing, stop with an explicit error.
 If the task record has no `tier`, stop with an explicit error. Authoritative verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 Task records and linked authoritative specs remain source of truth. Execution
 Packets are derivative runtime context and must not override task/spec evidence.
-If `runtime_context.packet_required` is true and the packet is missing, stale,
-blocked, or has a `source_task_hash` that does not match the current task
-record hash, do not verify as if context were complete. Return
+Packet requirement is `T2` / `T3` by tier, or `T0` / `T1` only when
+`runtime_context.packet_required` is true. If a required packet is missing,
+malformed, stale, blocked, or has a missing/malformed/mismatched
+`source_task_hash`, do not verify as if context were complete. Return
 `VERDICT: NEEDS-CLARIFICATION` or `VERDICT: FAIL` according to active
 verification ownership/mode, with reason `packet required but absent/stale`.
-When `packet_required` is false or absent, `packet_ref` should normally be
-omitted; do not make optional packets part of the verification path unless the
-user explicitly asks for that packet to be inspected.
+For `T2` / `T3`, `runtime_context.packet_required: false` is a policy
+violation, not permission to skip the packet. For `T0` / `T1`, when
+`packet_required` is false or absent, `packet_ref` should normally be omitted;
+do not make advisory packets part of the verification path unless the user
+explicitly asks for that packet to be inspected.
 Authoritative SDD spec links are links in task richer fields or linked feature
 `spec_design_links` that point to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
@@ -101,7 +105,7 @@ Status ownership:
 5. `normative_inputs`, если они явно перечислены и релевантны проверке
 6. classic acceptance criteria из feature doc
 7. RTM / REQ IDs
-8. required packet verification/scope checks when `packet_required` is true
+8. required packet verification/scope checks when required by tier/policy
 9. tests, logs, screenshots и иные evidence artifacts в `.tasks/TASK-<ID>/`
 
 Важно:

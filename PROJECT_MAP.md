@@ -111,7 +111,10 @@ For updates that change the JSON-only task registry or indexed task record model
 Execution Packets are derivative runtime artifacts under
 `.memory-bank/packets/TASK-*.packet.json`. They summarize task/spec context for
 one run but never replace JSON task records or linked SDD specs as source of
-truth.
+truth. T2/T3 tasks require a canonical
+`.memory-bank/packets/TASK-*.packet.json` before execute/scheduler
+implementation. T0/T1 tasks require packets only when
+`runtime_context.packet_required: true`.
 
 Primary source files for this behavior:
 

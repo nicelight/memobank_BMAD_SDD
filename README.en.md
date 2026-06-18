@@ -12,7 +12,7 @@ As a project grows, chat history becomes a weak source of truth. Decisions drift
 
 - `.memory-bank/` stores product knowledge, requirements, features, architecture, and task records;
 - `.memory-bank/contracts/boundary-map.md` stores lightweight responsibility and scope boundary notes used through existing task fields and `runtime_context`;
-- `.memory-bank/packets/` stores optional derivative Execution Packets for task runtime context;
+- `.memory-bank/packets/` stores derivative Execution Packets for task runtime context; T2/T3 require them, T0/T1 use them only when explicitly required;
 - `.protocols/` stores execution and verification traces for specific `TASK-*` work;
 - `.tasks/` stores runtime evidence, reports, and handoff material;
 - the JSON task queue keeps execution order and tier policy explicit.
@@ -35,7 +35,7 @@ idea / rough draft
   -> ...
   -> /prd-to-tasks FT-N
   -> /verify generated JSON task records/artifacts
-  -> /mb-packet TASK-001 when runtime_context.packet_required is true
+  -> /mb-packet TASK-001 when required (all T2/T3; explicit T0/T1)
   -> /execute first indexed TASK
   -> /verify same TASK
   -> /red-verify same TASK for T2/T3 work
@@ -52,8 +52,8 @@ In plain terms:
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
 - `/spec-design` is mandatory after `/prd`, but adaptive in depth. Small independent T0/T1 projects get a minimal backbone with irrelevant areas marked `not_applicable`; shared/T2/T3 projects get normal architecture backbone decisions. It may also create one first foundation task when a minimum executable baseline is needed. If key decisions are unresolved, it records blockers and stops downstream.
 - `/spec-improve FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
-- `/prd-to-tasks FT-001` creates feature JSON tasks; `/spec-design` may already have created one first foundation task when a minimum executable baseline was needed. After the full `FT-*` set is decomposed, run `/verify` on the generated JSON task records/artifacts, then run `/mb-packet` for tasks that explicitly require it before `/execute`.
-- `/mb-packet TASK-001` builds or refreshes a compact derivative Execution Packet when a task explicitly sets `runtime_context.packet_required: true`; task records and linked specs remain authoritative.
+- `/prd-to-tasks FT-001` creates feature JSON tasks; `/spec-design` may already have created one first foundation task when a minimum executable baseline was needed. After the full `FT-*` set is decomposed, run `/verify` on the generated JSON task records/artifacts, then run `/mb-packet` for all T2/T3 tasks and explicit T0/T1 packet requirements before `/execute`.
+- `/mb-packet TASK-001` builds or refreshes a compact derivative Execution Packet; T2/T3 require one, while T0/T1 require one only when `runtime_context.packet_required: true`. Task records and linked specs remain authoritative.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
 - `/red-verify` adds the required adversarial semantic pass for T2/T3 work.
 
@@ -63,8 +63,8 @@ Automation is available, but it works best after the manual loop is familiar.
 
 - `/autopilot` runs an existing JSON task queue as a scheduler/executor.
 - `/autonomous` runs the full unattended flow from PRD/Product Brief/delta to terminal state.
-Both respect `runtime_context.packet_required`; they do not require packets from
-tier alone.
+Both require usable packets for T2/T3 tasks and for T0/T1 tasks only when
+`runtime_context.packet_required: true`.
 
 ## Killer features
 
@@ -93,7 +93,7 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/prd-to-tasks FT-002` -> ... -> `/prd-to-tasks FT-N` -> `/verify generated JSON task records/artifacts` -> `/mb-packet TASK when required` -> `/execute first indexed TASK`.
+or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/prd-to-tasks FT-002` -> ... -> `/prd-to-tasks FT-N` -> `/verify generated JSON task records/artifacts` -> `/mb-packet TASK when required (all T2/T3; explicit T0/T1)` -> `/execute first indexed TASK`.
 
 `/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. A `/spec-init` PASS means the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. After the full `FT-*` set is broken down and the generated JSON task records/artifacts are reviewed, the project is ready for `/execute`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
 

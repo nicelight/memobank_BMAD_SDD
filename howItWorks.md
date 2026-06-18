@@ -13,7 +13,7 @@
 ```text
 .memory-bank/  durable project knowledge и generated command specs
 .memory-bank/contracts/boundary-map.md lightweight responsibility/scope boundary notes
-.memory-bank/packets/ optional derivative Execution Packets for task runtime context
+.memory-bank/packets/ derivative Execution Packets for task runtime context (required for T2/T3; explicit-only for T0/T1)
 .protocols/   resumable execution и verification protocols
 .tasks/       runtime evidence, reports и handoff material
 ```
@@ -215,7 +215,7 @@ idea / rough draft
   -> /spec-design
   -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
-  -> /mb-packet TASK-001 when runtime_context.packet_required is true
+  -> /mb-packet TASK-001 when required (all T2/T3; explicit T0/T1)
   -> /execute TASK-001
   -> /verify TASK-001
   -> /red-verify TASK-001 для T2/T3
@@ -264,9 +264,9 @@ Interactive mode для одной задачи:
 ```
 
 В manual mode T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence. Для T2/T3 `/verify PASS` не является финальным done: перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`; для T3 сохраняются human/recovery markers.
-`/mb-packet` нужен только если task record явно содержит
-`runtime_context.packet_required: true`; packet является производным runtime
-контекстом и не заменяет task/specs.
+`/mb-packet` нужен для всех T2/T3 задач и для T0/T1 только если task record
+явно содержит `runtime_context.packet_required: true`; packet является
+производным runtime контекстом и не заменяет task/specs.
 
 ### Scheduler mode: `/autopilot`
 
@@ -279,9 +279,8 @@ Preconditions:
 - последний `/review` вернул `APPROVE`;
 - `node scripts/mb-doctor.mjs --strict` проходит;
 - ни одна task-linked feature не имеет pending или blocked clarification.
-- required packets are usable when a task explicitly sets
-  `runtime_context.packet_required: true`; `/autopilot` does not infer packet
-  requirement from tier alone.
+- required packets are usable for every T2/T3 task and for T0/T1 tasks that
+  explicitly set `runtime_context.packet_required: true`.
 
 `/autopilot` не запускает `/write-prd`, `/prd`, `/prd-to-tasks` и не создает task queue.
 
@@ -369,7 +368,6 @@ evidence:
   "success_outcome": "Observable result that proves real success.",
   "anti_goals": [],
   "runtime_context": {
-    "packet_required": false,
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -377,11 +375,13 @@ evidence:
 }
 ```
 
-`packet_required` defaults to false/absent. T2/T3 tasks may use packets when
-linked specs/context are too large, ambiguous, or needed for safe executable
-context, but only explicit `runtime_context.packet_required: true` makes
-`/mb-packet` a mandatory pre-execute gate.
-When `packet_required` is false or absent, omit `packet_ref`.
+For T0/T1, `packet_required` defaults to false/absent and `packet_ref` without
+`packet_required: true` is advisory only. For T2/T3, `/prd-to-tasks` stores
+`runtime_context.packet_required: true` and canonical
+`packet_ref: ".memory-bank/packets/TASK-<ID>.packet.json"`; downstream gates
+also require the packet for older T2/T3 records that omit the flag. A T2/T3
+record with `packet_required: false` is a policy violation, not permission to
+skip the packet.
 
 Boundary notes live in `.memory-bank/contracts/boundary-map.md` as a normal
 contract/spec document. Tasks reference it through existing source/normative/
@@ -406,9 +406,9 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 - `/verify` не закрывает, не fail-ит и не promote-ит dependents;
 - `/red-verify` не закрывает, не fail-ит и не promote-ит dependents;
 - scheduler записывает closure/failure/blocking decision, final status и evidence links в authoritative `.task.json` до `/mb-sync`;
-- before `/execute`, scheduler ensures a usable packet only when
-  `runtime_context.packet_required: true`; missing/stale/blocked required
-  packets are `HALT_QUALITY_GATES`;
+- before `/execute`, scheduler ensures a usable packet for every T2/T3 task and
+  explicit T0/T1 packet requirement; missing/stale/blocked/malformed/hash-
+  mismatched required packets are `HALT_QUALITY_GATES`;
 - `/mb-sync` только synchronizes/reconciles already-written task state и не принимает closure/promotion decisions сам;
 - после `/mb-sync` и strict doctor scheduler выполняет отдельный promotion/dependent blocking pass.
 

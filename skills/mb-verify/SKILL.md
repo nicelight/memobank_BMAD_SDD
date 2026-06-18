@@ -62,7 +62,8 @@ If present, also use:
 - `anti_goals`
 - `runtime_context`
 - task record references to source artifacts
-- Execution Packet from `runtime_context.packet_ref`
+- Execution Packet from canonical `.memory-bank/packets/<TASK_ID>.packet.json`
+  when required by tier/policy
 
 Authoritative SDD spec links are links in task richer fields or linked feature
 `spec_design_links` that point to `.memory-bank/spec-index.md`,
@@ -74,9 +75,12 @@ Authoritative SDD spec links are links in task richer fields or linked feature
 - Implementation is done and gates were run (or failures recorded).
 - `.memory-bank/tasks/index.json` lists the target task record, and the indexed `.task.json` validates the requested `TASK_ID`.
 - Authoritative verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
-- If `runtime_context.packet_required` is true, the packet must exist, be
-  usable (`ready` or `ready_with_gaps`), and have a `source_task_hash` matching
-  the current task record before verification can pass.
+- For `T2` / `T3`, the packet must exist, be usable (`ready` or
+  `ready_with_gaps`), and have a `source_task_hash` matching the current task
+  record before verification can pass, regardless of whether older task records
+  omit `runtime_context.packet_required`.
+- For `T0` / `T1`, packets are required only when
+  `runtime_context.packet_required` is true.
 
 ## Required outputs
 - `T0` / `T1`: verification may be recorded in compact `.protocols/<TASK_ID>/run.md`.
@@ -107,7 +111,8 @@ Read:
 - `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and all linked
   authoritative SDD specs when the task record or linked feature contains SDD
   spec links, for any tier
-- `.memory-bank/packets/<TASK_ID>.packet.json` only when
+- `.memory-bank/packets/<TASK_ID>.packet.json` when required by tier/policy:
+  all `T2` / `T3`, and `T0` / `T1` only when
   `runtime_context.packet_required` is true
 
 Before verifying, validate the authoritative task record:
@@ -115,8 +120,9 @@ Before verifying, validate the authoritative task record:
 - the indexed record `id` matches `TASK_ID`
 - required fields for verification are present (`status`, `feature`, `reqs`, `depends_on`, `gates`, `verify`)
 - `tier` is present; if missing, stop
-- required packet is present and not stale/blocked/hash-mismatched; if missing
-  or unusable, return `VERDICT: NEEDS-CLARIFICATION` or `VERDICT: FAIL`
+- required packet is present and not malformed/stale/blocked/hash-mismatched;
+  if missing or unusable, return `VERDICT: NEEDS-CLARIFICATION` or
+  `VERDICT: FAIL`
   according to the active workflow ownership
 - for `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-improve` or `/spec-auto`
 

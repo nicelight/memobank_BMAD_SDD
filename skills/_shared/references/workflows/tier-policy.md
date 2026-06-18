@@ -49,7 +49,7 @@ Tier summary:
 
 ## Execution Packets
 
-Execution Packets are optional derivative runtime artifacts:
+Execution Packets are derivative runtime artifacts:
 
 ```text
 .memory-bank/packets/TASK-XXX.packet.json
@@ -60,14 +60,22 @@ verification checks, and stop conditions for one run. They never replace the
 indexed task record, linked SDD specs, or this tier policy as source of truth.
 
 Rules:
-- `T0` / `T1` tasks usually do not need packets.
-- `T2` / `T3` tasks may use packets when linked specs/context are too large,
-  ambiguous, or needed for safe executable context.
-- A packet is mandatory only when the indexed task record sets
-  `runtime_context.packet_required: true`.
-- Do not infer `packet_required` from tier alone.
-- If `packet_required` is true, `/execute`, `/autopilot`, and `/autonomous`
-  must block on missing, stale, blocked, or hash-mismatched packets.
+- `T0` / `T1` tasks require packets only when the indexed task record sets
+  `runtime_context.packet_required: true`. If a `T0` / `T1` task has
+  `packet_ref` without `packet_required: true`, the packet is advisory only.
+- `T2` / `T3` tasks require a usable packet before implementation regardless
+  of whether older task records omit `runtime_context.packet_required`.
+- `/prd-to-tasks` must set `runtime_context.packet_required: true` and
+  `runtime_context.packet_ref: ".memory-bank/packets/TASK-<ID>.packet.json"`
+  for generated `T2` / `T3` task records. If a task is downgraded to `T0` /
+  `T1`, do not infer or add packet requirement from the old planned tier.
+- If a `T2` / `T3` task record has `runtime_context.packet_required: false`,
+  treat it as a policy violation, not permission to skip the packet.
+- Required packet gates use canonical
+  `.memory-bank/packets/TASK-<ID>.packet.json` when `packet_ref` is absent.
+- For required packet gates, `/execute`, `/verify`, `/red-verify`,
+  `/autopilot`, and `/autonomous` must block on missing, malformed, stale,
+  blocked, or hash-mismatched packets.
 - Packet statuses are local packet statuses only:
   `ready|ready_with_gaps|blocked|stale`.
 - Packet statuses are not task lifecycle statuses and must not be added to the

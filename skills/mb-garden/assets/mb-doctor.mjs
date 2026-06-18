@@ -29,6 +29,7 @@ const LINK_REQUIRED_TIERS = new Set(['T1', 'T2', 'T3']);
 const TERMINAL_STATUSES = new Set(['done', 'failed']);
 const FULL_PROTOCOL_TIERS = new Set(['T2', 'T3']);
 const SDD_SPEC_REQUIRED_TIERS = new Set(['T2', 'T3']);
+const PACKET_REQUIRED_TIERS = new Set(['T2', 'T3']);
 const VALID_PACKET_STATUSES = new Set(['ready', 'ready_with_gaps', 'blocked', 'stale']);
 const BLOCKING_PACKET_STATUSES = new Set(['blocked', 'stale']);
 const USABLE_PACKET_STATUSES = new Set(['ready', 'ready_with_gaps']);
@@ -847,27 +848,43 @@ function checkSddSpecLinkage(record) {
 
 function checkRequiredExecutionPacket(record) {
   const { id, rel, task } = record;
-  const runtimeContext = task.runtime_context;
-  if (!runtimeContext || typeof runtimeContext !== 'object' || Array.isArray(runtimeContext)) return;
-  if (runtimeContext.packet_required !== true) return;
+  const runtimeContext = isPlainObject(task.runtime_context) ? task.runtime_context : null;
+  const tierRequiresPacket = PACKET_REQUIRED_TIERS.has(task.tier);
+  const explicitPacketRequired = runtimeContext?.packet_required === true;
+  if (!tierRequiresPacket && !explicitPacketRequired) return;
 
   const severity = options.strict ? 'error' : 'warning';
-  if (typeof runtimeContext.packet_ref !== 'string' || !runtimeContext.packet_ref.trim()) {
+  const canonicalRef = canonicalPacketRef(id);
+
+  if (tierRequiresPacket && !explicitPacketRequired) {
+    addFinding(severity, 'TASK_PACKET_REQUIRED_POLICY', `${rel}: ${task.tier} task must require a canonical execution packet.`, {
+      path: rel,
+      task_id: id,
+      details: {
+        tier: task.tier,
+        packet_required: runtimeContext?.packet_required,
+        expected_packet_ref: canonicalRef,
+      },
+      suggested_fix: `Set runtime_context.packet_required to true, set runtime_context.packet_ref to ${canonicalRef}, and run /mb-packet ${id}.`,
+    });
+  }
+
+  const hasPacketRef = typeof runtimeContext?.packet_ref === 'string' && runtimeContext.packet_ref.trim();
+  if (!hasPacketRef) {
     addFinding(severity, 'TASK_PACKET_REF_MISSING', `${rel}: required execution packet has no packet_ref.`, {
       path: rel,
       task_id: id,
-      suggested_fix: `Run /mb-packet ${id} or set runtime_context.packet_ref to .memory-bank/packets/${id}.packet.json.`,
+      suggested_fix: `Set runtime_context.packet_ref to ${canonicalRef} and run /mb-packet ${id}.`,
     });
-    return;
   }
 
-  const packetRef = normalizePacketRef(runtimeContext.packet_ref);
-  if (!isSafePacketRef(packetRef)) {
+  const packetRef = hasPacketRef ? normalizePacketRef(runtimeContext.packet_ref) : canonicalRef;
+  if (!isSafePacketRef(packetRef) || packetRef !== canonicalRef) {
     addFinding(severity, 'TASK_PACKET_REF_INVALID', `${rel}: required execution packet_ref is invalid.`, {
       path: rel,
       task_id: id,
-      details: { packet_ref: runtimeContext.packet_ref },
-      suggested_fix: `Use .memory-bank/packets/${id}.packet.json and rerun /mb-packet ${id}.`,
+      details: { packet_ref: runtimeContext?.packet_ref, expected_packet_ref: canonicalRef },
+      suggested_fix: `Use ${canonicalRef} and rerun /mb-packet ${id}.`,
     });
     return;
   }
@@ -1746,6 +1763,10 @@ function isStringArray(value) {
 
 function normalizePacketRef(value) {
   return normalizeRel(String(value ?? '').trim()).replace(/^\.\//, '');
+}
+
+function canonicalPacketRef(taskId) {
+  return `.memory-bank/packets/${taskId}.packet.json`;
 }
 
 function isSafePacketRef(value) {

@@ -70,7 +70,13 @@ Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonom
 - `T2` / `T3` tasks have relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
 - `guides/*` may count as linked SDD specs when the guide is the normative source for frontend component behavior or operating procedure; guides alone do not replace required T2/T3 architecture/contract/domain/state/testing specs when those concerns are in scope.
 - Default mode reports missing T2/T3 SDD spec links as warnings; `--strict` reports readiness errors.
-- When a task explicitly sets `runtime_context.packet_required: true`, packet validation checks:
+- T2/T3 tasks require canonical Execution Packets even when older task records
+  omit `runtime_context.packet_required`; absent or false `packet_required` on
+  T2/T3 is reported as `TASK_PACKET_REQUIRED_POLICY`.
+- T0/T1 tasks require packets only when `runtime_context.packet_required: true`;
+  `packet_ref` without that flag is advisory only.
+- For required packets, packet validation checks:
+  - `TASK_PACKET_REQUIRED_POLICY` when a T2/T3 task does not explicitly store `runtime_context.packet_required: true`.
   - `TASK_PACKET_REF_MISSING` when `runtime_context.packet_ref` is absent or empty.
   - `TASK_PACKET_REF_INVALID` when `packet_ref` is not the safe canonical `.memory-bank/packets/<TASK_ID>.packet.json` path.
   - `TASK_PACKET_MISSING` when the required packet file does not exist.
@@ -116,6 +122,7 @@ Errors block autonomous/autopilot progression:
 - `TASK_FEATURE_FILE_MISSING` in `--strict`
 - `TASK_SDD_SPEC_LINK_MISSING` in `--strict`
 - `TASK_SDD_SPEC_GUIDE_ONLY` in `--strict`
+- `TASK_PACKET_REQUIRED_POLICY` in `--strict`
 - `TASK_PACKET_REF_MISSING` in `--strict`
 - `TASK_PACKET_REF_INVALID` in `--strict`
 - `TASK_PACKET_MISSING` in `--strict`
@@ -153,6 +160,7 @@ Warnings identify non-blocking quality risks in default mode:
 - `TASK_FEATURE_FILE_MISSING`
 - `TASK_SDD_SPEC_LINK_MISSING`
 - `TASK_SDD_SPEC_GUIDE_ONLY`
+- `TASK_PACKET_REQUIRED_POLICY`
 - `TASK_PACKET_REF_MISSING`
 - `TASK_PACKET_REF_INVALID`
 - `TASK_PACKET_MISSING`

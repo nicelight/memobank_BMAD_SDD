@@ -63,9 +63,15 @@ Use richer task fields when present:
 - `verification_targets`
 - `runtime_context`
 
-If `runtime_context.packet_required` is true, required packet source:
-- `runtime_context.packet_ref`, normally
-  `.memory-bank/packets/TASK-<ID>.packet.json`
+Packet requirement:
+- `T0` / `T1`: packet is required only when
+  `runtime_context.packet_required === true`; a `packet_ref` without that flag
+  is advisory only
+- `T2` / `T3`: packet is required regardless of whether older task records
+  omit `runtime_context.packet_required`
+- required packet source is canonical
+  `.memory-bank/packets/TASK-<ID>.packet.json`; use this path when
+  `packet_ref` is absent
 
 Boundary notes are not a separate artifact flow. If the task links
 `.memory-bank/contracts/boundary-map.md` or other boundary/contract specs
@@ -94,12 +100,16 @@ Stop with an explicit error if:
 - `tier` is not `T0`, `T1`, `T2`, or `T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or has status other than `done`
-- `runtime_context.packet_required` is true and `packet_ref` is absent
-- `runtime_context.packet_required` is true and the packet is missing
-- `runtime_context.packet_required` is true and packet `status` is `stale` or
-  `blocked`
-- `runtime_context.packet_required` is true and packet `source_task_hash` does
-  not match the current task record hash
+- `tier` is `T2` or `T3` and `runtime_context.packet_required` is absent or
+  false; report it as a policy violation and route to task-record fix +
+  `/mb-packet`
+- required packet `packet_ref`, when present, is not the canonical
+  `.memory-bank/packets/TASK-<ID>.packet.json`
+- required packet is missing
+- required packet is malformed
+- required packet `status` is `stale` or `blocked`
+- required packet `source_task_hash` is missing, malformed, or does not match
+  the current task record hash
 - `tier` is `T2` or `T3` and task/feature/spec-backbone/spec-index provide no concrete linked SDD spec in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 - the task record, implementation plan, or feature doc contradicts linked SDD specs or a non-blocked global backbone decision
 
@@ -107,11 +117,12 @@ Do not block `T0` / `T1` only because SDD spec links are absent.
 Authoritative routing is only `task.tier`. Do not use legacy `risk` /
 `risk.level`.
 
-If `runtime_context.packet_required` is true and the packet is missing, stale,
-or blocked, stop before implementation and route to `/mb-packet TASK-<ID>` or
-the blocker owner. `ready` and `ready_with_gaps` are usable packet statuses;
-record gaps before editing. If a packet exists but is not required, read it when
-useful and treat it as advisory derivative context.
+If a required packet is missing, stale, blocked, malformed, or
+hash-mismatched, stop before implementation and route to `/mb-packet
+TASK-<ID>` or the blocker owner. `ready` and `ready_with_gaps` are usable
+packet statuses; record gaps before editing. If a packet exists for `T0` /
+`T1` but is not required, read it when useful and treat it as advisory
+derivative context.
 
 ## 2) Protocol By Tier
 Create `.tasks/TASK-<ID>/` for runtime evidence and reports.

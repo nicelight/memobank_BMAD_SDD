@@ -385,7 +385,7 @@ jobs:
 
             write_packet_required_task() {
               local packet_ref="$1"
-              node -e 'const fs = require("node:fs"); const packetRef = process.argv[1]; fs.rmSync(".protocols/TASK-997", { recursive: true, force: true }); fs.rmSync(".tasks/TASK-997", { recursive: true, force: true }); const task = { id: "TASK-997", title: "Packet smoke task", status: "ready", wave: "W1", feature: "FOUNDATION", reqs: [], depends_on: [], touched_files: [], tier: "T0", gates: [], verify: [], docs: [], evidence_required: [], purpose: "Validate packet-required runtime context.", success_outcome: "Validator distinguishes missing, invalid, blocked, and ready packets.", anti_goals: ["Do not infer packet requirement from tier."], runtime_context: { packet_required: true, packet_ref: packetRef, allowed_write_scope: ["skills/_shared/scripts/init-mb.js"], forbidden_scope: ["README.md"], stop_conditions: ["packet is stale"] }, source_artifacts: [], normative_inputs: [], constraints: [], invariants: [], verification_targets: [] }; fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [{ id: task.id, file: "TASK-997.task.json" }] }, null, 2)}\n`); fs.writeFileSync(".memory-bank/tasks/TASK-997.task.json", `${JSON.stringify(task, null, 2)}\n`);' "$packet_ref"
+              node -e 'const fs = require("node:fs"); const packetRef = process.argv[1]; fs.rmSync(".protocols/TASK-997", { recursive: true, force: true }); fs.rmSync(".tasks/TASK-997", { recursive: true, force: true }); const task = { id: "TASK-997", title: "Packet smoke task", status: "ready", wave: "W1", feature: "FOUNDATION", reqs: [], depends_on: [], touched_files: [], tier: "T0", gates: [], verify: [], docs: [], evidence_required: [], purpose: "Validate packet-required runtime context.", success_outcome: "Validator distinguishes missing, invalid, blocked, and ready packets.", anti_goals: ["Do not let packet context override task/spec truth."], runtime_context: { packet_required: true, packet_ref: packetRef, allowed_write_scope: ["skills/_shared/scripts/init-mb.js"], forbidden_scope: ["README.md"], stop_conditions: ["packet is stale"] }, source_artifacts: [], normative_inputs: [], constraints: [], invariants: [], verification_targets: [] }; fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [{ id: task.id, file: "TASK-997.task.json" }] }, null, 2)}\n`); fs.writeFileSync(".memory-bank/tasks/TASK-997.task.json", `${JSON.stringify(task, null, 2)}\n`);' "$packet_ref"
             }
 
             packet_smoke_task_hash() {
@@ -395,7 +395,7 @@ jobs:
             write_packet_smoke_packet() {
               local status="$1"
               local source_hash="${2:-}"
-              node -e 'const fs = require("node:fs"); const [status, sourceHash] = process.argv.slice(1); const packet = { schema_version: 1, packet_id: "PACKET-TASK-997-R1", task_id: "TASK-997", created_at: "2026-05-21T00:00:00.000Z", status, tier: "T0", purpose: "Validate packet-required runtime context.", success_outcome: "Validator distinguishes missing, invalid, blocked, and ready packets.", anti_goals: ["Do not infer packet requirement from tier."], source_refs: { task: ".memory-bank/tasks/TASK-997.task.json", feature: "FOUNDATION", specs: [], guides: [], protocols: [] }, scope: { allowed_write_scope: ["skills/_shared/scripts/init-mb.js"], forbidden_scope: ["README.md"] }, verification: { commands: [], success_checks: [], evidence_required: [] }, stop_conditions: ["packet is stale"], required_handoff: ["changed_files", "commands_run", "evidence", "scope_compliance", "blockers_or_none"] }; if (sourceHash) packet.source_task_hash = sourceHash; fs.writeFileSync(".memory-bank/packets/TASK-997.packet.json", `${JSON.stringify(packet, null, 2)}\n`);' "$status" "$source_hash"
+              node -e 'const fs = require("node:fs"); const [status, sourceHash] = process.argv.slice(1); const packet = { schema_version: 1, packet_id: "PACKET-TASK-997-R1", task_id: "TASK-997", created_at: "2026-05-21T00:00:00.000Z", status, tier: "T0", purpose: "Validate packet-required runtime context.", success_outcome: "Validator distinguishes missing, invalid, blocked, and ready packets.", anti_goals: ["Do not let packet context override task/spec truth."], source_refs: { task: ".memory-bank/tasks/TASK-997.task.json", feature: "FOUNDATION", specs: [], guides: [], protocols: [] }, scope: { allowed_write_scope: ["skills/_shared/scripts/init-mb.js"], forbidden_scope: ["README.md"] }, verification: { commands: [], success_checks: [], evidence_required: [] }, stop_conditions: ["packet is stale"], required_handoff: ["changed_files", "commands_run", "evidence", "scope_compliance", "blockers_or_none"] }; if (sourceHash) packet.source_task_hash = sourceHash; fs.writeFileSync(".memory-bank/packets/TASK-997.packet.json", `${JSON.stringify(packet, null, 2)}\n`);' "$status" "$source_hash"
             }
 
             write_packet_required_task '.memory-bank/packets/TASK-997.packet.json'
@@ -462,6 +462,60 @@ jobs:
             fi
 
             node -e 'const fs = require("node:fs"); fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [] }, null, 2)}\n`); fs.rmSync(".memory-bank/tasks/TASK-997.task.json", { force: true }); fs.rmSync(".memory-bank/packets/TASK-997.packet.json", { force: true });'
+
+            write_packet_policy_task() {
+              local task_id="$1"
+              local tier="$2"
+              local runtime_context_json="$3"
+              node -e 'const fs = require("node:fs"); const [id, tier, runtimeJson] = process.argv.slice(1); fs.rmSync(`.protocols/${id}`, { recursive: true, force: true }); fs.rmSync(`.tasks/${id}`, { recursive: true, force: true }); fs.rmSync(`.memory-bank/packets/${id}.packet.json`, { force: true }); const task = { id, title: "Packet policy smoke task", status: "ready", wave: "W1", feature: "FOUNDATION", reqs: [], depends_on: [], touched_files: [], tier, gates: [], verify: [], docs: [], evidence_required: [], purpose: "Validate tier packet policy.", success_outcome: "Doctor distinguishes mandatory T2/T3 packets from optional T0/T1 packets.", anti_goals: ["Do not let packet context override task/spec truth."], source_artifacts: [], normative_inputs: [], constraints: [], invariants: [], verification_targets: [] }; const runtimeContext = JSON.parse(runtimeJson); if (runtimeContext !== null) task.runtime_context = runtimeContext; fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [{ id: task.id, file: `${task.id}.task.json` }] }, null, 2)}\n`); fs.writeFileSync(`.memory-bank/tasks/${task.id}.task.json`, `${JSON.stringify(task, null, 2)}\n`);' "$task_id" "$tier" "$runtime_context_json"
+            }
+
+            packet_policy_task_hash() {
+              local task_id="$1"
+              node -e 'const fs = require("node:fs"); const { createHash } = require("node:crypto"); const id = process.argv[1]; const bytes = fs.readFileSync(`.memory-bank/tasks/${id}.task.json`); process.stdout.write(`sha256:${createHash("sha256").update(bytes).digest("hex")}`);' "$task_id"
+            }
+
+            write_packet_policy_packet() {
+              local task_id="$1"
+              local tier="$2"
+              local status="$3"
+              local source_hash="$4"
+              node -e 'const fs = require("node:fs"); const [id, tier, status, sourceHash] = process.argv.slice(1); const packet = { schema_version: 1, packet_id: `PACKET-${id}-R1`, task_id: id, created_at: "2026-05-21T00:00:00.000Z", source_task_hash: sourceHash, status, tier, purpose: "Validate tier packet policy.", success_outcome: "Doctor distinguishes mandatory T2/T3 packets from optional T0/T1 packets.", anti_goals: ["Do not let packet context override task/spec truth."], source_refs: { task: `.memory-bank/tasks/${id}.task.json`, feature: "FOUNDATION", specs: [], guides: [], protocols: [] }, scope: { allowed_write_scope: [], forbidden_scope: [] }, verification: { commands: [], success_checks: [], evidence_required: [] }, stop_conditions: [], required_handoff: ["changed_files", "commands_run", "evidence", "scope_compliance", "blockers_or_none"] }; fs.writeFileSync(`.memory-bank/packets/${id}.packet.json`, `${JSON.stringify(packet, null, 2)}\n`);' "$task_id" "$tier" "$status" "$source_hash"
+            }
+
+            write_packet_policy_task TASK-996 T2 'null'
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/t2-no-runtime-packet-doctor.json"
+            grep -q 'TASK_PACKET_REQUIRED_POLICY' "$TMP_DIR/t2-no-runtime-packet-doctor.json"
+            if node scripts/mb-doctor.mjs --strict --json >"$TMP_DIR/t2-no-runtime-packet-doctor-strict.json" 2>&1; then
+              echo "Expected mb-doctor strict failure for T2 missing packet_required"
+              exit 1
+            fi
+            grep -q 'TASK_PACKET_REQUIRED_POLICY' "$TMP_DIR/t2-no-runtime-packet-doctor-strict.json"
+
+            write_packet_policy_task TASK-996 T2 '{"packet_required":false}'
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/t2-false-packet-doctor.json"
+            grep -q 'TASK_PACKET_REQUIRED_POLICY' "$TMP_DIR/t2-false-packet-doctor.json"
+
+            write_packet_policy_task TASK-996 T2 '{"packet_required":true,"packet_ref":".memory-bank/packets/TASK-996.packet.json"}'
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/t2-missing-packet-doctor.json"
+            grep -q 'TASK_PACKET_MISSING' "$TMP_DIR/t2-missing-packet-doctor.json"
+
+            current_hash="$(packet_policy_task_hash TASK-996)"
+            write_packet_policy_packet TASK-996 T2 ready "$current_hash"
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/t2-ready-packet-doctor.json"
+            if grep -q 'TASK_PACKET_' "$TMP_DIR/t2-ready-packet-doctor.json"; then
+              echo "Expected T2 ready packet to produce no packet findings"
+              exit 1
+            fi
+
+            write_packet_policy_task TASK-995 T1 'null'
+            node scripts/mb-doctor.mjs --json >"$TMP_DIR/t1-no-packet-doctor.json"
+            if grep -q 'TASK_PACKET_' "$TMP_DIR/t1-no-packet-doctor.json"; then
+              echo "Expected T1 without packet to produce no packet findings"
+              exit 1
+            fi
+
+            node -e 'const fs = require("node:fs"); fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [] }, null, 2)}\n`); for (const id of ["TASK-995", "TASK-996"]) { fs.rmSync(`.memory-bank/tasks/${id}.task.json`, { force: true }); fs.rmSync(`.memory-bank/packets/${id}.packet.json`, { force: true }); }'
 
             write_clarification_feature() {
               local status="$1"

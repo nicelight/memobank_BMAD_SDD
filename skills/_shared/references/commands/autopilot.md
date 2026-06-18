@@ -26,9 +26,13 @@ status: active
 - Every `T2` / `T3` task has relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
 - `.memory-bank/spec-backbone.md` records mandatory `/spec-design` status `complete`, or `minimal` with explicit `not_applicable` areas.
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
-- Do not infer `runtime_context.packet_required` from tier alone. `T2` / `T3`
-  tasks SHOULD use Execution Packets, but packets are mandatory only when the
-  indexed task record sets `runtime_context.packet_required: true`.
+- `T2` / `T3` tasks require usable Execution Packets before implementation,
+  regardless of whether older task records omit `runtime_context.packet_required`.
+- `T2` / `T3` task records with `runtime_context.packet_required: false` are
+  policy violations, not permission to skip packets.
+- `T0` / `T1` tasks require packets only when the indexed task record sets
+  `runtime_context.packet_required: true`; `packet_ref` without that flag is
+  advisory only.
 - Нет unresolved blocking questions в `.protocols/AUTONOMOUS-RUN/status.md` или equivalent run protocol.
 - `/mb-doctor --strict` passes before the run starts.
 
@@ -105,9 +109,13 @@ Manual mode:
 Для каждой выбранной задачи:
 1) перечитай `task.tier` и `runtime_context` из JSON record and route only by
    those authoritative values
-2) before writing `ready -> in_progress`, if `runtime_context.packet_required`
-   is true, ensure a usable packet while the task remains `ready`:
-   - use `runtime_context.packet_ref` when present
+2) before writing `ready -> in_progress`, ensure a usable packet while the task
+   remains `ready` when required by tier/policy (`T2` / `T3`, or `T0` / `T1`
+   with `runtime_context.packet_required: true`):
+   - use canonical `.memory-bank/packets/TASK-<ID>.packet.json` when
+     `runtime_context.packet_ref` is absent
+   - if a `T2` / `T3` task has `packet_required` absent or false, record a
+     policy violation and route to task-record fix + `/mb-packet TASK-<ID>`
    - if missing or stale, run/route `/mb-packet TASK-<ID>` once without
      changing task status
    - usable packet status is `ready` or `ready_with_gaps` with matching
@@ -135,8 +143,8 @@ Manual mode:
    - write every promotion/blocking result to the affected `.task.json` records
 
 Per-task command order is exactly: required packet readiness gate while task is
-still `ready` (`/mb-packet` only when `runtime_context.packet_required` needs
-it) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
+still `ready` (`/mb-packet` for every T2/T3 and explicit T0/T1 packet
+requirement) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
 `/red-verify` if required → scheduler writes final task decision/status/evidence
 to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` +
 `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
@@ -146,8 +154,10 @@ to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` +
 ## Fresh-session packet context
 Every fresh-session worker prompt must include:
 - read `runtime_context` from the indexed JSON task record
-- if `runtime_context.packet_required: true`, read `runtime_context.packet_ref`
+- for `T2` / `T3`, read canonical `.memory-bank/packets/TASK-<ID>.packet.json`
   before implementation/verification
+- for `T0` / `T1`, read `runtime_context.packet_ref` before
+  implementation/verification only when `runtime_context.packet_required: true`
 - respect packet `scope`, `verification`, and `stop_conditions`
 - treat the task record and linked authoritative specs as source of truth; the
   packet is derivative runtime context and must not override them
@@ -157,19 +167,19 @@ Every fresh-session worker prompt must include:
 
 ```bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If task.tier is T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json first; if task.tier is T0/T1, do that only when runtime_context.packet_required=true. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If task.tier is T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json first; if task.tier is T0/T1, do that only when runtime_context.packet_required=true. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ### Claude (fresh session per TASK)
 ```bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and the tier-selected protocol path. If task.tier is T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json first; if task.tier is T0/T1, do that only when runtime_context.packet_required=true. Respect packet scope/verification/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier. Implement only scoped changes. Update compact run.md or full progress.md. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md."
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If runtime_context.packet_required=true, read runtime_context.packet_ref first. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
+  "TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/verify.md, .memory-bank/commands/red-verify.md when task.tier is T2/T3, the indexed JSON task record including runtime_context, .memory-bank/workflows/tier-policy.md, and linked acceptance criteria. If task.tier is T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json first; if task.tier is T0/T1, do that only when runtime_context.packet_required=true. Respect packet verification/scope/stop_conditions. Task/spec are source of truth; packet is derivative. Route only by task.tier: T0/T1 compact run.md; T2/T3 verify + red-verify; T3 exact markers HUMAN_CHECKPOINT: done and ROLLBACK_RECOVERY_NOTE: present. Run mb-doctor --strict before progression."
 ```
 
 ## Terminal states

@@ -52,7 +52,8 @@ Manual mode:
 - richer task fields when present: `source_artifacts`, `normative_inputs`,
   `constraints`, `invariants`, `verification_targets`, `purpose`,
   `success_outcome`, `anti_goals`, `runtime_context`
-- `.memory-bank/packets/<TASK_ID>.packet.json` when
+- `.memory-bank/packets/<TASK_ID>.packet.json` when required by tier/policy:
+  all `T2` / `T3`, and `T0` / `T1` only when
   `runtime_context.packet_required` is true
 
 Authoritative SDD spec links are links to `.memory-bank/spec-index.md`,
@@ -71,17 +72,20 @@ Stop with an explicit handoff error if:
 - `tier` is missing or is not `T0|T1|T2|T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or is not `done`
-- `runtime_context.packet_required` is true and `packet_ref` is absent
-- `runtime_context.packet_required` is true and the packet is missing, stale,
-  blocked, or hash-mismatched against the current task record
+- `tier` is `T2` / `T3` and `runtime_context.packet_required` is absent or false
+- required packet `packet_ref`, when present, is not canonical
+  `.memory-bank/packets/<TASK_ID>.packet.json`
+- required packet is missing, malformed, stale, blocked, or hash-mismatched
+  against the current task record
 - `tier` is `T2` / `T3` and neither task richer fields nor linked feature
   `spec_design_links` include relevant SDD spec links
 
 Do not block `T0` / `T1` only because SDD spec links are absent.
 Route only by `task.tier`. Do not use legacy `risk` / `risk.level`.
-Do not infer packet requirement from tier. Required packets must be usable
-(`ready` or `ready_with_gaps`) before implementation; otherwise route to
-`/mb-packet TASK_ID` or stop with a handoff blocker.
+Packets are required for every `T2` / `T3`; `T0` / `T1` packets remain
+explicit-only. Required packets must be usable (`ready` or `ready_with_gaps`)
+before implementation; otherwise route to `/mb-packet TASK_ID` or stop with a
+handoff blocker.
 
 ## Protocol Routing
 Create `.tasks/<TASK_ID>/` for runtime artifacts.

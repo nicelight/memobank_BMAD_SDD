@@ -57,9 +57,13 @@ Manual mode:
 - For non-trivial tasks, `mb-verify` should usually run first.
 - The indexed task record contains `tier`. Authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid.
 - For `T2` / `T3`, linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`; if absent, stop and route back to `/spec-improve` or `/spec-auto`.
-- If `runtime_context.packet_required` is true, the packet must exist, be
-  usable (`ready` or `ready_with_gaps`), and match the current task record hash;
-  otherwise record a semantic blocker instead of blessing the work.
+- For `T2` / `T3`, the packet must exist, be usable (`ready` or
+  `ready_with_gaps`), and match the current task record hash regardless of
+  whether older task records omit `runtime_context.packet_required`.
+- For `T0` / `T1`, packets are required only when
+  `runtime_context.packet_required` is true.
+- If a required packet is missing, malformed, stale, blocked, or
+  hash-mismatched, record a semantic blocker instead of blessing the work.
 - In scheduler mode, `T2` / `T3` require this pass before scheduler marks `done`.
 - In manual mode, this pass is required for `T2` / `T3` after `mb-verify PASS` and before final closure/`/mb-sync`; `T0` / `T1` usually skip it unless their real scope grew beyond the recorded tier.
 - `T0` / `T1` usually skip it unless scope has grown and the tier is updated first.

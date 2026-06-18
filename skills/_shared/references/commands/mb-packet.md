@@ -141,7 +141,7 @@ Use:
   current raw indexed task record file hash. Refresh the packet before
   execution.
 
-For required T2/T3 packet use, missing linked SDD specs, missing verification
+For T2/T3 required packet use, missing linked SDD specs, missing verification
 basis, or contradictory scope should be `blocked`, not `ready_with_gaps`.
 
 ## 4) Do not do
@@ -168,8 +168,9 @@ Next action:
 - /execute TASK-001 or resolve blocker
 ```
 
-If `runtime_context.packet_required` is true, `ready` or `ready_with_gaps` is
-required before `/execute`. Missing, stale, or blocked required packets are a
-quality gate halt for scheduler runs.
+For `T2` / `T3`, and for `T0` / `T1` tasks with
+`runtime_context.packet_required: true`, `ready` or `ready_with_gaps` is
+required before `/execute`. Missing, stale, blocked, malformed, or
+hash-mismatched required packets are a quality gate halt for scheduler runs.
 
 </process>

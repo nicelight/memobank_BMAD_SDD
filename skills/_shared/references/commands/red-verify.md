@@ -83,8 +83,9 @@ Status ownership:
 1) Не anchor слишком рано на full spec surface
 Сначала прочитай в таком порядке:
 - task intent из `.memory-bank/tasks/TASK-<ID>.task.json` через `.memory-bank/tasks/index.json`
-- packet intent/scope from `.memory-bank/packets/TASK-<ID>.packet.json` only
-  when `runtime_context.packet_required` is true
+- packet intent/scope from `.memory-bank/packets/TASK-<ID>.packet.json` when
+  required by tier/policy: all `T2` / `T3`, and `T0` / `T1` only when
+  `runtime_context.packet_required` is true
 - linked FT/REQ и `.protocols/TASK-<ID>/plan.md`
 - `.protocols/TASK-<ID>/progress.md`
 - `.protocols/TASK-<ID>/verification.md`, если уже есть
@@ -109,9 +110,11 @@ the provenance fields above, feature spec links, or runtime_context evidence.
 Важно:
 - if the task record has no `tier`, stop with an explicit error
 - authoritative red-verification routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used
-- if `runtime_context.packet_required` is true and the packet is missing,
-  stale, blocked, or inconsistent with the current task record, stop with
+- if a packet is required by tier/policy and it is missing, malformed, stale,
+  blocked, or inconsistent with the current task record, stop with
   `semantic-concern` and record the packet blocker
+- for `T2` / `T3`, `runtime_context.packet_required: false` is a policy
+  violation, not permission to skip the packet
 - if `task.tier` is `T2` or `T3` and no linked SDD specs are present in task richer fields, feature `spec_design_links`, or `spec-index.md`, stop with a blocker; semantic verification must not bless serious work against AC alone
 - if the task record, implementation, or verify verdict conflicts with linked SDD specs or the global backbone in `.memory-bank/spec-backbone.md`, stop with `semantic-concern` or `semantic-fail` instead of choosing locally
 - не начинай с предположения, что task record и verify verdict уже доказывают correctness

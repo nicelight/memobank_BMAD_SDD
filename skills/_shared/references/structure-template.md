@@ -68,17 +68,17 @@ After finishing a meaningful unit of work:
 - Scheduler mode: T2/T3 require full protocol state plus `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
 - Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - Manual mode: T0/T1 may close after `/verify PASS` only with explicit closure ownership and completed evidence; T2/T3 must run `/red-verify` before final closure/`/mb-sync`.
-- Packet requirement is explicit only: if `task.runtime_context.packet_required === true`, validate `task.runtime_context.packet_ref` before `/execute`; never infer packet requirement from tier.
+- Packet requirement: T2/T3 require canonical `.memory-bank/packets/TASK-<ID>.packet.json`; T0/T1 require packets only when `task.runtime_context.packet_required === true`.
 - Required packets are derivative runtime artifacts under `.memory-bank/packets/`; if missing, blocked, stale, invalid, or mismatched, run `/mb-packet TASK-XXX` or stop before implementation.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 Claude (fresh session):
-- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. If task.runtime_context.packet_required is true, read and validate packet_ref before /execute; stop on missing/blocked/stale/invalid packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
 - **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
@@ -657,7 +657,6 @@ The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real 
     "What must not be changed or optimized away."
   ],
   "runtime_context": {
-    "packet_required": false,
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -675,9 +674,9 @@ Optional (but recommended) plans folder:
 
 Optional runtime context rules:
 - `purpose`, `success_outcome`, `anti_goals`, and `runtime_context` are optional; existing tasks without them remain valid.
-- `runtime_context.packet_required` defaults to false when absent.
-- Do not infer packet requirement from `tier`. A packet is required only when the task record says `runtime_context.packet_required === true`.
-- When `packet_required === true`, `packet_ref` should point to `.memory-bank/packets/<TASK_ID>.packet.json`; omit `packet_ref` when `packet_required` is false/absent.
+- `T0` / `T1`: `runtime_context.packet_required` defaults to false when absent. A packet is required only when the task record says `runtime_context.packet_required === true`; `packet_ref` without that flag is advisory only.
+- `T2` / `T3`: a packet is required by tier. Generated T2/T3 records should explicitly store `runtime_context.packet_required: true` and canonical `packet_ref`.
+- Required `packet_ref` points to `.memory-bank/packets/<TASK_ID>.packet.json`; omit `packet_ref` for T0/T1 when `packet_required` is false/absent.
 - `allowed_write_scope`, `forbidden_scope`, and `stop_conditions` are preflight/evidence contracts. They do not replace sandbox permissions or role write-scope instructions.
 
 ### 6c) `.memory-bank/packets/`

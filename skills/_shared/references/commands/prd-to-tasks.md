@@ -199,7 +199,6 @@ testing docs:
     "What must not be changed or optimized away."
   ],
   "runtime_context": {
-    "packet_required": false,
     "allowed_write_scope": [],
     "forbidden_scope": [],
     "stop_conditions": []
@@ -215,18 +214,17 @@ Rules for optional purpose/runtime fields:
   `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or
   `verification_targets`; do not add boundary-specific task fields
 - `T0` / `T1` tasks may omit runtime context entirely
-- `T2` / `T3` may use an Execution Packet when the task needs compact runtime
-  context, but tier alone and linked specs alone do not make a packet mandatory
-- set `runtime_context.packet_required: true` only when at least one is true:
-  - linked specs or task context are too large for safe execution handoff
-  - linked specs or task context are ambiguous enough that a packet must freeze
-    the executable interpretation for this run
-  - `success_outcome` or verification targets need a compact executable summary
-    to avoid false success
-  - `allowed_write_scope`, `forbidden_scope`, or `stop_conditions` are needed
-    as safe executable context for the implementer/verifier
-- when `packet_required` is true, set `packet_ref` to
+- `T0` / `T1` tasks require packets only when there is explicit evidence that
+  compact executable runtime context is needed; in that case set
+  `runtime_context.packet_required: true`
+- do not infer packets for `T0` / `T1`; if `packet_ref` exists without
+  `packet_required: true`, it is advisory only
+- `T2` / `T3` tasks always require an Execution Packet before implementation
+- for every generated `T2` / `T3` task, set
+  `runtime_context.packet_required: true` and `packet_ref` to
   `.memory-bank/packets/TASK-<NNN>.packet.json`
+- if a planned `T2` / `T3` task is downgraded to `T0` / `T1`, remove the
+  automatic packet requirement unless explicit T0/T1 packet evidence remains
 - `allowed_write_scope` may default from `touched_files` when that scope is
   already evidenced by the task plan
 - `allowed_write_scope`, `forbidden_scope`, and `stop_conditions` may be copied
@@ -299,9 +297,11 @@ Persistence rule:
 - проверь что acceptance criteria из FT покрыты задачами
 - обнови RTM при необходимости
 - если richer fields были добавлены, проверь что они не противоречат feature doc и RTM
-- если `runtime_context.packet_required` установлен, проверь что `packet_ref`
-  указывает на expected `.memory-bank/packets/TASK-*.packet.json`; сам packet
-  строит `/mb-packet`, а не `/prd-to-tasks`
+- for `T2` / `T3`, verify that `runtime_context.packet_required: true` and
+  canonical `packet_ref` are present before handing off task records
+- if `runtime_context.packet_required` is set for any tier, verify that
+  `packet_ref` points to expected `.memory-bank/packets/TASK-*.packet.json`
+- сам packet строит `/mb-packet`, а не `/prd-to-tasks`
 
 Если используется `--all`:
 - пройдись по всем `FT-*` в порядке приоритета

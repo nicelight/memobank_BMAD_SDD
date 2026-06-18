@@ -135,9 +135,16 @@ Block `/prd-to-tasks --all` when any targeted feature has:
   - `docs`
 - Authoritative routing is only `task.tier`; the old `risk` / `risk.level` model is invalid and must not be used.
 - T2/T3 task records must include relevant SDD spec links in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`.
-- Do not infer `runtime_context.packet_required` from tier alone. `T2` / `T3`
-  tasks SHOULD use Execution Packets, but packets are mandatory only when the
-  indexed task record sets `runtime_context.packet_required: true`.
+- T2/T3 task records must include
+  `runtime_context.packet_required: true` and canonical
+  `runtime_context.packet_ref: ".memory-bank/packets/TASK-<ID>.packet.json"`.
+- T2/T3 tasks require usable Execution Packets before implementation,
+  regardless of whether older task records omit `runtime_context.packet_required`.
+- A T2/T3 task record with `runtime_context.packet_required: false` is a
+  policy violation, not permission to skip the packet.
+- T0/T1 tasks require packets only when the indexed task record sets
+  `runtime_context.packet_required: true`; `packet_ref` without that flag is
+  advisory only.
 
 ## 6.1) Review gate по JSON task records
 Сразу после `/prd-to-tasks --all` и до scheduler execution запусти `/review` именно по task planning surface:
@@ -218,9 +225,13 @@ Manual mode:
 Для каждого выбранного `TASK-*`:
 1) reread `task.tier` and `runtime_context` from the JSON record and route only
    by those authoritative values
-2) before writing `ready -> in_progress`, if `runtime_context.packet_required`
-   is true, ensure a usable packet while the task remains `ready`:
-   - use `runtime_context.packet_ref` when present
+2) before writing `ready -> in_progress`, ensure a usable packet while the task
+   remains `ready` when required by tier/policy (`T2` / `T3`, or `T0` / `T1`
+   with `runtime_context.packet_required: true`):
+   - use canonical `.memory-bank/packets/TASK-<ID>.packet.json` when
+     `runtime_context.packet_ref` is absent
+   - if a `T2` / `T3` task has `packet_required` absent or false, record a
+     policy violation and route to task-record fix + `/mb-packet TASK-<ID>`
    - if missing or stale, run/route `/mb-packet TASK-<ID>` once without
      changing task status
    - usable packet status is `ready` or `ready_with_gaps` with matching
@@ -242,18 +253,19 @@ Manual mode:
 10) scheduler performs a separate promotion/dependent blocking pass and writes any `planned -> ready` / downstream `blocked` changes to their `.task.json` records
 
 Per-task command order is exactly: required packet readiness gate while task is
-still `ready` (`/mb-packet` only when `runtime_context.packet_required` needs
-it) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
+still `ready` (`/mb-packet` for every T2/T3 and explicit T0/T1 packet
+requirement) → scheduler writes `ready -> in_progress` → `/execute` → `/verify` →
 `/red-verify` if required → scheduler writes final task decision/status/evidence
 to `.task.json` → `/mb-sync` → `node scripts/mb-lint.mjs` +
 `/mb-doctor --strict` → scheduler promotion/dependent blocking pass.
 
 Fresh-session worker prompts for Codex/Claude must include: read
-`runtime_context` from the indexed task record; if
-`runtime_context.packet_required: true`, read `runtime_context.packet_ref`;
-respect packet `scope`, `verification`, and `stop_conditions`; treat the task
-record and linked authoritative specs as source of truth, with the packet only
-as derivative runtime context.
+`runtime_context` from the indexed task record; for `T2` / `T3`, read canonical
+`.memory-bank/packets/TASK-<ID>.packet.json`; for `T0` / `T1`, read the packet
+only when `runtime_context.packet_required: true`; respect packet `scope`,
+`verification`, and `stop_conditions`; treat the task record and linked
+authoritative specs as source of truth, with the packet only as derivative
+runtime context.
 
 Переходы состояния:
 - `ready -> in_progress`
