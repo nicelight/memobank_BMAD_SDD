@@ -125,10 +125,10 @@
 - Влияние: semantic verification может превратиться в extension обычной verify-сессии.
 - Минимальное направление: split verifier и red-verifier на отдельные commands/sessions; убрать progression/doctor из verifier prompt.
 
-### 18. T0/T1 compact protocol конфликтует с worker prompts
+### 18. T0/T1 compact protocol конфликтует с generated AGENTS
 
-- Источники: `skills/_shared/references/workflows/tier-policy.md:21`, `skills/_shared/references/workflows/tier-policy.md:31`, `skills/_shared/scripts/init-mb.js:575`, `skills/_shared/agents/implementer.md:13`, `skills/_shared/agents/secretary.md:9`
-- Проблема: tier policy разрешает compact `.protocols/<TASK_ID>/run.md`, но generated AGENTS и worker prompts требуют `progress.md`.
+- Источники: `skills/_shared/references/workflows/tier-policy.md:21`, `skills/_shared/references/workflows/tier-policy.md:31`, `skills/_shared/scripts/init-mb.js:575`
+- Проблема: tier policy разрешает compact `.protocols/<TASK_ID>/run.md`, но generated AGENTS требует `progress.md`.
 - Влияние: T0/T1 получают лишний protocol overhead и ложные expectations у doctor/review.
 - Минимальное направление: сделать prompts tier-aware: T0/T1 update `run.md`; T2/T3 update `progress.md`.
 

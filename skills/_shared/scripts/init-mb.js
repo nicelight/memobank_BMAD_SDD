@@ -27,6 +27,7 @@ const REFERENCES_DIR = path.join(SHARED_DIR, 'references');
 const COMMAND_TEMPLATES_DIR = path.join(REFERENCES_DIR, 'commands');
 const WORKFLOW_REFERENCES_DIR = path.join(REFERENCES_DIR, 'workflows');
 const ROLE_REFERENCES_DIR = path.join(REFERENCES_DIR, 'roles');
+const CONSTITUTION_TEMPLATE_FILE = 'constitution-template.md';
 const FLAT_COMMAND_PREFIX = 'shared-commands-';
 const RUNTIME_SCRIPT_ASSETS = [
   { asset: 'mb-lint.mjs', target: 'scripts/mb-lint.mjs' },
@@ -221,6 +222,27 @@ function resolveReferenceFile(category, filename) {
   if (fs.existsSync(flattenedPath)) return flattenedPath;
 
   return null;
+}
+
+function resolveTopLevelReferenceFile(filename) {
+  const directPath = path.join(REFERENCES_DIR, filename);
+  if (fs.existsSync(directPath)) return directPath;
+
+  const flattenedPath = path.join(REFERENCES_DIR, `shared-${filename}`);
+  if (fs.existsSync(flattenedPath)) return flattenedPath;
+
+  return null;
+}
+
+function constitutionSkeleton() {
+  const absPath = resolveTopLevelReferenceFile(CONSTITUTION_TEMPLATE_FILE);
+  if (!absPath) {
+    console.error(`\nERROR: Constitution template not found: ${path.join(REFERENCES_DIR, CONSTITUTION_TEMPLATE_FILE)} or flattened shared-${CONSTITUTION_TEMPLATE_FILE}.`);
+    console.error('Run init-mb.js from the memobank_BMAD_SDD package (do not copy it standalone).');
+    process.exit(1);
+  }
+
+  return readUtf8(absPath).replace(/\{\{TODAY\}\}/g, TODAY);
 }
 
 function resolveRuntimeAsset(filename) {
@@ -579,9 +601,11 @@ After finishing a meaningful unit of work:
 - Route each \`TASK-XXX\` by \`task.tier\` and \`.memory-bank/workflows/tier-policy.md\`.
 - Delegation and worker reports follow \`.memory-bank/roles/orchestrator.md\` and \`.memory-bank/roles/worker.md\`.
 - T0/T1 may use compact \`.protocols/TASK-XXX/run.md\`; compact evidence can be enough.
-- Scheduler mode: T2/T3 require full protocol state plus \`/verify\` \`VERDICT: PASS\` and \`/red-verify\` \`SEMANTIC_VERDICT: semantic-pass\` before scheduler marks \`done\`.
-- Manual mode: T0/T1 may close after \`/verify PASS\` only with explicit closure ownership and completed evidence; T2/T3 must run \`/red-verify\` before final closure/\`/mb-sync\`.
+- Scheduler mode: T2 requires full protocol state, required packet/spec gates, and \`/verify\` \`VERDICT: PASS\`; per-task \`/red-verify\` is not required for T2 task closure.
+- Scheduler mode: T2 feature completion requires \`/red-verify --feature FT-<ID>\` with \`SEMANTIC_VERDICT: semantic-pass\` after all feature tasks are implemented.
+- Scheduler mode: T3 requires full protocol state, required packet/spec gates, \`/verify\` \`VERDICT: PASS\`, and per-task \`/red-verify\` \`SEMANTIC_VERDICT: semantic-pass\` before scheduler marks \`done\`.
 - T3 also requires a human-aware checkpoint and rollback/recovery note.
+- Manual mode: T0/T1 may close after \`/verify PASS\` only with explicit closure ownership and completed evidence; T2 may close after \`/verify PASS\` when full protocol plus required packet/spec gates are satisfied; T3 must run per-task \`/red-verify\` before final closure/\`/mb-sync\`.
 - Packet requirement: T2/T3 require canonical \`.memory-bank/packets/TASK-<ID>.packet.json\`; T0/T1 require packets only when \`task.runtime_context.packet_required === true\`.
 - Required packets are derivative runtime artifacts under \`.memory-bank/packets/\`; if missing, blocked, stale, invalid, or mismatched, run \`/mb-packet TASK-XXX\` or stop before implementation.
 - If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using tier-appropriate \`.protocols/TASK-XXX/\` state.
@@ -595,7 +619,7 @@ Claude (fresh session):
 - \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\` (start execution only after every FT-* has been decomposed and the generated task records/artifacts have passed the pre-execution verify gate).
+- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T3 (optional for T2 task) -> /mb-sync\`; before treating a T2 feature as complete, run \`/red-verify --feature FT-001\` after all its tasks are implemented (start execution only after every FT-* has been decomposed and the generated task records/artifacts have passed the pre-execution verify gate).
 - \`/spec-design\` is mandatory after \`/prd\`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas \`not_applicable\`; it may also create one first foundation task when a minimum executable baseline is needed. It does not replace per-feature \`/spec-improve FT-001\`.
 - Use \`/brainstorm\` before \`/brief\` only when the idea is raw.
 - Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
@@ -826,67 +850,7 @@ status: active
 - Notes: /spec-design has not completed the global AI-first architecture guardrails yet.
 `);
 
-writeFile(`${MB}/constitution.md`, `---
-description: Project Constitution — governing principles for AI-first development.
-status: active
-version: 1
-project_principles: framework-default
-ratified: null
-last_updated: ${TODAY}
----
-# Project Constitution
-
-## Purpose
-
-This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
-
-## Core Principles
-
-### 0. Project Principles Status
-
-This skeleton uses framework-default principles until \`/constitution\` runs the contextual interview. \`ratified: null\` means project principles are not ratified yet. When \`/constitution\` sets \`project_principles: ratified\` or \`project_principles: partial\`, it must fill \`ratified: YYYY-MM-DD\`. If the user explicitly skips that interview, keep or set \`project_principles: skipped\`, keep \`ratified: null\`, and continue; revisit \`/constitution\` later.
-
-### I. AI-First Spec-Driven Development
-
-Agents MUST derive implementation work from explicit product, requirement, feature, task, and workflow artifacts. Agents MUST NOT invent product scope without evidence or user instruction.
-
-### II. Memory Bank Is Durable Project Knowledge
-
-\`.memory-bank/\` is the durable source of project knowledge. Chat context is temporary. Agents MUST update Memory Bank after meaningful changes.
-
-### III. Schema-Backed Task Execution
-
-Tasks MUST use the current schema-backed JSON task record model. If the framework uses \`tier: T0|T1|T2|T3\`, agents MUST route execution and verification through that tier model.
-
-### IV. Minimal Verifiable Change
-
-Agents SHOULD prefer the smallest change that satisfies the task. Every completed task MUST have clear checks or evidence.
-
-### V. Evidence Before Done
-
-A task MUST NOT be marked done without verification evidence appropriate to its tier and scope.
-
-### VI. No Legacy Fallback and No Speculation
-
-Agents MUST NOT rely on deprecated task formats, old risk models, or undocumented assumptions. Unknowns MUST be recorded as blockers or explicit assumptions.
-
-### VII. Context Discipline
-
-Agents SHOULD read the smallest sufficient context for the task. Higher-tier or cross-cutting tasks MUST read relevant normative docs such as invariants, contracts, states, testing, and workflow policies.
-
-### VIII. Synchronization
-
-After meaningful changes, agents MUST synchronize affected Memory Bank docs, task state, changelog, and routing files.
-
-## Governance
-
-- Constitution has precedence over workflow habits and generated plans.
-- MBB, spec-index, spec-backbone, invariants, contracts, states, testing, and workflow docs refine this Constitution; they must not contradict it.
-- Amendments must include rationale and update affected docs if needed.
-- Constitution should stay short. Put concrete project rules into \`invariants.md\`, \`contracts/*\`, \`states/*\`, or workflow policy docs.
-
-**Version**: 1 | **Ratified**: not ratified | **Last updated**: ${TODAY}
-`);
+writeFile(`${MB}/constitution.md`, constitutionSkeleton());
 
 writeFile(`${MB}/glossary.md`, `---
 description: Словарь терминов, сущностей и agreed vocabulary проекта.
@@ -1048,145 +1012,12 @@ status: active
 - Seeded core docs (product, requirements, testing, task registry)
 `);
 
-writeFile(`${MB}/workflows/mb-sync.md`, `---
-description: Чеклист синхронизации Memory Bank после wave/изменений.
-status: active
----
-# MB-SYNC Checklist
-
-- [ ] Duo docs consistent where the classic pair model is used (architecture ↔ guides)
-- [ ] Optional normative docs, if present, are linked and do not contradict duo docs
-- [ ] RTM lifecycle up to date (requirements.md)
-- [ ] Feature/epic document \`status\` and implementation \`lifecycle\` are both updated
-- [ ] JSON task records and \`.memory-bank/tasks/index.json\` updated
-- [ ] Changelog entry added
-- [ ] index.md links valid
-- [ ] Lint passes (0 errors; blocking in autonomous mode)
-`);
-
+copyWorkflowReference('mb-sync.md');
 copyWorkflowReference('tier-policy.md');
+copyWorkflowReference('autonomy-policy.md');
+copyWorkflowReference('execute-loop.md');
 copyRoleReference('orchestrator.md');
 copyRoleReference('worker.md');
-
-writeFile(`${MB}/workflows/autonomy-policy.md`, `---
-description: Guardrails and terminal states for unattended autonomous runs.
-status: active
----
-# Autonomy policy
-
-## Default mode
-- Prefer interactive mode unless the user explicitly requested unattended execution.
-
-## Hard-stop categories
-- security / compliance ambiguity
-- external contracts or partner APIs with unknown behavior
-- destructive data migrations
-- secret reads / prod writes / deploys
-
-## Allowed assumptions
-- naming / wording / non-critical UX defaults
-- low-impact implementation details that can be verified later
-
-Non-blocking gaps must be written as explicit assumptions in \`.protocols/AUTONOMOUS-RUN/decision-log.md\`.
-
-## Required gates
-- latest \`/review\` verdict must be \`APPROVE\`
-- mandatory \`/mb-doctor --strict\` before autonomous/autopilot task selection, after \`/mb-sync\` before promotion, and before final success
-- tier-appropriate verification per TASK:
-  - T0/T1: compact evidence may be enough
-  - Scheduler mode T2/T3: \`/verify\` PASS and \`/red-verify\` semantic-pass are required before scheduler marks done
-  - Manual mode T0/T1: \`/verify\` PASS may close only with explicit closure ownership and completed evidence
-  - Manual mode T2/T3: \`/verify\` PASS is not final closure; \`/red-verify\` semantic-pass is required before \`done\` or \`/mb-sync\`
-  - T3: human-aware checkpoint plus rollback/recovery note are required
-- mandatory \`/mb-sync\`
-- mandatory lint/link consistency before final success, covered by \`mb-doctor\`
-
-## Failure budgets
-- max_retries_per_task: 2
-- max_consecutive_failures: 3
-- max_open_blockers: 3
-
-## Terminal states
-- \`SUCCESS\`
-- \`HALT_BLOCKING_QUESTIONS\`
-- \`HALT_CLARIFICATION_REQUIRED\`
-- \`HALT_REVIEW_REJECT\`
-- \`HALT_FAILURE_BUDGET\`
-- \`HALT_DEPENDENCY_DEADLOCK\`
-- \`HALT_POLICY_VIOLATION\`
-- \`HALT_QUALITY_GATES\`
-- \`HALT_BUDGET_EXCEEDED\`
-`);
-
-writeFile(`${MB}/workflows/execute-loop.md`, `---
-description: Workflow: PRD → FT → TASK loop (interactive or autonomous).
-status: active
----
-# Execute loop (PRD → Feature → Tasks)
-
-## Principle: no task explosion
-- \`/prd\` creates L1–L3 only (product/requirements/epics/features/testing/index).
-- \`/write-prd\` = PRD-level ambiguity closure. \`/clarify-feature\` = optional feature-level ambiguity pass.
-- \`/spec-init\` creates the lightweight SDD route map after \`/write-prd\` and before \`/prd\`.
-- \`/spec-design\` is mandatory after \`/prd\`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, may create one first foundation task when a minimum executable baseline is needed, and does not replace per-feature \`/spec-improve\`.
-- \`/spec-improve FT-<NNN>\` completes or marks unnecessary feature-level design before task decomposition.
-- Feature tasks are created via \`/prd-to-tasks FT-<NNN>\` after \`/prd\` creates clear feature docs and SDD design status is ready. The only earlier task exception is a first foundation task from \`/spec-design\` when a minimum executable baseline is needed. After the full FT-* set is decomposed, run \`/verify\` on the generated JSON task records/artifacts, then start \`/execute\`.
-
-## Interactive mode (you stay)
-1) \`/analysis -> /brief\` when idea discovery is needed; use \`/brainstorm\` before \`/brief\` only for raw ideas
-2) \`/constitution\` for contextual governing principles when \`.memory-bank/constitution.md\` is missing or \`project_principles\` is framework-default|skipped|missing; if principles are already ratified/partial, continue to \`/write-prd\`; if explicitly skipped, continue with framework-default/skipped principles
-3) \`/write-prd\` (creates clarified .memory-bank/prd.md)
-4) \`/spec-init\` (updates .memory-bank/spec-backbone.md framing and .memory-bank/spec-index.md registry)
-5) \`/prd\` (fills L1–L3)
-6) \`/spec-design\` (mandatory; minimal is valid for simple T0/T1-only scope)
-7) Pick one top feature; use \`/clarify-feature FT-001\` only for explicit feature blockers
-8) \`/spec-improve FT-001\` (updates only needed SDD specs or marks not_required)
-9) \`/prd-to-tasks FT-001\` (creates IMPL plan + TASK-* for this feature)
-10) Run \`/mb-doctor\` when task records change; use \`/mb-doctor --strict\` before autonomous handoff
-11) Execute tasks from \`.memory-bank/tasks/index.json\` and indexed \`*.task.json\` records one-by-one:
-   - \`/verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T2/T3 -> /mb-sync\`
-   - start \`/execute\` only after all targeted FT-* have been decomposed and the pre-execution \`/verify\` gate has passed
-   - for T2/T3, validate canonical \`.memory-bank/packets/TASK-XXX.packet.json\` before \`/execute\`; for T0/T1, validate a packet only when \`task.runtime_context.packet_required === true\`
-12) After each wave: \`/review\` (fresh context)
-
-## Autonomous end-to-end mode (start and leave)
-1) \`/autonomous\`
-2) command runs \`/write-prd -> /spec-auto --init -> /prd -> /spec-design --all -> /spec-auto --all -> /prd-to-tasks --all\`, then schedules ready TASKs
-3) run \`/mb-doctor --strict\` before scheduler execution; T2/T3 tasks without SDD spec links are blockers
-4) before \`/execute\`, scheduler checks required packets for every T2/T3 task and explicit T0/T1 packet requirement; missing/blocked/stale/invalid packets stop execution and require \`/mb-packet TASK-XXX\` or blocker resolution
-5) each TASK runs in **fresh CLI sessions**
-6) after each \`/mb-sync\`, run \`/mb-doctor --strict\` before promoting dependents
-7) after each wave: \`/review\`
-8) final success only if last review = \`APPROVE\`, \`/mb-doctor --strict\` passes, and no blocking tasks remain
-
-## Autonomous executor only
-If JSON task records already exist and review gate already passed, use:
-- \`/autopilot\`
-
-\`/autopilot\` must run \`/mb-doctor --strict\` before each task selection pass and after each \`/mb-sync\` before promotion.
-
-Codex (implement, then verify when the tier requires a separate verifier):
-~~~bash
-codex exec --ephemeral --full-auto -m gpt-5.2-high \\
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
-
-codex exec --ephemeral --full-auto -m gpt-5.2-high \\
-  'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL.'
-~~~
-
-Claude (implement, then verify when the tier requires a separate verifier):
-~~~bash
-claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
-
-claude -p --no-session-persistence --permission-mode acceptEdits --model opus \\
-  'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'
-~~~
-
-## Parallel vs sequential
-- Independent tasks (no shared files) MAY run in parallel (separate sessions).
-- Dependent or shared-file tasks MUST run sequentially: TASK-A (execute→tier-appropriate verify→red-verify if required→mb-sync) → TASK-B.
-`);
 
 writeFile(`${MB}/adrs/ADR-000-template.md`, `---
 description: "ADR-000: Шаблон для архитектурных решений."

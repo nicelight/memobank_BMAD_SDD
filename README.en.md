@@ -38,7 +38,8 @@ idea / rough draft
   -> /mb-packet TASK-001 when required (all T2/T3; explicit T0/T1)
   -> /execute first indexed TASK
   -> /verify same TASK
-  -> /red-verify same TASK for T2/T3 work
+  -> /red-verify same TASK for T3 work (optional for T2 task closure)
+  -> /red-verify --feature FT-001 for T2 feature completion
   -> /mb-sync
   -> repeat the feature/task loop until the project is done
 ```
@@ -55,7 +56,7 @@ In plain terms:
 - `/prd-to-tasks FT-001` creates feature JSON tasks; `/spec-design` may already have created one first foundation task when a minimum executable baseline was needed. After the full `FT-*` set is decomposed, run `/verify` on the generated JSON task records/artifacts, then run `/mb-packet` for all T2/T3 tasks and explicit T0/T1 packet requirements before `/execute`.
 - `/mb-packet TASK-001` builds or refreshes a compact derivative Execution Packet; T2/T3 require one, while T0/T1 require one only when `runtime_context.packet_required: true`. Task records and linked specs remain authoritative.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
-- `/red-verify` adds the required adversarial semantic pass for T2/T3 work.
+- `/red-verify TASK-*` is required for T3 task closure and optional for T2 task closure; `/red-verify --feature FT-*` is required before a T2 feature is treated as complete.
 
 ## Automation, when you are ready
 

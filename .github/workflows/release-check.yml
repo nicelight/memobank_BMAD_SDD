@@ -40,6 +40,11 @@ jobs:
           test -f skills/_shared/references/protocols/packet-template.json
           test -f skills/_shared/references/roles/orchestrator.md
           test -f skills/_shared/references/roles/worker.md
+          test -f skills/_shared/references/constitution-template.md
+          test -f skills/_shared/references/workflows/mb-sync.md
+          test -f skills/_shared/references/workflows/tier-policy.md
+          test -f skills/_shared/references/workflows/autonomy-policy.md
+          test -f skills/_shared/references/workflows/execute-loop.md
 
       - name: Syntax check helper scripts
         shell: bash
@@ -64,9 +69,14 @@ jobs:
             node "$GITHUB_WORKSPACE/scripts/install-framework.mjs" --skill '*' --yes
 
             test -f .agents/skills/cold-start/references/shared-structure-template.md
+            test -f .agents/skills/cold-start/references/shared-constitution-template.md
             test -f .agents/skills/cold-start/references/shared-protocols-packet-template.json
             test -f .agents/skills/cold-start/references/shared-roles-orchestrator.md
             test -f .agents/skills/cold-start/references/shared-roles-worker.md
+            test -f .agents/skills/cold-start/references/shared-workflows-mb-sync.md
+            test -f .agents/skills/cold-start/references/shared-workflows-tier-policy.md
+            test -f .agents/skills/cold-start/references/shared-workflows-autonomy-policy.md
+            test -f .agents/skills/cold-start/references/shared-workflows-execute-loop.md
             test -f .agents/skills/cold-start/agents/shared-repo-scanner.md
             test -f .agents/skills/cold-start/scripts/shared-init-mb.js
             test -f .agents/skills/mb-execute/references/shared-protocols-context-template.md
@@ -80,6 +90,7 @@ jobs:
 
             mkdir -p target-repo
             cd target-repo
+            TODAY="$(date -u +%F)"
             node ../.agents/skills/mb-init/scripts/shared-init-mb.js
 
             test -f .memory-bank/commands/analysis.md
@@ -88,6 +99,13 @@ jobs:
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
+            grep -q '^description: Project Constitution' .memory-bank/constitution.md
+            grep -q '^status: active$' .memory-bank/constitution.md
+            grep -q '^version: 1$' .memory-bank/constitution.md
+            grep -q '^project_principles: framework-default$' .memory-bank/constitution.md
+            grep -q '^ratified: null$' .memory-bank/constitution.md
+            grep -q "^last_updated: $TODAY$" .memory-bank/constitution.md
+            ! grep -q '{{TODAY}}' .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/spec-init.md
@@ -102,7 +120,10 @@ jobs:
             test -d .memory-bank/packets
             test -f .memory-bank/contracts/boundary-map.md
             test ! -e .memory-bank/boundaries
+            test -f .memory-bank/workflows/mb-sync.md
             test -f .memory-bank/workflows/tier-policy.md
+            test -f .memory-bank/workflows/autonomy-policy.md
+            test -f .memory-bank/workflows/execute-loop.md
             test -f .memory-bank/schemas/task.schema.json
             test -f .memory-bank/tasks/index.json
             test -f scripts/mb-lint.mjs
@@ -182,18 +203,48 @@ jobs:
           trap 'rm -rf "$TMP_DIR"' EXIT
 
           TARGET="$TMP_DIR/target-repo"
+          TODAY="$(date -u +%F)"
           node "$GITHUB_WORKSPACE/scripts/install-framework.mjs" --bootstrap --target "$TARGET" --yes
 
           test -f "$TARGET/.memory-bank/tasks/index.json"
           test -d "$TARGET/.memory-bank/packets"
           test -f "$TARGET/AGENTS.md"
+          test -f "$TARGET/.memory-bank/constitution.md"
+          grep -q '^description: Project Constitution' "$TARGET/.memory-bank/constitution.md"
+          grep -q '^status: active$' "$TARGET/.memory-bank/constitution.md"
+          grep -q '^version: 1$' "$TARGET/.memory-bank/constitution.md"
+          grep -q '^project_principles: framework-default$' "$TARGET/.memory-bank/constitution.md"
+          grep -q '^ratified: null$' "$TARGET/.memory-bank/constitution.md"
+          grep -q "^last_updated: $TODAY$" "$TARGET/.memory-bank/constitution.md"
+          ! grep -q '{{TODAY}}' "$TARGET/.memory-bank/constitution.md"
           test -f "$TARGET/.memory-bank/roles/orchestrator.md"
           test -f "$TARGET/.memory-bank/roles/worker.md"
           test -f "$TARGET/.memory-bank/commands/cold-start.md"
           test -f "$TARGET/.memory-bank/commands/mb-packet.md"
           test -f "$TARGET/.memory-bank/commands/spec-design.md"
+          for command_doc in \
+            execute \
+            verify \
+            red-verify \
+            autopilot \
+            autonomous \
+            mb-sync \
+            cold-start \
+            mb-doctor
+          do
+            cmp "$GITHUB_WORKSPACE/.memory-bank/commands/$command_doc.md" "$TARGET/.memory-bank/commands/$command_doc.md"
+          done
           test -f "$TARGET/.memory-bank/contracts/boundary-map.md"
           test ! -e "$TARGET/.memory-bank/boundaries"
+          test -f "$TARGET/.memory-bank/workflows/mb-sync.md"
+          test -f "$TARGET/.memory-bank/workflows/tier-policy.md"
+          test -f "$TARGET/.memory-bank/workflows/autonomy-policy.md"
+          test -f "$TARGET/.memory-bank/workflows/execute-loop.md"
+          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/mb-sync.md" "$TARGET/.memory-bank/workflows/mb-sync.md"
+          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/tier-policy.md" "$TARGET/.memory-bank/workflows/tier-policy.md"
+          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/autonomy-policy.md" "$TARGET/.memory-bank/workflows/autonomy-policy.md"
+          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/execute-loop.md" "$TARGET/.memory-bank/workflows/execute-loop.md"
+          cmp "$GITHUB_WORKSPACE/.memory-bank/schemas/task.schema.json" "$TARGET/.memory-bank/schemas/task.schema.json"
           test -f "$TARGET/.claude/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.agents/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.claude/skills/spec-design/SKILL.md"
@@ -214,6 +265,7 @@ jobs:
 
           (
             cd "$TMP_DIR"
+            TODAY="$(date -u +%F)"
             node "$GITHUB_WORKSPACE/skills/_shared/scripts/init-mb.js"
             node "$GITHUB_WORKSPACE/skills/_shared/scripts/init-mb.js" --sync
 
@@ -223,6 +275,13 @@ jobs:
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
             test -f .memory-bank/constitution.md
+            grep -q '^description: Project Constitution' .memory-bank/constitution.md
+            grep -q '^status: active$' .memory-bank/constitution.md
+            grep -q '^version: 1$' .memory-bank/constitution.md
+            grep -q '^project_principles: framework-default$' .memory-bank/constitution.md
+            grep -q '^ratified: null$' .memory-bank/constitution.md
+            grep -q "^last_updated: $TODAY$" .memory-bank/constitution.md
+            ! grep -q '{{TODAY}}' .memory-bank/constitution.md
             test -f .memory-bank/commands/constitution.md
             test -f .memory-bank/commands/write-prd.md
             test -f .memory-bank/commands/spec-init.md
@@ -236,8 +295,10 @@ jobs:
             test -d .memory-bank/packets
             test -f .memory-bank/contracts/boundary-map.md
             test ! -e .memory-bank/boundaries
+            test -f .memory-bank/workflows/mb-sync.md
             test -f .memory-bank/workflows/autonomy-policy.md
             test -f .memory-bank/workflows/tier-policy.md
+            test -f .memory-bank/workflows/execute-loop.md
             test -f .memory-bank/schemas/task.schema.json
             test -f .memory-bank/tasks/index.json
             test -f scripts/mb-lint.mjs
@@ -516,6 +577,44 @@ jobs:
             fi
 
             node -e 'const fs = require("node:fs"); fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [] }, null, 2)}\n`); for (const id of ["TASK-995", "TASK-996"]) { fs.rmSync(`.memory-bank/tasks/${id}.task.json`, { force: true }); fs.rmSync(`.memory-bank/packets/${id}.packet.json`, { force: true }); }'
+
+            write_tier_closure_smoke_task() {
+              local task_id="$1"
+              local tier="$2"
+              local with_red="$3"
+              local with_t3_markers="$4"
+              node -e 'const fs = require("node:fs"); const { createHash } = require("node:crypto"); const [id, tier, withRed, withT3Markers] = process.argv.slice(1); fs.rmSync(`.protocols/${id}`, { recursive: true, force: true }); fs.rmSync(`.tasks/${id}`, { recursive: true, force: true }); fs.rmSync(`.memory-bank/packets/${id}.packet.json`, { force: true }); fs.mkdirSync(".memory-bank/tech-specs", { recursive: true }); fs.writeFileSync(".memory-bank/tech-specs/ci-smoke.md", "---\ndescription: CI smoke SDD spec.\nstatus: active\n---\n# CI Smoke SDD Spec\n\nAuthoritative smoke spec.\n"); const task = { id, title: `${tier} closure policy smoke task`, status: "done", wave: "W1", feature: "FT-999", reqs: [], depends_on: [], touched_files: [], tier, gates: [], verify: ["VERDICT: PASS"], docs: [], evidence_required: [], purpose: "Validate tier closure policy.", success_outcome: "Doctor distinguishes T2 and T3 red-verify requirements.", anti_goals: ["Do not require per-task red-verify for T2 closure."], runtime_context: { packet_required: true, packet_ref: `.memory-bank/packets/${id}.packet.json` }, source_artifacts: [".memory-bank/tech-specs/ci-smoke.md"], normative_inputs: [".memory-bank/tech-specs/ci-smoke.md"], constraints: [], invariants: [], verification_targets: ["VERDICT: PASS"] }; fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [{ id: task.id, file: `${task.id}.task.json` }] }, null, 2)}\n`); fs.writeFileSync(`.memory-bank/tasks/${id}.task.json`, `${JSON.stringify(task, null, 2)}\n`); fs.mkdirSync(`.protocols/${id}`, { recursive: true }); fs.writeFileSync(`.protocols/${id}/context.md`, `---\ndescription: ${id} context.\nstatus: active\n---\n# Context\n\n${tier} closure smoke.\n`); fs.writeFileSync(`.protocols/${id}/plan.md`, `---\ndescription: ${id} plan.\nstatus: active\n---\n# Plan\n\n- Validate closure policy.\n`); fs.writeFileSync(`.protocols/${id}/progress.md`, `---\ndescription: ${id} progress.\nstatus: active\n---\n# Progress\n\nDone.\n`); fs.writeFileSync(`.protocols/${id}/verification.md`, `---\ndescription: ${id} verification.\nstatus: active\n---\n# Verification\n\nVERDICT: PASS\n`); const markerText = withT3Markers === "yes" ? "\nHUMAN_CHECKPOINT: done\nROLLBACK_RECOVERY_NOTE: present\n" : ""; fs.writeFileSync(`.protocols/${id}/handoff.md`, `---\ndescription: ${id} handoff.\nstatus: active\n---\n# Handoff\n\nReady for scheduler closure.${markerText}`); fs.mkdirSync(`.tasks/${id}`, { recursive: true }); fs.writeFileSync(`.tasks/${id}/${id}-S-VERIFY-final-report-docs-01.md`, `---\ndescription: ${id} verify report.\nstatus: active\n---\n# Verify\n\nVERDICT: PASS\n`); if (withRed === "yes") { fs.writeFileSync(`.protocols/${id}/red-verification.md`, `---\ndescription: ${id} red verification.\nstatus: active\n---\n# Red Verification\n\nSEMANTIC_VERDICT: semantic-pass\n`); fs.writeFileSync(`.tasks/${id}/${id}-S-RED-VERIFY-final-report-docs-01.md`, `---\ndescription: ${id} red verify report.\nstatus: active\n---\n# Red Verify\n\nSEMANTIC_VERDICT: semantic-pass\n`); } const bytes = fs.readFileSync(`.memory-bank/tasks/${id}.task.json`); const sourceHash = `sha256:${createHash("sha256").update(bytes).digest("hex")}`; const packet = { schema_version: 1, packet_id: `PACKET-${id}-R1`, task_id: id, created_at: "2026-05-21T00:00:00.000Z", source_task_hash: sourceHash, status: "ready", tier, purpose: task.purpose, success_outcome: task.success_outcome, anti_goals: task.anti_goals, source_refs: { task: `.memory-bank/tasks/${id}.task.json`, feature: "FT-999", specs: [".memory-bank/tech-specs/ci-smoke.md"], guides: [], protocols: [] }, scope: { allowed_write_scope: [], forbidden_scope: [] }, verification: { commands: [], success_checks: [], evidence_required: [] }, stop_conditions: [], required_handoff: ["changed_files", "commands_run", "evidence", "scope_compliance", "blockers_or_none"] }; fs.writeFileSync(`.memory-bank/packets/${id}.packet.json`, `${JSON.stringify(packet, null, 2)}\n`);' "$task_id" "$tier" "$with_red" "$with_t3_markers"
+            }
+
+            write_tier_closure_smoke_task TASK-994 T2 no no
+            node scripts/mb-lint.mjs
+            node scripts/mb-doctor.mjs --strict --json >"$TMP_DIR/t2-done-no-red-doctor.json"
+            if grep -q 'TASK_RED_VERIFY_' "$TMP_DIR/t2-done-no-red-doctor.json"; then
+              echo "Expected T2 done task without per-task red-verify to pass strict doctor red-verify policy"
+              exit 1
+            fi
+
+            write_tier_closure_smoke_task TASK-993 T3 no yes
+            node scripts/mb-lint.mjs
+            if node scripts/mb-doctor.mjs --strict --json >"$TMP_DIR/t3-done-no-red-doctor.json" 2>&1; then
+              echo "Expected mb-doctor strict failure for T3 done task without red-verify"
+              exit 1
+            fi
+            grep -q 'TASK_RED_VERIFY_EVIDENCE_MISSING' "$TMP_DIR/t3-done-no-red-doctor.json"
+
+            write_tier_closure_smoke_task TASK-992 T3 yes yes
+            node scripts/mb-lint.mjs
+            node scripts/mb-doctor.mjs --strict --json >"$TMP_DIR/t3-done-with-red-doctor.json"
+            if grep -q 'TASK_RED_VERIFY_' "$TMP_DIR/t3-done-with-red-doctor.json"; then
+              echo "Expected T3 done task with semantic-pass red-verify to produce no red-verify findings"
+              exit 1
+            fi
+            if grep -q 'TASK_T3_' "$TMP_DIR/t3-done-with-red-doctor.json"; then
+              echo "Expected T3 done task with exact human/recovery markers to produce no T3 marker findings"
+              exit 1
+            fi
+
+            node -e 'const fs = require("node:fs"); fs.writeFileSync(".memory-bank/tasks/index.json", `${JSON.stringify({ version: 1, tasks: [] }, null, 2)}\n`); for (const id of ["TASK-992", "TASK-993", "TASK-994"]) { fs.rmSync(`.memory-bank/tasks/${id}.task.json`, { force: true }); fs.rmSync(`.memory-bank/packets/${id}.packet.json`, { force: true }); fs.rmSync(`.protocols/${id}`, { recursive: true, force: true }); fs.rmSync(`.tasks/${id}`, { recursive: true, force: true }); }'
 
             write_clarification_feature() {
               local status="$1"

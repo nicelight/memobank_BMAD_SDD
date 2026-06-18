@@ -26,18 +26,20 @@ Scheduler mode:
 - Scheduler decides closure/failure/blocking eligibility.
 - `/execute` returns scoped implementation handoff; it does not close tasks.
 - `/verify` gives functional verdict/evidence; in scheduler mode it does not close/fail/block/promote.
-- `/red-verify` gives semantic verdict for T2/T3; in scheduler mode it does not close/fail/block/promote.
+- `/red-verify` gives semantic verdict for per-task T3 checks and T2 feature-completion checks; in scheduler mode it does not close/fail/block/promote.
 - `/mb-sync` records/reconciles state after the scheduler-provided closure/failure/blocking decision. It does not decide closure itself.
 - T0/T1 scheduler closure may use compact evidence / functional PASS according to tier policy.
-- T2/T3 scheduler closure requires `VERDICT: PASS` plus `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
+- T2 scheduler task closure requires full protocol, required packet/spec gates, and `VERDICT: PASS`; per-task `/red-verify` is not required for T2 task closure.
+- T2 feature completion requires feature-level `/red-verify --feature FT-<ID>` with `SEMANTIC_VERDICT: semantic-pass` after all tasks for that feature are implemented.
+- T3 scheduler task closure requires full protocol, required packet/spec gates, `VERDICT: PASS`, and per-task `SEMANTIC_VERDICT: semantic-pass` before scheduler marks `done`.
 - T3 scheduler closure also requires exact markers `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 
 Manual mode:
 - Expected T0/T1 simple flow: `/execute -> /verify`.
 - Manual closure is allowed only when an explicit closure owner exists.
 - T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
-- T2/T3 must not treat `/verify PASS` alone as final `done`; run `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
-- If required T2/T3 `/red-verify` returns anything other than `semantic-pass`, leave closure pending or blocked, not done; optional T0/T1 red-verify does not make their normal verify-based closure stricter.
+- T2 task closure may rely on `/verify PASS` when full protocol and required packet/spec gates are satisfied; per-task `/red-verify` is optional for T2. T2 feature completion requires `/red-verify --feature FT-<ID>` with `SEMANTIC_VERDICT: semantic-pass` before the feature is treated complete. T3 must not treat `/verify PASS` alone as final `done`; run per-task `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
+- If required T3 per-task `/red-verify` or T2 feature-level `/red-verify --feature FT-<ID>` returns anything other than `semantic-pass`, leave the relevant task or feature closure pending or blocked, not complete. Optional T0/T1/T2 per-task red-verify does not make normal verify-based task closure stricter.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
 - No persisted `mode` field is used.
@@ -96,7 +98,7 @@ Authoritative SDD spec links are links in task richer fields or linked feature
 - `mb-verify` owns verification evidence and `VERDICT: PASS|FAIL|NEEDS-CLARIFICATION`.
 - When invoked by `/autopilot` or `/autonomous`, it must not close the task, set `status: done`, set `status: failed`, block dependents, or promote dependents. It reports a recommended next status to the scheduler.
 - In standalone/manual mode, it may mark a `T0` / `T1` task `done` after functional `VERDICT: PASS` only with explicit closure ownership.
-- For `T2` / `T3`, `mb-verify` records functional evidence and closure recommendation, but final closure requires `mb-red-verify` semantic-pass first.
+- For `T2`, `mb-verify` records functional evidence and can make task closure eligible when full protocol and required packet/spec gates are satisfied; feature completion still requires feature-level `mb-red-verify --feature FT-<ID>` semantic-pass. For `T3`, final task closure requires per-task `mb-red-verify` semantic-pass first.
 
 ## Process
 
@@ -174,8 +176,8 @@ If all pass:
 - add completed verification/evidence entries in `verify`
 - apply status by tier:
   - scheduler mode: recommend the scheduler decision; do not close/fail/block/promote
-  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2` / `T3`, leave closure pending `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
-- in scheduler mode, final `T2` / `T3` closure is eligible only after `/red-verify` / `mb-red-verify` returns `semantic-pass`
+  - manual mode: may set `T0` / `T1` `status: done` after functional `VERDICT: PASS` with explicit closure ownership; for `T2`, recommend task closure when full protocol and required packet/spec gates are satisfied; for `T3`, leave closure pending per-task `/red-verify` `SEMANTIC_VERDICT: semantic-pass`
+- in scheduler mode, final `T2` task closure does not require per-task red-verify; final `T2` feature completion requires feature-level `/red-verify --feature FT-<ID>` semantic-pass; final `T3` task closure is eligible only after per-task `/red-verify` / `mb-red-verify` returns `semantic-pass`
 
 ### 4) Sync recommendations
 - Record RTM/feature lifecycle recommendations for `/mb-sync`
@@ -183,5 +185,5 @@ If all pass:
 
 ## Definition of done
 - Verification output exists and is evidence-backed: compact `run.md` for eligible `T0` / `T1`, full `verification.md` for `T2` / `T3`.
-- PASS verification has updated RTM/task evidence; `T2` / `T3` tasks are not closed until `/red-verify` / `mb-red-verify` produces `semantic-pass`.
+- PASS verification has updated RTM/task evidence; `T2` tasks can close without per-task red-verify when full protocol, required packet/spec gates, and PASS evidence are present; `T2` features are not complete until feature-level red-verify produces semantic-pass; `T3` tasks are not closed until per-task `/red-verify` / `mb-red-verify` produces `semantic-pass`.
 - FAIL tasks have a bug doc and next steps.

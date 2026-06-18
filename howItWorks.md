@@ -218,7 +218,8 @@ idea / rough draft
   -> /mb-packet TASK-001 when required (all T2/T3; explicit T0/T1)
   -> /execute TASK-001
   -> /verify TASK-001
-  -> /red-verify TASK-001 для T2/T3
+  -> /red-verify TASK-001 для T3 (optional для T2 task)
+  -> /red-verify --feature FT-001 для T2 feature completion
   -> /mb-sync
   -> повторять feature/task loop
 ```
@@ -260,10 +261,10 @@ idea / rough draft
 Interactive mode для одной задачи:
 
 ```text
-/mb-packet TASK-001 when required -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync
+/mb-packet TASK-001 when required -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T3 (optional for T2 task) -> /mb-sync
 ```
 
-В manual mode T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence. Для T2/T3 `/verify PASS` не является финальным done: перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`; для T3 сохраняются human/recovery markers.
+В manual mode T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence. Для T2 task closure per-task `/red-verify` не требуется: нужны full protocol, required packet/spec gates и `/verify PASS`; перед T2 feature completion нужен `/red-verify --feature FT-*` с `SEMANTIC_VERDICT: semantic-pass`. Для T3 `/verify PASS` не является финальным done: перед closure и `/mb-sync` нужен per-task `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`; для T3 сохраняются human/recovery markers.
 `/mb-packet` нужен для всех T2/T3 задач и для T0/T1 только если task record
 явно содержит `runtime_context.packet_required: true`; packet является
 производным runtime контекстом и не заменяет task/specs.
@@ -396,7 +397,9 @@ Manual mode:
 
 - `/execute` реализует task и записывает evidence/handoff;
 - T0/T1 task можно закрыть после `/verify PASS` только при явном closure owner и recorded evidence;
-- T2/T3 task нельзя считать финально `done` по одному `/verify PASS`; перед closure и `/mb-sync` нужен `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`;
+- T2 task можно считать финально `done` после full protocol, required packet/spec gates и `/verify PASS`; per-task `/red-verify` не требуется для T2 task closure;
+- T2 feature нельзя считать complete, пока после всех feature tasks не прошел `/red-verify --feature FT-*` с `SEMANTIC_VERDICT: semantic-pass`;
+- T3 task нельзя считать финально `done` по одному `/verify PASS`; перед closure и `/mb-sync` нужен per-task `/red-verify` с `SEMANTIC_VERDICT: semantic-pass`;
 - `/mb-sync` синхронизирует Memory Bank, RTM, changelog и task records после уже записанного closure/failure/blocking decision; сам sync не выводит решение о закрытии.
 
 Scheduler mode (`/autopilot`, `/autonomous`):
@@ -420,8 +423,8 @@ Scheduler mode (`/autopilot`, `/autonomous`):
 |---|---|---|---|---|
 | `T0` | typo, links, formatting, safe docs-only | допустим compact `.protocols/TASK/run.md` | отдельный `/verify` обычно не нужен | compact evidence / functional PASS достаточно |
 | `T1` | local code/local behavior с низким blast radius | compact допустим | local gates; `/verify` optional | compact evidence / functional PASS достаточно |
-| `T2` | API, contracts, schema/state/data/domain, cross-module | full protocol required | `/verify` required; `/red-verify` required в scheduler | `VERDICT: PASS` + `SEMANTIC_VERDICT: semantic-pass` |
-| `T3` | auth, security, secrets, prod/deploy, irreversible/data-loss, payments, compliance | full protocol required | `/verify` + `/red-verify` + human/recovery evidence | требования T2 + точные `HUMAN_CHECKPOINT: done` и `ROLLBACK_RECOVERY_NOTE: present` |
+| `T2` | API, contracts, schema/state/data/domain, cross-module | full protocol required | `/verify` required; per-task `/red-verify` optional | task: `VERDICT: PASS`; feature: `/red-verify --feature FT-*` + `SEMANTIC_VERDICT: semantic-pass` before feature completion |
+| `T3` | auth, security, secrets, prod/deploy, irreversible/data-loss, payments, compliance | full protocol required | `/verify` + per-task `/red-verify` + human/recovery evidence | `VERDICT: PASS` + `SEMANTIC_VERDICT: semantic-pass` + exact `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present` |
 
 Если scope растет, поднимите tier перед передачей task дальше. Если сомневаетесь между двумя tiers, выбирайте более высокий.
 

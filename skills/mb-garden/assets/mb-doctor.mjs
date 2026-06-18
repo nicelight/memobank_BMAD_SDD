@@ -647,7 +647,7 @@ function checkFullProtocolTask(record) {
     });
   }
 
-  if (task.status === 'done') {
+  if (task.status === 'done' && task.tier === 'T3') {
     const redFiles = redVerificationFiles(id);
     if (!redFiles.length) {
       addFinding(severity, 'TASK_RED_VERIFY_EVIDENCE_MISSING', `${rel}: ${task.tier} done task has no red-verify evidence.`, {
@@ -669,22 +669,20 @@ function checkFullProtocolTask(record) {
       );
     }
 
-    if (task.tier === 'T3') {
-      const text = protocolAndArtifactText(id);
-      if (!hasExactMarker(text, T3_HUMAN_CHECKPOINT_MARKER)) {
-        addFinding(severity, 'TASK_T3_CHECKPOINT_MISSING', `${rel}: T3 done task has no exact ${T3_HUMAN_CHECKPOINT_MARKER} marker.`, {
-          path: rel,
-          task_id: id,
-          suggested_fix: `Record ${T3_HUMAN_CHECKPOINT_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
-        });
-      }
-      if (!hasExactMarker(text, T3_ROLLBACK_RECOVERY_MARKER)) {
-        addFinding(severity, 'TASK_T3_ROLLBACK_MISSING', `${rel}: T3 done task has no exact ${T3_ROLLBACK_RECOVERY_MARKER} marker.`, {
-          path: rel,
-          task_id: id,
-          suggested_fix: `Record ${T3_ROLLBACK_RECOVERY_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
-        });
-      }
+    const text = protocolAndArtifactText(id);
+    if (!hasExactMarker(text, T3_HUMAN_CHECKPOINT_MARKER)) {
+      addFinding(severity, 'TASK_T3_CHECKPOINT_MISSING', `${rel}: T3 done task has no exact ${T3_HUMAN_CHECKPOINT_MARKER} marker.`, {
+        path: rel,
+        task_id: id,
+        suggested_fix: `Record ${T3_HUMAN_CHECKPOINT_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
+      });
+    }
+    if (!hasExactMarker(text, T3_ROLLBACK_RECOVERY_MARKER)) {
+      addFinding(severity, 'TASK_T3_ROLLBACK_MISSING', `${rel}: T3 done task has no exact ${T3_ROLLBACK_RECOVERY_MARKER} marker.`, {
+        path: rel,
+        task_id: id,
+        suggested_fix: `Record ${T3_ROLLBACK_RECOVERY_MARKER} as a standalone line in .protocols/${id}/handoff.md or another task protocol/artifact.`,
+      });
     }
   }
 }

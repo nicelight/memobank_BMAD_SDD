@@ -65,9 +65,11 @@ After finishing a meaningful unit of work:
 - Route each `TASK-XXX` by `task.tier` and `.memory-bank/workflows/tier-policy.md`.
 - Delegation and worker reports follow `.memory-bank/roles/orchestrator.md` and `.memory-bank/roles/worker.md`.
 - T0/T1 may use compact `.protocols/TASK-XXX/run.md`; compact evidence can be enough.
-- Scheduler mode: T2/T3 require full protocol state plus `/verify` `VERDICT: PASS` and `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
+- Scheduler mode: T2 requires full protocol state, required packet/spec gates, and `/verify` `VERDICT: PASS`; per-task `/red-verify` is not required for T2 task closure.
+- Scheduler mode: T2 feature completion requires `/red-verify --feature FT-<ID>` with `SEMANTIC_VERDICT: semantic-pass` after all feature tasks are implemented.
+- Scheduler mode: T3 requires full protocol state, required packet/spec gates, `/verify` `VERDICT: PASS`, and per-task `/red-verify` `SEMANTIC_VERDICT: semantic-pass` before the scheduler marks `done`.
 - Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
-- Manual mode: T0/T1 may close after `/verify PASS` only with explicit closure ownership and completed evidence; T2/T3 must run `/red-verify` before final closure/`/mb-sync`.
+- Manual mode: T0/T1 may close after `/verify PASS` only with explicit closure ownership and completed evidence; T2 may close after `/verify PASS` when full protocol plus required packet/spec gates are satisfied; T3 must run per-task `/red-verify` before final closure/`/mb-sync`.
 - Packet requirement: T2/T3 require canonical `.memory-bank/packets/TASK-<ID>.packet.json`; T0/T1 require packets only when `task.runtime_context.packet_required === true`.
 - Required packets are derivative runtime artifacts under `.memory-bank/packets/`; if missing, blocked, stale, invalid, or mismatched, run `/mb-packet TASK-XXX` or stop before implementation.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
@@ -81,7 +83,7 @@ Claude (fresh session):
 - `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run `/red-verify` for T2/T3 tasks; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run per-task `/red-verify` for T3 tasks, optional for T2 tasks, and run `/red-verify --feature FT-<NNN>` before T2 feature completion; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init`, mandatory `/spec-design --all`, and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
@@ -362,67 +364,19 @@ status: active
 
 ## 3c) `.memory-bank/constitution.md`
 
-```markdown
----
+Canonical skeleton source: `skills/_shared/references/constitution-template.md`.
+`init-mb.js` writes `.memory-bank/constitution.md` from that template and
+replaces `{{TODAY}}` with the current date.
+
+Minimal generated frontmatter:
+
+```yaml
 description: Project Constitution — governing principles for AI-first development.
 status: active
 version: 1
 project_principles: framework-default
 ratified: null
 last_updated: YYYY-MM-DD
----
-# Project Constitution
-
-## Purpose
-
-This Constitution defines the non-negotiable principles that guide AI agents when planning, implementing, verifying, and synchronizing project work.
-
-## Core Principles
-
-### 0. Project Principles Status
-
-This skeleton uses framework-default principles until `/constitution` runs the contextual interview. `ratified: null` means project principles are not ratified yet. When `/constitution` sets `project_principles: ratified` or `project_principles: partial`, it must fill `ratified: YYYY-MM-DD`. If the user explicitly skips that interview, keep or set `project_principles: skipped`, keep `ratified: null`, and continue; revisit `/constitution` later.
-
-### I. AI-First Spec-Driven Development
-
-Agents MUST derive implementation work from explicit product, requirement, feature, task, and workflow artifacts. Agents MUST NOT invent product scope without evidence or user instruction.
-
-### II. Memory Bank Is Durable Project Knowledge
-
-`.memory-bank/` is the durable source of project knowledge. Chat context is temporary. Agents MUST update Memory Bank after meaningful changes.
-
-### III. Schema-Backed Task Execution
-
-Tasks MUST use the current schema-backed JSON task record model. If the framework uses `tier: T0|T1|T2|T3`, agents MUST route execution and verification through that tier model.
-
-### IV. Minimal Verifiable Change
-
-Agents SHOULD prefer the smallest change that satisfies the task. Every completed task MUST have clear checks or evidence.
-
-### V. Evidence Before Done
-
-A task MUST NOT be marked done without verification evidence appropriate to its tier and scope.
-
-### VI. No Legacy Fallback and No Speculation
-
-Agents MUST NOT rely on deprecated task formats, old risk models, or undocumented assumptions. Unknowns MUST be recorded as blockers or explicit assumptions.
-
-### VII. Context Discipline
-
-Agents SHOULD read the smallest sufficient context for the task. Higher-tier or cross-cutting tasks MUST read relevant normative docs such as invariants, contracts, states, testing, and workflow policies.
-
-### VIII. Synchronization
-
-After meaningful changes, agents MUST synchronize affected Memory Bank docs, task state, changelog, and routing files.
-
-## Governance
-
-- Constitution has precedence over workflow habits and generated plans.
-- MBB, spec-index, spec-backbone, invariants, contracts, states, testing, and workflow docs refine this Constitution; they must not contradict it.
-- Amendments must include rationale and update affected docs if needed.
-- Constitution should stay short. Put concrete project rules into `invariants.md`, `contracts/*`, `states/*`, or workflow policy docs.
-
-**Version**: 1 | **Ratified**: not ratified | **Last updated**: YYYY-MM-DD
 ```
 
 ---

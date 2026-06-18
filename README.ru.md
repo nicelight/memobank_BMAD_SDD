@@ -50,7 +50,7 @@ Memory Bank помогает вести разработку как повтор
   -> JSON tasks          с градацией сложности и риска 
   -> mb-packet           для всех T2/T3 и явных T0/T1 packet requirements
   -> execute             можно все сразу в авторежиме
-  -> verify              + red-verify
+  -> verify              + red-verify для T3 task / T2 feature completion
   -> sync
   -> следующая task
 ```
@@ -155,7 +155,7 @@ Memory Bank помогает вести разработку как повтор
 
 13. `/red-verify TASK-*`
 
-   **Когда:** обязательно для T2/T3 перед финальным закрытием; особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
+   **Когда:** обязательно для T3 task closure; опционально для T2 task closure; обязательно как `/red-verify --feature FT-*` перед T2 feature completion. Особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
    **Создает/обновляет:** semantic verification report и semantic verdict.
 
