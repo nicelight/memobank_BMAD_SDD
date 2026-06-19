@@ -190,13 +190,6 @@
 
 ## P2 / Low
 
-### 27. `HANDOFF.md` указан как read-first/root doc, но отсутствует
-
-- Источники: `PROJECT_MAP.md:5`, `PROJECT_MAP.md:46`
-- Проблема: `PROJECT_MAP.md` перечисляет `HANDOFF.md` как source-only packaging handoff and verified install flow, но файла нет в рабочем дереве.
-- Влияние: priming route ведет агентов в несуществующий документ.
-- Минимальное направление: восстановить короткий `HANDOFF.md` или убрать/заменить ссылки на актуальный source-only packaging doc.
-
 ### 28. `/red-verify TASK-123` продублирован в README
 
 - Источники: `README.en.md:197`, `README.ru.md:197`
@@ -211,17 +204,17 @@
 - Влияние: агент может не увидеть recommended skill discovery path из generated project guide.
 - Минимальное направление: добавить `/find-skills` в generated AGENTS entrypoints или явно оставить его только в command index.
 
-### 30. Ожидаемое число generated `shared-*` файлов устарело
+### 30. Ожидаемое число generated `shared-*` файлов не должно быть hardcoded
 
 - Источники: repository instructions, `scripts/vendor-shared.mjs:56`, `scripts/vendor-shared.mjs:64`, `scripts/vendor-shared.mjs:77`
-- Проблема: инструкции должны говорить про 550 generated `shared-*`, потому что текущая структура дает около 550 generated files.
+- Проблема: инструкции не должны фиксировать конкретное число generated `shared-*`; актуальное число зависит от количества installable skills и shared source files.
 - Влияние: hardcoded count создает ложные ожидания при проверке vendoring.
 - Минимальное направление: заменить число формулой/диапазоном или проверять только invariant `0` в source tree.
 
 ## Suggested Fix Order
 
-1. Stabilize install packaging: single-skill self-containment/dependencies, CI matrix, `vendor:shared` footgun, CLI pinning.
+1. Stabilize install packaging: single-skill self-containment/dependencies, CI matrix, CLI pinning.
 2. Stabilize task state ownership: one closure order, one standalone closure path, no duplicated authoritative queue state.
 3. Fix safety boundaries: T3 human checkpoint authority, separate red-verify sessions, terminal-state enum alignment.
 4. Reduce default workflow weight: minimal skeleton, optional richer fields, compact protocol for T0-T2, lighter default review.
-5. Clean documentation drift: missing `HANDOFF.md`, incomplete command lists, duplicated README lines, `/find-skills` entrypoint, outdated generated count.
+5. Clean documentation drift: incomplete command lists, duplicated README lines, `/find-skills` entrypoint, and hardcoded generated-file counts.

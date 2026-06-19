@@ -10,8 +10,6 @@ Before changing this repository, reaad:
 - `scripts/vendor-shared.mjs`
 - `.github/workflows/release-check.yml`
 
-If the task mentions schema-backed tasks, task records, task queues, scheduler, autopilot, or autonomous execution, also read `Optimisation.md` as planning context only. It is not automatically an implementation instruction.
-
 ## Core Invariant: Source-Only Skill Packaging
 
 This fork intentionally does not commit generated package-local `shared-*` files.
@@ -50,13 +48,12 @@ Root documentation:
 - `README.md`: short bilingual entrypoint and install warning.
 - `README.en.md`, `README.ru.md`: full user documentation.
 - `PROJECT_MAP.md`: this file, intended as agent priming.
-- `Optimisation.md`: future task-schema plan context, not standing instructions.
 
 Packaging and install:
 
 - `package.json`: package bin and scripts.
 - `scripts/install-framework.mjs`: correct installer for this fork; no args starts the interactive one-command install/bootstrap flow, explicit `--skill ... --yes` preserves legacy install-only behavior, and every path prepares a temporary vendored repo before `skills add`.
-- `scripts/vendor-shared.mjs`: generator that copies `skills/_shared` files into every installable skill package.
+- `scripts/vendor-shared.mjs`: generator that copies `skills/_shared` files into every installable skill package; normal install uses it inside a temporary prepared repository, while direct source-tree vendoring requires explicit `--in-place`.
 - `.github/workflows/release-check.yml`: CI source-only hygiene, syntax checks, install smoke, bootstrap smoke.
 
 Canonical shared source:

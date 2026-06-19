@@ -6,6 +6,15 @@ import { join, relative, resolve } from 'node:path';
 const repoRoot = resolve(process.cwd());
 const skillsRoot = join(repoRoot, 'skills');
 const sharedRoot = join(skillsRoot, '_shared');
+const args = process.argv.slice(2);
+const allowInPlace = args.includes('--in-place') || process.env.MEMOBANK_VENDOR_SHARED_ALLOW === '1';
+
+if (!allowInPlace) {
+  console.error(
+    'Refusing in-place shared vendoring. Use scripts/install-framework.mjs for normal install flow, or pass --in-place explicitly.',
+  );
+  process.exit(1);
+}
 
 if (!existsSync(sharedRoot)) {
   console.error(`Missing shared source: ${sharedRoot}`);

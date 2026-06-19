@@ -118,7 +118,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** feature-level SDD design status/spec links, `.protocols/FT-001/plan.md`, `.protocols/FT-001/decision-log.md`, `.memory-bank/tasks/plans/IMPL-FT-001.md`, task records в `.memory-bank/tasks/*.task.json`, индекс `.memory-bank/tasks/index.json` и required initial Execution Packets для T2/T3 и явных T0/T1 packet requirements.
 
-   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным JSON task records / artifacts, затем `/mb-doctor` на feature/task-queue boundary и перейти к `/execute TASK-*`.
+   **Дальше:** после декомпозиции текущей feature запустить `/mb-doctor` на feature/task-queue boundary и перейти к `/execute TASK-*`; `/verify TASK-*` выполняется после реализации конкретной задачи.
 
 9. `/mb-doctor`
 

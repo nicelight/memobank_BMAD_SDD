@@ -234,7 +234,10 @@ function prepareRepository() {
     },
   });
 
-  run(process.execPath, ['scripts/vendor-shared.mjs'], { cwd: preparedRepo });
+  run(process.execPath, ['scripts/vendor-shared.mjs'], {
+    cwd: preparedRepo,
+    env: { ...process.env, MEMOBANK_VENDOR_SHARED_ALLOW: '1' },
+  });
 
   return { tempRoot, preparedRepo };
 }

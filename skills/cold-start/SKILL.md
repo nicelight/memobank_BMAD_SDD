@@ -375,10 +375,12 @@ After review gate passes (APPROVE):
 
 1. Pick the highest-priority ready task from `.memory-bank/tasks/index.json` and its indexed `.task.json` records. If the index is empty, stop and run `/spec-design`, then `/prd-to-tasks FT-<NNN>` for a selected feature.
    Use `/clarify-feature FT-<NNN>` first only if that feature is explicitly pending/blocked.
-2. Run `mb-execute` for the task (plan → implement → quality gates → MB-SYNC).
-3. Route by `task.tier`: `T0`/`T1` may use compact verification in `run.md`; `T2`/`T3` require `mb-verify` and `mb-red-verify`.
-4. For `T3`, require human-aware checkpoint plus rollback/recovery note before closure.
-5. Repeat until the wave is complete or user stops.
+2. Run `mb-execute` for the task (plan → implement → quality gates → handoff).
+3. Run `mb-verify` for the same task when verification is required by tier/workflow.
+4. Route red verification by `task.tier`: `T3` requires per-task `mb-red-verify` before closure; `T2` does not require per-task red-verify for task closure, but the feature requires `/red-verify --feature FT-<NNN>` before feature completion.
+5. For `T3`, require human-aware checkpoint plus rollback/recovery note before closure.
+6. Run `/mb-sync` only by scheduler or explicit standalone owner after the closure decision is recorded.
+7. Repeat until the wave is complete or user stops.
 
 If the intended mode is unattended end-to-end:
 - do not stay in manual loop here
@@ -401,7 +403,7 @@ You are done when:
 - Brownfield: repo mapped **as-is** into MB and user asked for PRD delta (no roadmap entities invented without PRD).
 - Skeleton-only: skeleton created, user asked for PRD (valid stopping point).
 - Multi-expert review passes (APPROVE) — for Greenfield/Brownfield; skip for Skeleton-only.
-- Execution loop is available (mb-execute + mb-verify reachable or documented, plus mb-red-verify for T2/T3 tasks).
+- Execution loop is available (mb-execute + mb-verify reachable or documented, plus mb-red-verify for T3 tasks and T2 feature completion).
 - Autonomous loop is available (`/autonomous` + `/autopilot` documented).
 
 ---

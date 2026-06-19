@@ -501,10 +501,6 @@ node scripts/mb-doctor.mjs --strict
 
 В fresh skeleton пустой `.memory-bank/tasks/index.json` валиден в default doctor mode и невалиден в strict mode, потому что executable queue отсутствует.
 
-## 12. Documentation caveats
-
-`PROJECT_MAP.md` упоминает `HANDOFF.md` и `Optimisation.md` как planning/context docs, но в текущем tree этих файлов нет. Этот файл говорит о них только как о caveat и не ссылается на них как на существующую документацию.
-
 ## License
 
 MIT

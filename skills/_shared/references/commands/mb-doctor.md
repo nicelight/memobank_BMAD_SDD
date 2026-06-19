@@ -42,7 +42,7 @@ Status transitions have two modes. In scheduler mode, `/autopilot` and `/autonom
 `mb-doctor` must check only readiness-critical conditions:
 
 - `mb-lint` passes first. A lint error is a doctor error.
-- Feature docs under `.memory-bank/features/FT-*.md` may have optional clarification metadata: `clarification_status`, `last_clarified`, and `clarification_questions`.
+- Feature docs under `.memory-bank/features/FT-*.md` may have optional clarification metadata: `clarification_status`, `last_clarified`, and `clarification_questions`. Absent optional clarification fields are allowed; missing feature frontmatter or invalid present metadata is not.
 - Explicit `clarification_status: pending|blocked` is not allowed for autonomous/autopilot readiness or task-linked features.
 - Indexed task records do not exist for features that are pending, missing, or otherwise not clarified.
 - `.memory-bank/tasks/index.json` is valid JSON and has a valid task list.
@@ -92,7 +92,7 @@ Errors block autonomous/autopilot progression:
 
 - `MB_LINT_SCRIPT_MISSING` in `--strict`
 - `MB_LINT_FAILED`
-- `FEATURE_CLARIFICATION_METADATA_MISSING` in `--strict`
+- `FEATURE_CLARIFICATION_METADATA_MISSING` in `--strict` when feature frontmatter is missing or present clarification metadata is invalid
 - `FEATURE_CLARIFICATION_PENDING` in `--strict`
 - `TASKS_FROM_UNCLARIFIED_FEATURE` in `--strict`
 - `TASK_INDEX_INVALID`
@@ -139,7 +139,7 @@ Structural lint details such as invalid legacy `risk`, dependency cycles, and sc
 Warnings identify non-blocking quality risks in default mode:
 
 - `MB_LINT_SCRIPT_MISSING`
-- `FEATURE_CLARIFICATION_METADATA_MISSING`
+- `FEATURE_CLARIFICATION_METADATA_MISSING` when feature frontmatter is missing or present clarification metadata is invalid
 - `FEATURE_CLARIFICATION_PENDING`
 - `TASKS_FROM_UNCLARIFIED_FEATURE`
 - `TASK_IN_PROGRESS_WITHOUT_PROTOCOL`
