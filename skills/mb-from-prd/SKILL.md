@@ -9,7 +9,7 @@ description: >
 - **What it does:** converts a PRD into structured project knowledge and traceable planning artifacts.
 - **Use it when:** the project is greenfield and `prd.md` or equivalent requirements already exist.
 - **Input:** `prd.md` or user-provided PRD text plus an initialized `.memory-bank/`.
-- **Output:** product, RTM, epics, features, and SDD design routing ready for mandatory `/spec-design` and per-feature `/spec-improve` before `/prd-to-tasks`.
+- **Output:** product, RTM, epics, features, and SDD design routing ready for mandatory `/spec-design` before `/prd-to-tasks`.
 
 ## Preconditions
 - You are in the repo root.
@@ -70,7 +70,7 @@ For each feature:
 - Ensure autonomy and explicit acceptance criteria.
 - Do not add clarification metadata by default. Add `clarification_status: pending|blocked` only when the PRD explicitly leaves a feature-level blocker that affects task decomposition.
 - Fill optional sections such as `Source artifacts`, `Normative inputs`, `Constraints / invariants`, and `Verification targets` only when they are grounded in evidence.
-- Include the `## SDD Design Gate` section in every feature. This routes to `/spec-improve FT-<NNN>` before `/prd-to-tasks FT-<NNN>` but does not introduce a placeholder `spec_design_status` or a new blocking status.
+- Include the `## SDD Design Gate` section in every feature. This routes through mandatory `/spec-design` and then `/prd-to-tasks FT-<NNN>`, where feature-level SDD design is completed before task slicing. Do not introduce a placeholder `spec_design_status` or a new blocking status.
 - Default `status: draft` until acceptance criteria + verification plan are solid.
 
 ### 8) Tasks planning (per-feature, no “everything at once”)
@@ -79,13 +79,13 @@ Do **not** generate a full task queue “в лоб” for all features in one pa
 Instead:
 1) Ensure `.memory-bank/schemas/task.schema.json` and `.memory-bank/tasks/index.json` exist. A fresh skeleton may have `{ "version": 1, "tasks": [] }`.
 2) Run `/spec-design` after `/prd`. For small independent T0/T1 features it may record a minimal backbone with irrelevant areas marked `not_applicable`; for shared/T2/T3 concerns it creates or updates the needed backbone SDD specs and `spec-index`. This is not another mandatory heavy phase: it creates no tasks and no feature-local implementation design.
-3) For each selected feature, run `/spec-improve FT-<NNN>` first, then `/prd-to-tasks FT-<NNN>` to produce:
+3) For each selected feature, run `/prd-to-tasks FT-<NNN>` to produce feature-level design status, implementation plan, JSON tasks, and required packets:
    - `.memory-bank/tasks/plans/IMPL-FT-<NNN>.md`
    - atomic `.memory-bank/tasks/TASK-*.task.json` records grouped by `wave`, each with mandatory `tier: T0|T1|T2|T3`
 
 When enough structured evidence exists, those feature-level plans and task records may include optional richer fields such as `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, and `verification_targets`.
 Task routing is authoritative only through `task.tier`; the old `risk` / `risk.level` model is invalid.
-Canonical SDD planning path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>`. `/spec-improve` remains the feature-level gate after the mandatory backbone gate. Run `/clarify-feature FT-<NNN>` only when a feature is explicitly pending/blocked. For simple T0/T1-like features, `/spec-improve` may set `spec_design_status: not_required` with a concise rationale.
+Canonical SDD planning path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/prd-to-tasks FT-<NNN>`. `/prd-to-tasks` includes the feature-level design phase after the mandatory backbone gate. Run `/clarify-feature FT-<NNN>` only when a feature is explicitly pending/blocked. For simple T0/T1-like features, the feature design phase may set `spec_design_status: not_required` with a concise rationale.
 
 This keeps planning accurate and avoids speculative task explosions.
 
@@ -125,5 +125,5 @@ If the goal is “PRD → done without more user interaction”:
 - Epics and features exist with acceptance criteria.
 - `.memory-bank/spec-index.md` routes existing/planned/candidate/unknown/not_applicable SDD design areas.
 - No schema-backed task records are required from `mb-from-prd` itself.
-- If task planning is explicitly continued with `/spec-improve FT-<NNN>` and `/prd-to-tasks FT-<NNN>`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
+- If task planning is explicitly continued with `/prd-to-tasks FT-<NNN>`, schema-backed task records are indexed in `.memory-bank/tasks/index.json`; every task has `tier`.
 - index.md is updated.

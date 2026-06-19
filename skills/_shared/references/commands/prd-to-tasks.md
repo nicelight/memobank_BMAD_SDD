@@ -5,9 +5,11 @@ status: active
 # /prd-to-tasks — Feature → Implementation plan → JSON tasks
 
 <objective>
-Взять конкретную фичу (FT-XXX) и превратить её в:
+Взять конкретную фичу (FT-XXX), полноценно закрыть feature-level SDD design и превратить её в:
+- feature design status/spec links
 - Implementation Plan
 - schema-backed JSON task records (waves)
+- required derivative Execution Packets
 - критерии done + тесты + verify
 </objective>
 
@@ -24,7 +26,11 @@ status: active
 
 ## 1) Decomposition preflight
 Перед созданием или обновлением implementation plan и JSON task records проверь, что feature can be decomposed.
-`/prd-to-tasks` does not require feature clarification metadata. The normal path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>`.
+`/prd-to-tasks` does not require feature clarification metadata. The normal manual path is `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/prd-to-tasks FT-<NNN>`.
+
+`/prd-to-tasks` owns the full feature-level SDD design phase before task slicing.
+Standalone `/spec-improve FT-<NNN>` remains a repair/advanced command for rerunning
+only feature design without task decomposition.
 
 Для `FT-<NNN>`:
 1. Найди `.memory-bank/features/FT-<NNN>-*.md`.
@@ -60,9 +66,27 @@ For `--all`:
 
 `/clarify-feature` does not assign tier. Tier remains mandatory here and is assigned during task decomposition.
 
-## 1.1) SDD design preflight
-Before decomposition, read `.memory-bank/spec-backbone.md`, `.memory-bank/spec-index.md`, and the target feature doc.
-Block before task generation unless the global backbone status in `.memory-bank/spec-backbone.md` is `complete` or `minimal` with explicit `not_applicable` areas. If backbone status is missing or `blocked`, route to `/spec-design` and stop.
+## 1.1) Full feature SDD design phase
+Before decomposition, complete the same feature-level design work that standalone
+`/spec-improve FT-<NNN>` would do.
+
+Read existing design surface first:
+1. Read `.memory-bank/spec-index.md`.
+2. Read `.memory-bank/spec-backbone.md`.
+3. Confirm global backbone status in `.memory-bank/spec-backbone.md` is `complete`,
+   or `minimal` with explicit `not_applicable` areas. If missing, bare `minimal`,
+   or `blocked`, route to `/spec-design` and stop before task generation.
+4. Read the target `.memory-bank/features/FT-<NNN>-*.md`.
+5. Read linked epic, requirements, Constitution, backbone specs, and any existing
+   specs routed by the index/backbone.
+6. Search existing `.memory-bank/architecture/`, `.memory-bank/tech-specs/`,
+   `.memory-bank/contracts/`, `.memory-bank/domains/`, `.memory-bank/states/`,
+   `.memory-bank/adrs/`, `.memory-bank/testing/`, `.memory-bank/guides/`, and
+   `.memory-bank/runbooks/` for overlapping decisions.
+
+Rule: do not create a new spec before checking existing specs through the index.
+If several features need the same missing domain/contract/state/API/security/data/runtime/testing decision, stop and route to `/spec-design` instead of creating duplicate feature-local specs.
+If a task/feature interpretation conflicts with a backbone spec, stop with a blocker instead of choosing locally.
 
 Feature frontmatter may include:
 
@@ -76,10 +100,7 @@ Rules:
 - `spec_design_status: blocked` always blocks task decomposition.
 - `spec_design_status: not_required` is allowed only for simple T0/T1-like features with a concise rationale in the feature doc.
 - `spec_design_status: complete` requires at least one concrete linked spec when the feature implies T2/T3 work.
-- missing or incomplete `spec_design_status` does not always block immediately; first estimate the likely task tiers from feature scope.
-- If decomposition reveals any T2/T3 task would be needed and `spec_design_status` is missing, `blocked`, `not_required`, or `complete` without linked specs, stop and route to `/spec-improve FT-<NNN>` (or `/spec-auto FT-<NNN>` in autonomous flow).
-- If multiple targeted features need the same missing shared domain/contract/state/API/security/data/runtime decision, stop and route to `/spec-design` before `/spec-improve`.
-- Do not create new specs here. This command only consumes the design surface and routes to `/spec-improve` when needed.
+- missing or incomplete `spec_design_status` means this command must complete or block the feature-level design phase before task slicing.
 - Design specs are normative source of truth for task records. If feature/task interpretation conflicts with linked SDD specs, stop with a blocker instead of resolving locally.
 
 T2/T3 indicators include:
@@ -90,7 +111,81 @@ T2/T3 indicators include:
 - deploy/runtime/production impact
 - changes where tests can pass while the substance is wrong
 
-For `--all`, resolve the full targeted feature set first. If any targeted feature would need T2/T3 tasks without complete linked SDD specs, halt before creating or updating task records for any feature and report all blocked features.
+Decide required design depth:
+- none: simple T0/T1-like work with no runtime, contract, state, data, security, migration, or cross-module design impact
+- feature hub only: a small `.memory-bank/tech-specs/FT-<NNN>-<slug>.md` is enough
+- linked specs: update or create specific architecture/contracts/domains/states/ADR/testing/runbook docs
+
+If simple, mark the feature:
+
+```yaml
+spec_design_status: not_required
+spec_design_links: []
+```
+
+Add a concise rationale in the feature doc and update `.memory-bank/spec-index.md`.
+
+Before writing specs, explicitly look for:
+- duplicate or conflicting existing specs
+- inconsistent boundaries, contracts, state transitions, or data ownership
+- hidden coupling or complexity growth
+- unclear acceptance criteria that would make tasks unverifiable
+- security/compliance/runtime risks
+- places where tests could pass while substance remains wrong
+
+If design is blocked or multiple meaningful options exist, ask the user. Ask only
+questions needed to make the spec truthful. If contradiction or major complexity
+increase exists, stop until resolved.
+
+Allowed artifacts:
+- feature design hub: `.memory-bank/tech-specs/FT-<NNN>-<slug>.md`
+- architecture notes: `.memory-bank/architecture/<topic>.md`
+- contracts: `.memory-bank/contracts/<boundary>.md`
+- domain/data model notes: `.memory-bank/domains/<domain>.md`
+- states: `.memory-bank/states/<lifecycle>.md`
+- ADRs for significant decisions: `.memory-bank/adrs/ADR-<NNN>-<slug>.md`
+- frontend component guide: `.memory-bank/guides/frontend-component-guide.md` when UI component/design behavior is normative
+- testing/runbooks when needed: `.memory-bank/testing/`, `.memory-bank/runbooks/`
+
+Keep KISS:
+- update existing specs when that is the natural home
+- do not fork duplicate specs
+- do not add schema, migration, hook, or governance machinery just for design routing
+- write decisions, constraints, invariants, and verification targets only when grounded in PRD/user/spec evidence
+- use backbone specs from `/spec-design` as primary normative inputs
+
+Update `.memory-bank/spec-index.md`:
+- keep the spec registry/planned specs current
+- add linked specs created or used for the feature
+- record broken/missing links only when relevant
+
+Do not write feature status maps into `.memory-bank/spec-index.md`; feature `spec_design_status` lives in feature frontmatter. If a global/shared gap appears, update `.memory-bank/spec-backbone.md` or route back to `/spec-design`.
+
+Invariant for `spec_design_status: complete`:
+- set `complete` only when every feature-relevant SDD design area either has a concrete linked spec file routed through `.memory-bank/spec-index.md` as an authoritative, evidence-backed source of truth, or is explicitly `not_applicable` for this feature
+- do not set `complete` while any feature-relevant design area remains planned, candidate, unknown, conflicting, or otherwise unresolved
+- if unresolved feature-relevant planned/candidate/unknown/conflicting areas remain, set `spec_design_status: blocked` or leave the feature without `complete`, and record the gap/open question in the feature doc or relevant spec; use `.memory-bank/spec-backbone.md` only for shared/global gaps
+
+Update target feature frontmatter:
+
+```yaml
+spec_design_status: complete
+spec_design_links:
+  - .memory-bank/tech-specs/FT-<NNN>-<slug>.md
+```
+
+Allowed statuses:
+- `complete`
+- `not_required`
+- `blocked`
+
+Use `blocked` only when design cannot be made truthful without user or external evidence.
+If the result is `blocked`, stop before creating or updating implementation plans,
+task records, or packets.
+
+For `--all`, run this full feature SDD design phase for each targeted feature
+before task generation. If any targeted feature is blocked, halt before creating
+or updating task records for any feature and report all blocked features.
 
 ## 2) Создай протокол фичи
 - `.protocols/FT-<NNN>/plan.md`
@@ -271,7 +366,7 @@ Persistence rule:
 - не выдумывай содержимое без evidence из PRD / feature docs / baseline docs / contracts / states / runbooks
 - for `T2` / `T3`, include relevant linked SDD specs from `spec_design_links`, `.memory-bank/spec-backbone.md`, and `spec-index.md` in `source_artifacts`, `normative_inputs`, `constraints`, `invariants`, or `verification_targets`
 - include relevant backbone specs from `.memory-bank/spec-backbone.md` and `spec-index.md` whenever they constrain source of truth, module boundaries, runtime data model, API behavior, events/messages, frontend component behavior, invariants, or testing gates
-- if a planned `T2` / `T3` task has no relevant linked SDD spec to include, stop and route back to `/spec-improve FT-<NNN>` instead of creating a weak task record
+- if a planned `T2` / `T3` task still has no relevant linked SDD spec after the feature design phase, stop with a design blocker; route shared/global gaps to `/spec-design`, or repair feature-local gaps before creating a weak task record
 
 Обнови `.memory-bank/tasks/index.json` только ссылками:
 ```json
@@ -292,8 +387,38 @@ Persistence rule:
 - `planned -> ready` происходит явно, когда все prerequisites/dependencies уже `done` или отсутствуют, и нет blockers / blocking review rejects
 - dependent task может быть `ready`, если все её dependencies уже `done`
 
-## 6) Gate
-Перед `execute`:
+## 6) Build required Execution Packets
+After task records are written, build initial derivative Execution Packets while
+the feature/task/spec context is still loaded.
+
+Create or refresh `.memory-bank/packets/TASK-<ID>.packet.json` for:
+- every generated `T2` / `T3` task
+- every `T0` / `T1` task with `runtime_context.packet_required: true`
+
+Use `skills/_shared/references/protocols/packet-template.json` shape when
+available. Each packet is derivative only; task records, feature docs, linked
+SDD specs, and tier policy remain authoritative.
+
+For each required packet:
+1. Use the just-written task record as the source task.
+2. Compute `source_task_hash` as `sha256:<64-lowercase-hex>` over the raw task
+   record bytes.
+3. Fill source refs, purpose fields, scope, verification checks, evidence
+   requirements, stop conditions, and required handoff from the task record,
+   implementation plan, linked feature, and linked specs.
+4. Use status `ready` when usable, `ready_with_gaps` for bounded non-blocking
+   gaps, or `blocked` when required inputs are missing, contradictory, or
+   insufficient for safe execution.
+
+For T2/T3 required packet use, missing linked SDD specs, missing verification
+basis, contradictory scope, or unresolved public contract/state/data/security
+decisions are packet blockers, not `ready_with_gaps`.
+
+Standalone `/mb-packet TASK-<ID>` remains the repair/refresh command when task
+records or specs change after decomposition.
+
+## 7) Readiness handoff
+Before handoff:
 - проверь что acceptance criteria из FT покрыты задачами
 - обнови RTM при необходимости
 - если richer fields были добавлены, проверь что они не противоречат feature doc и RTM
@@ -301,10 +426,21 @@ Persistence rule:
   canonical `packet_ref` are present before handing off task records
 - if `runtime_context.packet_required` is set for any tier, verify that
   `packet_ref` points to expected `.memory-bank/packets/TASK-*.packet.json`
-- сам packet строит `/mb-packet`, а не `/prd-to-tasks`
+- required packet files exist and have `status: ready|ready_with_gaps`; if any
+  required packet is `blocked`, report the blocker and do not hand off execution
 
 Если используется `--all`:
 - пройдись по всем `FT-*` в порядке приоритета
 - после каждой фичи перечитай `tasks/index.json` и избегай дублирования `TASK-*`
 - не запускай execution отсюда; только готовь autonomous-ready JSON task queue
+
+Final report:
+- feature id and final `spec_design_status`
+- linked specs created/used
+- implementation plan path
+- task records created/updated
+- packet files created/updated and their statuses
+- blockers/open questions, or `none`
+- next gate: run `/mb-doctor` once for the feature/task-queue boundary before
+  starting `/execute`
 </process>

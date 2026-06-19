@@ -55,9 +55,9 @@ Manual mode:
 - richer task fields when present: `source_artifacts`, `normative_inputs`,
   `constraints`, `invariants`, `verification_targets`, `purpose`,
   `success_outcome`, `anti_goals`, `runtime_context`
-- `.memory-bank/packets/<TASK_ID>.packet.json` when required by tier/policy:
-  all `T2` / `T3`, and `T0` / `T1` only when
-  `runtime_context.packet_required` is true
+- `.memory-bank/packets/<TASK_ID>.packet.json` when present or expected by
+  tier/policy; `/prd-to-tasks` creates initial required packets and
+  `/mb-doctor` validates readiness before execution handoff
 
 Authoritative SDD spec links are links to `.memory-bank/spec-index.md`,
 `.memory-bank/tech-specs/`, `.memory-bank/architecture/`,
@@ -75,28 +75,33 @@ Stop with an explicit handoff error if:
 - `tier` is missing or is not `T0|T1|T2|T3`
 - task `status` is `blocked`, `failed`, or `done`
 - any `depends_on` task is missing or is not `done`
-- `tier` is `T2` / `T3` and `runtime_context.packet_required` is absent or false
-- required packet `packet_ref`, when present, is not canonical
-  `.memory-bank/packets/<TASK_ID>.packet.json`
-- required packet is missing, malformed, stale, blocked, or hash-mismatched
-  against the current task record
 - `tier` is `T2` / `T3` and neither task richer fields nor linked feature
   `spec_design_links` include relevant SDD spec links
+- task, packet summary, feature, implementation plan, linked specs, or
+  acceptance criteria are contradictory, underspecified for safe
+  implementation, or logically inconsistent
+- success cannot be verified from the provided acceptance criteria,
+  verification targets, gates, or linked specs
+- implementation would exceed assigned scope, touch forbidden scope, or require
+  an unsettled product/spec/architecture/public-contract/state/data/security
+  decision
+- task appears materially broader than assigned, or its tier is obviously too
+  low for the actual implementation risk
 
 Do not block `T0` / `T1` only because SDD spec links are absent.
 Route only by `task.tier`. Do not use legacy `risk` / `risk.level`.
-Packets are required for every `T2` / `T3`; `T0` / `T1` packets remain
-explicit-only. Required packets must be usable (`ready` or `ready_with_gaps`)
-before implementation; otherwise route to `/mb-packet TASK_ID` or stop with a
-handoff blocker.
+Do not validate `packet_ref`, `source_task_hash`, packet freshness, or packet
+status inside `mb-execute`. If packet context exists, treat it as derivative
+context. If it contradicts the task record or linked specs in a way that affects
+implementation semantics, stop with a blocker and report the contradiction.
 
 ## Protocol Routing
 Create `.tasks/<TASK_ID>/` for runtime artifacts.
 
 `T0` / `T1`: use compact protocol:
 - `.protocols/<TASK_ID>/run.md`; record tier, goal, context, plan, changes,
-  gates, evidence, Goal Interpretation, packet status when present, and handoff
-  notes
+  gates, evidence, Goal Interpretation, packet context when present, and
+  handoff notes
 - `VERDICT: PASS|FAIL|BLOCKED` is a local evidence marker only, not task closure
 
 `T2` / `T3`: use full protocol:
@@ -122,7 +127,7 @@ Record whether these markers are present or still needed; do not close the task.
   - Allowed write scope
   - Forbidden scope
   - Stop conditions
-- Record constraints, touched areas, packet verification checks, and gates.
+- Record constraints, touched areas, packet-sourced checks when used, and gates.
 - Stay inside `runtime_context.allowed_write_scope` when present.
 - Do not touch `runtime_context.forbidden_scope`; if it was touched, stop and
   record a blocker.
@@ -133,8 +138,8 @@ Record whether these markers are present or still needed; do not close the task.
 ## Local Gates
 Run relevant local gates from project instructions: lint/typecheck, unit tests,
 and integration/e2e checks only when relevant.
-When a packet is required or present, run applicable packet
-`verification.commands` / `success_checks`, or record why each could not run.
+When packet context is present, run applicable packet-sourced
+`verification.commands` / `success_checks`, or record why each was skipped.
 
 If a gate cannot run or fails, record command, result, evidence path, and the
 blocker in the protocol/handoff. Do not convert that into final task status.
@@ -146,7 +151,7 @@ Finish with:
 - local gates run and results
 - evidence paths under `.tasks/<TASK_ID>/`
 - verification targets and risk notes for verifier/reviewer
-- packet path/status and packet checks run or skipped with reason
+- packet context used and packet-sourced checks run or skipped with reason
 - scope compliance: yes/no
 - forbidden scope touched: yes/no
 - MB-SYNC handoff notes: what should be synchronized and by whom

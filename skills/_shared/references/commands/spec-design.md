@@ -1,11 +1,11 @@
 ---
-description: Mandatory global SDD architecture backbone gate after PRD decomposition and before feature design.
+description: Mandatory global SDD architecture backbone gate after PRD decomposition and before feature task design.
 status: active
 ---
 # /spec-design - Global SDD backbone gate
 
 <objective>
-Create or update the mandatory global architecture/design backbone after `/prd` has created the FT set and before `/spec-improve FT-<NNN>`, `/spec-auto --all`, or `/prd-to-tasks`.
+Create or update the mandatory global architecture/design backbone after `/prd` has created the FT set and before `/prd-to-tasks FT-<NNN>` or `/spec-auto --all`.
 
 The first result is AI-first implementation guardrails: technical decisions, boundaries, and contracts that constrain agents/developers so they do not damage the project. It is not an architecture essay.
 
@@ -17,7 +17,7 @@ The gate is mandatory by workflow, but adaptive by depth:
 - projects with shared/T2/T3 concerns get staged architecture decisions and normal backbone specs;
 - unresolved key decisions are recorded as blockers and downstream commands must stop.
 
-`/spec-design` does not create normal feature TASK records, implementation plans, or feature-local tech specs, and it does not replace `/spec-improve`. Exception: it may create one foundation task when a project needs a minimum executable baseline before business features.
+`/spec-design` does not create normal feature TASK records, implementation plans, or feature-local tech specs. Feature-local design is handled inside `/prd-to-tasks`; standalone `/spec-improve` is for repair/refresh. Exception: `/spec-design` may create one foundation task when a project needs a minimum executable baseline before business features.
 </objective>
 
 <process>
@@ -102,7 +102,7 @@ After reading PRD/requirements/features and current specs, ask one initial archi
 - **Standard AI-first architecture backbone (recommended when shared behavior exists)**: normal guardrails for modules, source-of-truth, contracts, data, testing, and deployment.
 - **Strict T2/T3 backbone**: for public contracts, security/safety, migrations, distributed/runtime boundaries, cross-team ownership, or irreversible decisions.
 
-Recommend the mode from evidence; the user may override. Preserve the rule that `/prd-to-tasks` may route back to `/spec-design` or `/spec-improve` if T2/T3 indicators appear during task slicing.
+Recommend the mode from evidence; the user may override. Preserve the rule that `/prd-to-tasks` may route back to `/spec-design` for shared/global gaps or use its own feature-level design phase for feature-local gaps if T2/T3 indicators appear during task slicing.
 
 ## 5) Backbone status gate
 Update `.memory-bank/spec-backbone.md` with this exact contract:
@@ -248,7 +248,7 @@ Route domain model work through the Backbone Area Matrix as `domain_model` with 
 
 Domain Spec is not a mandatory heavy phase for every project:
 - If the scope is simple T0/T1 and PRD/requirements/features already define the needed vocabulary and rules clearly enough, set `domain_model: not_applicable` with a short rationale, or link the authoritative PRD/requirements/features source.
-- If domain logic is feature-local, route it to `/spec-improve FT-<NNN>` and the feature tech-spec instead of creating a global Domain Spec.
+- If domain logic is feature-local, route it to the `/prd-to-tasks FT-<NNN>` feature-level design phase and the feature tech-spec instead of creating a global Domain Spec.
 - If the domain model affects modules, contracts, storage, states, security/safety, or likely T2/T3 tasks, `/spec-design` creates or updates a minimal `.memory-bank/domains/<domain>.md` or `.memory-bank/domains/runtime-data-model.md` as the global/shared authoritative source.
 
 Minimal Domain Spec sections:
@@ -320,7 +320,7 @@ Rules:
 - choose `tier` by the existing tier policy; do not add new status fields or foundation-specific lifecycle fields
 - fill the normal task schema fields; use empty arrays where evidence is not applicable
 - if storage or migrations are included, include a verification target that exercises the baseline path
-- keep scope to the minimum executable baseline; feature behavior still belongs to `/spec-improve` and `/prd-to-tasks`
+- keep scope to the minimum executable baseline; feature behavior still belongs to `/prd-to-tasks`
 
 ## 12) Verifiable contracts routing
 For AI-first architecture, route concrete contracts to verifiable artifacts when relevant:
@@ -363,7 +363,7 @@ Update `.memory-bank/spec-backbone.md`:
 - global backbone blockers and next command routing
 - architecture artifact strategy and baseline backbone specs with their scope
 - short backbone decision labels only, never decision body/rationale/rules
-- handoff to `/spec-improve` or `/spec-auto`
+- handoff to `/prd-to-tasks` or `/spec-auto`
 
 Update `.memory-bank/spec-index.md` only as a pure registry:
 - add or update authoritative spec rows
@@ -373,7 +373,7 @@ Update `.memory-bank/spec-index.md` only as a pure registry:
 
 For affected feature docs:
 - add SDD Design Gate notes with normative backbone links where evidence exists
-- do not set `spec_design_status: complete` unless feature-local `/spec-improve` criteria are already fully satisfied
+- do not set `spec_design_status: complete` unless feature-local design criteria are already fully satisfied
 - do not mark `not_required` for features that still depend on shared T2/T3 backbone decisions
 
 ## 15) Handoff
@@ -388,7 +388,7 @@ Report:
 - foundation task: created `TASK-*` or `none`
 - blockers/open questions
 - next command routing:
-  - if status is `complete`, or valid `minimal` with explicit `not_applicable` areas: `/spec-improve FT-<NNN>` for manual flow, or `/spec-auto --all` before `/prd-to-tasks --all` in autonomous flow
+  - if status is `complete`, or valid `minimal` with explicit `not_applicable` areas: `/prd-to-tasks FT-<NNN>` for manual flow, or `/spec-auto --all` before `/prd-to-tasks --all` in autonomous flow
   - if status is `blocked`: no downstream command; resolve the blocker, user decision, or spec gap, then rerun `/spec-design`
 
 </process>

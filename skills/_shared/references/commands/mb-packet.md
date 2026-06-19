@@ -1,14 +1,19 @@
 ---
-description: Build or refresh a derivative Execution Packet for one TASK.
+description: Repair or refresh a derivative Execution Packet for one TASK.
 status: active
 ---
 # /mb-packet - Build TASK Execution Packet
 
 <objective>
-Build or refresh a compact derivative Execution Packet for one indexed task.
+Repair or refresh a compact derivative Execution Packet for one indexed task.
 The packet helps `/execute`, `/verify`, `/red-verify`, `/autopilot`, and
 `/autonomous` load the right runtime context without replacing task records or
 linked specs as source of truth.
+
+Normal manual flow creates initial required packets inside
+`/prd-to-tasks FT-<NNN>` while feature/task/spec context is already loaded. Use
+standalone `/mb-packet TASK-<ID>` after task records or linked specs changed, or
+when `/mb-doctor` reports a packet readiness problem.
 </objective>
 
 <process>
@@ -165,12 +170,13 @@ Missing:
 Gaps:
 - ...
 Next action:
-- /execute TASK-001 or resolve blocker
+- rerun /mb-doctor at the feature/task-queue boundary, then /execute TASK-001; or resolve blocker
 ```
 
 For `T2` / `T3`, and for `T0` / `T1` tasks with
 `runtime_context.packet_required: true`, `ready` or `ready_with_gaps` is
-required before `/execute`. Missing, stale, blocked, malformed, or
-hash-mismatched required packets are a quality gate halt for scheduler runs.
+required before execution handoff. Missing, stale, blocked, malformed, or
+hash-mismatched required packets are reported by `/mb-doctor` as feature/task-
+queue readiness problems.
 
 </process>

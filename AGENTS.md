@@ -52,7 +52,7 @@ Do not overengineer. Придерживайся KISS. Лучшнее враг х
 - `skills/_shared/` — единственный canonical source для общих prompts, references и scripts.
 - В рабочем дереве намеренно нет package-local файлов `skills/*/{agents,references,scripts}/shared-*`.
 - При установке фреймворка эти файлы разворачиваются автоматически во временной копии репозитория.
-- Ожидаемый масштаб разворота: 627 generated `shared-*` файлов.
+- Ожидаемый масштаб разворота: 671 generated `shared-*` файлов.
 - Разворот выполняется цепочкой `scripts/install-framework.mjs` → временная копия repo → `scripts/vendor-shared.mjs` → `npx -y skills add <prepared-temp-repo> ...`.
 - Прямой `npx skills add <repo>` для source-only форка использовать нельзя, если перед этим не был запущен vendoring.
 
@@ -74,11 +74,11 @@ find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | w
 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
-Если нужно посмотреть временно развернутые 627 файлов, запускай:
+Если нужно посмотреть временно развернутые 671 файлов, запускай:
 
 ```bash
 MEMOBANK_KEEP_INSTALL_TMP=1 node scripts/install-framework.mjs --skill '*' --yes
 ```
 
 ## Canonical Interactive Chain
-- `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify task cards/artifacts -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T2/T3 -> /mb-sync`
+- `/analysis -> /brainstorm -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /prd-to-tasks FT-001 -> /mb-doctor at feature/task-queue boundary -> /execute TASK-001 -> /verify TASK-001 -> /red-verify TASK-001 for T3 -> /red-verify --feature FT-001 for T2 feature completion -> /mb-sync`

@@ -604,25 +604,27 @@ After finishing a meaningful unit of work:
 - Scheduler mode: T2 requires full protocol state, required packet/spec gates, and \`/verify\` \`VERDICT: PASS\`; per-task \`/red-verify\` is not required for T2 task closure.
 - Scheduler mode: T2 feature completion requires \`/red-verify --feature FT-<ID>\` with \`SEMANTIC_VERDICT: semantic-pass\` after all feature tasks are implemented.
 - Scheduler mode: T3 requires full protocol state, required packet/spec gates, \`/verify\` \`VERDICT: PASS\`, and per-task \`/red-verify\` \`SEMANTIC_VERDICT: semantic-pass\` before scheduler marks \`done\`.
-- T3 also requires a human-aware checkpoint and rollback/recovery note.
+- T3 also requires exact marker lines \`HUMAN_CHECKPOINT: done\` and \`ROLLBACK_RECOVERY_NOTE: present\`.
 - Manual mode: T0/T1 may close after \`/verify PASS\` only with explicit closure ownership and completed evidence; T2 may close after \`/verify PASS\` when full protocol plus required packet/spec gates are satisfied; T3 must run per-task \`/red-verify\` before final closure/\`/mb-sync\`.
 - Packet requirement: T2/T3 require canonical \`.memory-bank/packets/TASK-<ID>.packet.json\`; T0/T1 require packets only when \`task.runtime_context.packet_required === true\`.
-- Required packets are derivative runtime artifacts under \`.memory-bank/packets/\`; if missing, blocked, stale, invalid, or mismatched, run \`/mb-packet TASK-XXX\` or stop before implementation.
+- Required packets are derivative runtime artifacts under \`.memory-bank/packets/\`; \`/prd-to-tasks\` creates initial required packets and \`/mb-doctor\` validates readiness at the feature/task-queue boundary. Use \`/mb-packet TASK-XXX\` only to repair or refresh packets after task/spec changes.
 - If running in **Claude Code**: execute each \`TASK-XXX\` in a **fresh Claude session** using tier-appropriate \`.protocols/TASK-XXX/\` state.
 - If running in **Codex**: you can run each \`TASK-XXX\` in a fresh session via \`codex exec\` (see \`/execute\`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
+- \`codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 Claude (fresh session):
-- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
+- \`claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'\`
 
 ## Two modes (interactive vs autonomous)
-- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T3 (optional for T2 task) -> /mb-sync\`; before treating a T2 feature as complete, run \`/red-verify --feature FT-001\` after all its tasks are implemented (start execution only after every FT-* has been decomposed and the generated task records/artifacts have passed the pre-execution verify gate).
-- \`/spec-design\` is mandatory after \`/prd\`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas \`not_applicable\`; it may also create one first foundation task when a minimum executable baseline is needed. It does not replace per-feature \`/spec-improve FT-001\`.
+- **Interactive**: target chain is \`/analysis -> /brief -> /constitution if project_principles is not ratified|partial -> /write-prd -> /spec-init -> /prd -> /spec-design -> /prd-to-tasks FT-001 -> /mb-doctor at feature/task-queue boundary -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T3 (optional for T2 task) -> /mb-sync\`; before treating a T2 feature as complete, run \`/red-verify --feature FT-001\` after all its tasks are implemented (start execution after the current feature task set is decomposed and the feature/task-queue doctor gate has passed).
+- \`/prd-to-tasks\` performs feature-level SDD design and creates required initial packets before task handoff.
+- \`/spec-design\` is mandatory after \`/prd\`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas \`not_applicable\`; it may also create one first foundation task when a minimum executable baseline is needed.
 - Use \`/brainstorm\` before \`/brief\` only when the idea is raw.
 - Use \`/clarify-feature FT-001\` only for explicit feature blockers before \`/prd-to-tasks\`.
+- Use standalone \`/spec-improve\` and \`/mb-packet\` only for repair or refresh outside the happy path.
 - **Autonomous (batch)**: use \`/autonomous\` for full \`PRD → done\`; it runs \`/spec-auto --init\` after \`/write-prd\`, \`/spec-design --all\` after \`/prd\`, and \`/spec-auto --all\` after the backbone gate. Use \`/autopilot\` only if JSON task records and required SDD spec links already exist. See: \`.memory-bank/workflows/execute-loop.md\` and \`.memory-bank/workflows/autonomy-policy.md\`.
 
 Naming:
@@ -775,7 +777,7 @@ status: active
 | boundary_hints | .memory-bank/contracts/boundary-map.md | /prd, /spec-design | Seeded lightweight template; fill only evidence-backed responsibility/scope notes, no endpoint/OpenAPI details. |
 | lifecycle_hints | .memory-bank/states/lifecycle-map.md | /prd, /spec-design | Create only when lifecycles affect feature boundaries. |
 | system_architecture | .memory-bank/architecture/system-architecture.md | /spec-design | Default global architecture hub after /prd. |
-| feature_design | .memory-bank/tech-specs/FT-<NNN>-<slug>.md | /spec-improve | Feature-local specs only when needed before task decomposition. |
+| feature_design | .memory-bank/tech-specs/FT-<NNN>-<slug>.md | /prd-to-tasks | Feature-local specs only when needed before task decomposition. |
 
 ## Broken / Missing Links
 - TBD
@@ -989,8 +991,8 @@ status: active
 - Bootstrap: cold-start / mb-init
 - Optional Analysis: mb-analysis, then /analysis /brainstorm /brief when the idea is not ready for PRD
 - Project principles: /constitution after /brief or existing PRD context, before /write-prd only when project_principles is not ratified|partial
-- PRD → MB: /write-prd, lightweight /spec-init, /prd, /spec-design, /spec-improve, then /prd-to-tasks
-- SDD design: /spec-init for lightweight route-map preflight, /spec-design for mandatory adaptive global backbone after /prd, /spec-improve FT-XXX for manual feature design, /spec-auto for autonomous design
+- PRD → MB: /write-prd, lightweight /spec-init, /prd, /spec-design, then /prd-to-tasks
+- SDD design: /spec-init for lightweight route-map preflight, /spec-design for mandatory adaptive global backbone after /prd, feature-level design inside /prd-to-tasks, standalone /spec-improve for repair, /spec-auto for autonomous design
 - Map codebase: /map-codebase
 - Execution: /execute
 - Verification (UAT): /verify

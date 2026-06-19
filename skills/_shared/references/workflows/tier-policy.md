@@ -77,9 +77,13 @@ Rules:
   treat it as a policy violation, not permission to skip the packet.
 - Required packet gates use canonical
   `.memory-bank/packets/TASK-<ID>.packet.json` when `packet_ref` is absent.
-- For required packet gates, `/execute`, `/verify`, `/red-verify`,
-  `/autopilot`, and `/autonomous` must block on missing, malformed, stale,
-  blocked, or hash-mismatched packets.
+- For required packet gates, `/verify`, `/red-verify`, `/autopilot`, and
+  `/autonomous` must block on missing, malformed, stale, blocked, or
+  hash-mismatched packets.
+- `/execute` reads packet context when present or expected, but structural
+  packet readiness is owned by `/prd-to-tasks`, `/mb-doctor`, and scheduler
+  gates. `/execute` stops on semantic packet/task/spec contradictions, not on
+  packet freshness/hash/status checks.
 - Packet statuses are local packet statuses only:
   `ready|ready_with_gaps|blocked|stale`.
 - Packet statuses are not task lifecycle statuses and must not be added to the

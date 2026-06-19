@@ -1,13 +1,19 @@
 ---
-description: Improve one feature's SDD design against the Design Specs Index before task decomposition.
+description: Standalone repair/advanced command for one feature's SDD design.
 status: active
 ---
 # /spec-improve - Feature-level SDD design improvement
 
 <objective>
-Improve the minimum necessary spec surface for one feature before `/prd-to-tasks`.
+Repair or rerun the minimum necessary spec surface for one feature without task
+decomposition.
 
 `/spec-improve FT-<NNN>` checks existing specs first, finds gaps/contradictions, asks focused questions when needed, updates only necessary design artifacts, and marks the target feature with `spec_design_status`.
+
+Normal manual flow does not require a separate `/spec-improve` step:
+`/prd-to-tasks FT-<NNN>` includes the full feature-level SDD design phase before
+task slicing. Use standalone `/spec-improve` when you need to repair, refresh,
+or review feature design without creating/updating task records.
 </objective>
 
 <process>
@@ -16,7 +22,9 @@ Improve the minimum necessary spec surface for one feature before `/prd-to-tasks
 Expected `$ARGUMENTS`:
 - `FT-<NNN>`
 
-Run after `/prd` and mandatory `/spec-design`, before `/prd-to-tasks FT-<NNN>`.
+Run after `/prd` and mandatory `/spec-design` when feature design needs a
+standalone repair/refresh pass. In the happy path, run `/prd-to-tasks FT-<NNN>`
+directly after `/spec-design`; it performs this design work before task slicing.
 Consume backbone specs as normative inputs instead of duplicating them.
 
 If the argument is missing, ask the user to choose one feature.
@@ -25,8 +33,12 @@ Examples:
 - `/spec-improve FT-001`
 - `/spec-improve FT-012`
 
-Canonical route:
-`/write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-<NNN> -> /prd-to-tasks FT-<NNN>`.
+Normal route:
+`/write-prd -> /spec-init -> /prd -> /spec-design -> /prd-to-tasks FT-<NNN>`.
+
+Standalone repair route:
+`/spec-improve FT-<NNN> -> /prd-to-tasks FT-<NNN>` when decomposition is still
+needed after the repair.
 
 ## 1) Read existing design surface first
 Before creating any new spec:
@@ -131,7 +143,8 @@ Report:
 - gaps/open questions
 - complexity or contradiction notes
 - expected next command routing:
-  - if `spec_design_status` is `complete` or `not_required`: `/prd-to-tasks FT-<NNN>`
+  - if `spec_design_status` is `complete` or `not_required`: rerun
+    `/prd-to-tasks FT-<NNN>` when task decomposition or packet refresh is needed
   - if `spec_design_status` is `blocked`: no `/prd-to-tasks`; resolve the blocker and rerun `/spec-improve FT-<NNN>`, or route back to `/spec-design` when the gap is shared/global
 
 </process>

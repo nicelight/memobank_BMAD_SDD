@@ -71,19 +71,19 @@ After finishing a meaningful unit of work:
 - Scheduler mode: T3 also requires exact marker lines `HUMAN_CHECKPOINT: done` and `ROLLBACK_RECOVERY_NOTE: present`.
 - Manual mode: T0/T1 may close after `/verify PASS` only with explicit closure ownership and completed evidence; T2 may close after `/verify PASS` when full protocol plus required packet/spec gates are satisfied; T3 must run per-task `/red-verify` before final closure/`/mb-sync`.
 - Packet requirement: T2/T3 require canonical `.memory-bank/packets/TASK-<ID>.packet.json`; T0/T1 require packets only when `task.runtime_context.packet_required === true`.
-- Required packets are derivative runtime artifacts under `.memory-bank/packets/`; if missing, blocked, stale, invalid, or mismatched, run `/mb-packet TASK-XXX` or stop before implementation.
+- Required packets are derivative runtime artifacts under `.memory-bank/packets/`; `/prd-to-tasks` creates initial required packets and `/mb-doctor` validates readiness at the feature/task-queue boundary. Use `/mb-packet TASK-XXX` only to repair or refresh packets after task/spec changes.
 - If running in **Claude Code**: execute each `TASK-XXX` in a **fresh Claude session** using tier-appropriate `.protocols/TASK-XXX/` state.
 - If running in **Codex**: you can run each `TASK-XXX` in a fresh session via `codex exec` (see `/execute`).
 - Sequencing: independent tasks may run in parallel clean sessions; dependent/shared-file tasks must run sequentially.
 
 Codex (fresh session):
-- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `codex exec --ephemeral --full-auto -m gpt-5.2-high 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 Claude (fresh session):
-- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before /execute; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
+- `claude -p --no-session-persistence --permission-mode acceptEdits --model opus 'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement. Record evidence. Report → .tasks/TASK-123/…'`
 
 ## Two modes (manual vs scheduler)
-- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/spec-improve FT-<NNN>` → `/prd-to-tasks FT-<NNN>` → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run per-task `/red-verify` for T3 tasks, optional for T2 tasks, and run `/red-verify --feature FT-<NNN>` before T2 feature completion; `/mb-sync` only when durable Memory Bank docs/state changed. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, and use `/clarify-feature FT-<NNN>` only for explicit feature blockers.
+- **Manual**: run `/analysis` → `/brief` → `/constitution` if `project_principles` is not `ratified|partial` → `/write-prd` → `/spec-init` → `/prd` → `/spec-design` → `/prd-to-tasks FT-<NNN>` → `/mb-doctor` at the feature/task-queue boundary → execute tasks one-by-one with `/execute TASK-<ID>` → `/verify TASK-<ID>`; run per-task `/red-verify` for T3 tasks, optional for T2 tasks, and run `/red-verify --feature FT-<NNN>` before T2 feature completion; `/mb-sync` only when durable Memory Bank docs/state changed. `/prd-to-tasks` performs feature-level SDD design and creates required initial packets before task handoff. `/spec-design` is mandatory after `/prd`, but simple T0/T1 projects may record a minimal backbone with irrelevant areas `not_applicable`; it may also create one first foundation task when a minimum executable baseline is needed. Use `/brainstorm` before `/brief` only for raw ideas, use `/clarify-feature FT-<NNN>` only for explicit feature blockers, and use standalone `/spec-improve`/`/mb-packet` only for repair or refresh.
 - **Autonomous (batch)**: use `/autonomous` for full `PRD → done`; it runs `/spec-auto --init`, mandatory `/spec-design --all`, and `/spec-auto --all`. Use `/autopilot` only if JSON task records and required SDD spec links already exist. See: `.memory-bank/workflows/execute-loop.md` and `.memory-bank/workflows/autonomy-policy.md`.
 
 `.tasks/` naming:
@@ -282,7 +282,7 @@ status: active
 | boundary_hints | .memory-bank/contracts/boundary-map.md | /prd, /spec-design | Seeded lightweight template; fill only evidence-backed responsibility/scope notes, no endpoint/OpenAPI details. |
 | lifecycle_hints | .memory-bank/states/lifecycle-map.md | /prd, /spec-design | Create only when lifecycles affect feature boundaries. |
 | system_architecture | .memory-bank/architecture/system-architecture.md | /spec-design | Default global architecture hub after /prd. |
-| feature_design | .memory-bank/tech-specs/FT-<NNN>-<slug>.md | /spec-improve | Feature-local specs only when needed before task decomposition. |
+| feature_design | .memory-bank/tech-specs/FT-<NNN>-<slug>.md | /prd-to-tasks | Feature-local specs only when needed before task decomposition. |
 
 ## Broken / Missing Links
 - TBD
@@ -583,7 +583,7 @@ status: draft
 
 ## 6b) Example task record template
 
-The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` creates real feature `.memory-bank/tasks/TASK-*.task.json` records only after `/spec-design` is `complete|minimal` and `/spec-improve FT-<NNN>` has completed, blocked, or marked SDD design `not_required`. Exception: `/spec-design` may create one first foundation task, preferably `TASK-000`, with `feature: "FOUNDATION"`, `wave: "W0"`, and `status: "ready"` when a minimum executable baseline is needed before business features.
+The skeleton does not generate this file. `/prd-to-tasks FT-<NNN>` first completes feature-level SDD design, then creates real feature `.memory-bank/tasks/TASK-*.task.json` records when the feature is ready or marks design blocked and stops. Exception: `/spec-design` may create one first foundation task, preferably `TASK-000`, with `feature: "FOUNDATION"`, `wave: "W0"`, and `status: "ready"` when a minimum executable baseline is needed before business features.
 
 ```json
 {
@@ -645,7 +645,8 @@ Execution packets are compact derivative runtime artifacts for one task run:
 Packet semantics:
 - The task record and linked SDD specs remain the source of truth.
 - A packet compiles existing context for execution; it must not invent missing specs, requirements, or scope.
-- If a packet contradicts the task record, feature, tier policy, or linked specs, stop and refresh/rebuild it with `/mb-packet TASK-XXX`.
+- `/prd-to-tasks` creates initial required packets while feature/task/spec context is loaded. `/mb-packet TASK-XXX` refreshes a packet after task/spec changes or a `/mb-doctor` readiness finding.
+- If a packet contradicts the task record, feature, tier policy, or linked specs, repair the source or refresh/rebuild it with `/mb-packet TASK-XXX` before execution handoff.
 - Packet-local statuses are only `ready`, `ready_with_gaps`, `blocked`, and `stale`; these are not task lifecycle statuses.
 - Task lifecycle remains `planned|ready|in_progress|blocked|done|failed`.
 - No new `.memory-bank/modules/`, `.memory-bank/graph/`, or `.memory-bank/verification/` layers are introduced for this flow.
@@ -698,7 +699,7 @@ status: active
 
 ## When to use
 - Bootstrap / memory: cold-start, mb-init
-- SDD design: /spec-init, mandatory adaptive /spec-design, /spec-improve, /spec-auto
+- SDD design: /spec-init, mandatory adaptive /spec-design, feature-level design inside /prd-to-tasks, standalone /spec-improve repair, /spec-auto
 - PRD decomposition: mb-from-prd
 - Codebase mapping: mb-map-codebase
 - Execution: mb-execute

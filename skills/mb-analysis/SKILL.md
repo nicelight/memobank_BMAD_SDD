@@ -20,12 +20,12 @@ Analysis is optional. Raw PRD text or an existing external PRD should pass `/con
 The normal planning path is:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-<NNN> -> /prd-to-tasks FT-<NNN>
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /prd-to-tasks FT-<NNN>
 ```
 
 Use `/brainstorm` before `/brief` when the idea is raw. `/constitution` should read the Product Brief when present and run the governing-principles interview; if the user explicitly skips it, downstream PRD work may continue with framework-default/skipped principles.
 
-Analysis never creates task records. `/spec-design` also does not create task records or feature-local implementation design; it only updates backbone SDD specs and `spec-index`, while `/spec-improve FT-<NNN>` remains the feature-level gate. `/clarify-feature FT-<NNN>` is optional and only for a specific feature that is explicitly pending/blocked or has decomposition-affecting unresolved markers.
+Analysis never creates task records. `/spec-design` also does not create task records or feature-local implementation design; it only updates backbone SDD specs and `spec-index`, while `/prd-to-tasks FT-<NNN>` performs feature-level design before task slicing. `/clarify-feature FT-<NNN>` is optional and only for a specific feature that is explicitly pending/blocked or has decomposition-affecting unresolved markers.
 
 ## Artifacts
 

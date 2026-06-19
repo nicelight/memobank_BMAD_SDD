@@ -8,9 +8,10 @@ status: active
 - `/prd` creates L1–L3 only (product/requirements/epics/features/testing/index).
 - `/write-prd` = PRD-level ambiguity closure. `/clarify-feature` = optional feature-level ambiguity pass.
 - `/spec-init` creates the lightweight SDD route map after `/write-prd` and before `/prd`.
-- `/spec-design` is mandatory after `/prd`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, may create one first foundation task when a minimum executable baseline is needed, and does not replace per-feature `/spec-improve`.
-- `/spec-improve FT-<NNN>` completes or marks unnecessary feature-level design before task decomposition.
-- Feature tasks are created via `/prd-to-tasks FT-<NNN>` after `/prd` creates clear feature docs and SDD design status is ready. The only earlier task exception is a first foundation task from `/spec-design` when a minimum executable baseline is needed. After the full FT-* set is decomposed, run `/verify` on the generated JSON task records/artifacts, then start `/execute`.
+- `/spec-design` is mandatory after `/prd`; it records a minimal backbone for simple T0/T1 projects or full shared backbone for shared/T2/T3 concerns, and may create one first foundation task when a minimum executable baseline is needed.
+- `/prd-to-tasks FT-<NNN>` performs full feature-level SDD design before task slicing, then creates the implementation plan, JSON task records, and required initial Execution Packets.
+- Standalone `/spec-improve FT-<NNN>` and `/mb-packet TASK-XXX` remain repair/advanced commands when design or packets must be refreshed outside the happy path.
+- After the current feature task set is decomposed, run `/mb-doctor` once at the feature/task-queue boundary before starting `/execute`.
 
 ## Interactive mode (you stay)
 1) `/analysis -> /brief` when idea discovery is needed; use `/brainstorm` before `/brief` only for raw ideas
@@ -20,15 +21,14 @@ status: active
 5) `/prd` (fills L1–L3)
 6) `/spec-design` (mandatory; minimal is valid for simple T0/T1-only scope)
 7) Pick one top feature; use `/clarify-feature FT-001` only for explicit feature blockers
-8) `/spec-improve FT-001` (updates only needed SDD specs or marks not_required)
-9) `/prd-to-tasks FT-001` (creates IMPL plan + TASK-* for this feature)
-10) Run `/mb-doctor` when task records change; use `/mb-doctor --strict` before autonomous handoff
-11) Execute tasks from `.memory-bank/tasks/index.json` and indexed `*.task.json` records one-by-one:
-   - `/verify generated JSON task records/artifacts -> /execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T3 (optional for T2 task closure) -> /mb-sync`
+8) `/prd-to-tasks FT-001` (completes feature-level SDD design, creates IMPL plan + TASK-* + required packets for this feature)
+9) Run `/mb-doctor` at the feature/task-queue boundary after the current feature task set is decomposed and before execution; use `/mb-doctor --strict` before autonomous handoff
+10) Execute tasks from `.memory-bank/tasks/index.json` and indexed `*.task.json` records one-by-one:
+   - `/execute first indexed TASK -> /verify same TASK -> /red-verify same TASK for T3 (optional for T2 task closure) -> /mb-sync`
    - after all tasks for a T2 feature are implemented, run `/red-verify --feature FT-<ID>` before treating the feature as complete
-   - start `/execute` only after all targeted FT-* have been decomposed and the pre-execution `/verify` gate has passed
-   - for T2/T3, validate canonical `.memory-bank/packets/TASK-XXX.packet.json` before `/execute`; for T0/T1, validate a packet only when `task.runtime_context.packet_required === true`
-12) After each wave: `/review` (fresh context)
+   - start `/execute` only after the current feature task set has been decomposed and the feature/task-queue doctor gate has passed
+   - `/execute` reads packet context when present or expected, but structural packet readiness is owned by `/mb-doctor`, not by the implementer
+11) After each wave: `/review` (fresh context)
 
 ## Autonomous end-to-end mode (start and leave)
 1) `/autonomous`
@@ -49,7 +49,7 @@ If JSON task records already exist and review gate already passed, use:
 Codex (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 codex exec --ephemeral --full-auto -m gpt-5.2-high \
   'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL.'
@@ -58,7 +58,7 @@ codex exec --ephemeral --full-auto -m gpt-5.2-high \
 Claude (implement, then verify when the tier requires a separate verifier):
 ~~~bash
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
-  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, and .memory-bank/workflows/tier-policy.md. For T2/T3, read and validate .memory-bank/packets/TASK-123.packet.json before implementation; for T0/T1, do that only when task.runtime_context.packet_required is true. Stop on missing/blocked/stale/invalid required packet. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
+  'TASK_ID=TASK-123. Read AGENTS.md, .memory-bank/commands/execute.md, the indexed task record, .memory-bank/workflows/tier-policy.md, and packet context when present or expected. Assume packet readiness was checked by the feature/task-queue gate; do not repair or structurally validate packets here. Stop on semantic contradictions, unverifiable success, or scope/public-contract ambiguity. Use tier-appropriate .protocols/TASK-123/ state. Implement only scoped changes. Record evidence. Report → .tasks/TASK-123/TASK-123-S-IMPL-final-report-code-01.md.'
 
 claude -p --no-session-persistence --permission-mode acceptEdits --model opus \
   'TASK_ID=TASK-123. For T2/T3 only: read AGENTS.md, .memory-bank/commands/verify.md, the indexed task record, .memory-bank/workflows/tier-policy.md, full protocol, and acceptance criteria. Fill .protocols/TASK-123/verification.md. Evidence → .tasks/TASK-123/. VERDICT: PASS/FAIL/NEEDS-CLARIFICATION.'

@@ -29,13 +29,8 @@ idea / rough draft
   -> /spec-init
   -> /prd
   -> /spec-design
-  -> /spec-improve FT-001
   -> /prd-to-tasks FT-001
-  -> /prd-to-tasks FT-002
-  -> ...
-  -> /prd-to-tasks FT-N
-  -> /verify generated JSON task records/artifacts
-  -> /mb-packet TASK-001 when required (all T2/T3; explicit T0/T1)
+  -> /mb-doctor at the feature/task-queue boundary
   -> /execute first indexed TASK
   -> /verify same TASK
   -> /red-verify same TASK for T3 work (optional for T2 task closure)
@@ -52,9 +47,9 @@ In plain terms:
 - `/spec-init` creates a lightweight SDD route map from PRD/brief/existing-spec evidence. It does not run architecture design or create authoritative specs.
 - `/prd` decomposes the PRD into Memory Bank product, requirements, epics, and features.
 - `/spec-design` is mandatory after `/prd`, but adaptive in depth. Small independent T0/T1 projects get a minimal backbone with irrelevant areas marked `not_applicable`; shared/T2/T3 projects get normal architecture backbone decisions. It may also create one first foundation task when a minimum executable baseline is needed. If key decisions are unresolved, it records blockers and stops downstream.
-- `/spec-improve FT-001` completes the minimum needed feature design, or marks it `not_required` for simple T0/T1-like work.
-- `/prd-to-tasks FT-001` creates feature JSON tasks; `/spec-design` may already have created one first foundation task when a minimum executable baseline was needed. After the full `FT-*` set is decomposed, run `/verify` on the generated JSON task records/artifacts, then run `/mb-packet` for all T2/T3 tasks and explicit T0/T1 packet requirements before `/execute`.
-- `/mb-packet TASK-001` builds or refreshes a compact derivative Execution Packet; T2/T3 require one, while T0/T1 require one only when `runtime_context.packet_required: true`. Task records and linked specs remain authoritative.
+- `/prd-to-tasks FT-001` completes the feature-level SDD design, creates feature JSON tasks, and builds the required initial Execution Packets while feature/task/spec context is loaded. `/spec-design` may already have created one first foundation task when a minimum executable baseline was needed.
+- After the current feature task set is decomposed, run `/mb-doctor` once at the feature/task-queue boundary before `/execute`.
+- `/spec-improve FT-001` and `/mb-packet TASK-001` remain standalone repair/refresh commands when feature design or packets must be updated after decomposition.
 - `/execute`, `/verify`, and `/mb-sync` take one task from implementation to synchronized project memory.
 - `/red-verify TASK-*` is required for T3 task closure and optional for T2 task closure; `/red-verify --feature FT-*` is required before a T2 feature is treated as complete.
 
@@ -94,9 +89,9 @@ Then run:
 /cold-start
 ```
 
-or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/spec-improve FT-001` -> `/prd-to-tasks FT-001` -> `/prd-to-tasks FT-002` -> ... -> `/prd-to-tasks FT-N` -> `/verify generated JSON task records/artifacts` -> `/mb-packet TASK when required (all T2/T3; explicit T0/T1)` -> `/execute first indexed TASK`.
+or go straight into the manual flow: `/analysis` -> `/brief` -> `/constitution` -> `/write-prd` -> `/spec-init` -> `/prd` -> `/spec-design` -> `/prd-to-tasks FT-001` -> `/mb-doctor at feature/task-queue boundary` -> `/execute first indexed TASK`.
 
-`/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. A `/spec-init` PASS means the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. After the full `FT-*` set is broken down and the generated JSON task records/artifacts are reviewed, the project is ready for `/execute`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
+`/spec-init` is the pre-PRD spec framing step: it captures enough domain, scenario, constraints, non-goals, risks, boundary hints, and lifecycle context for `/prd` to decompose safely. A `/spec-init` PASS means the project is prepared for `/prd`; Global Backbone Status is intentionally pending until `/spec-design`. After the current feature task set is decomposed and the feature/task-queue doctor gate has passed, the project is ready for `/execute`. It keeps `.memory-bank/spec-index.md` as a pure spec registry and writes readiness/state to `.memory-bank/spec-backbone.md`.
 
 ## More detail
 

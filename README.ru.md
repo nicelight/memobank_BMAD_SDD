@@ -46,9 +46,8 @@ Memory Bank помогает вести разработку как повтор
   -> /spec-init           Pre-PRD framing для безопасной нарезки
   -> /prd                 requirements, epics, features
   -> /spec-design         обязательный адаптивный SDD backbone
-  -> feature design       /spec-improve для выбранной feature
-  -> JSON tasks          с градацией сложности и риска 
-  -> mb-packet           для всех T2/T3 и явных T0/T1 packet requirements
+  -> /prd-to-tasks        feature design + JSON tasks + required packets
+  -> /mb-doctor           readiness gate на feature/task-queue boundary
   -> execute             можно все сразу в авторежиме
   -> verify              + red-verify для T3 task / T2 feature completion
   -> sync
@@ -95,15 +94,15 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** `.memory-bank/product.md`, `.memory-bank/requirements.md`, `.memory-bank/epics/`, `.memory-bank/features/` и связанные индексы.
 
-   **Дальше:** запустить обязательный `/spec-design`. Для маленьких независимых T0/T1 features он создает minimal backbone и помечает лишние области `not_applicable`; для shared/T2/T3 concerns проводит архитектурный checkpoint. Затем выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/spec-improve FT-001`.
+   **Дальше:** запустить обязательный `/spec-design`. Для маленьких независимых T0/T1 features он создает minimal backbone и помечает лишние области `not_applicable`; для shared/T2/T3 concerns проводит архитектурный checkpoint. Затем выбрать feature для декомпозиции. Если она заблокирована неясностями, сначала использовать `/clarify-feature FT-001`; затем `/prd-to-tasks FT-001`.
 
 6. `/spec-design`
 
-   **Когда:** после `/prd`, всегда перед `/spec-improve`. Это обязательный gate, но не обязательная тяжелая фаза.
+   **Когда:** после `/prd`, всегда перед `/prd-to-tasks`. Это обязательный gate, но не обязательная тяжелая фаза.
 
-   **Создает/обновляет:** `spec-backbone` с Global Backbone Status и Backbone Area Matrix, чистый `spec-index` только как registry, и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет pre-PRD framing из `/spec-init`, не создает обычные feature tasks и не заменяет feature-level `/spec-improve`. Исключение: может создать одну первую foundation task, если до бизнес-фич нужен минимальный executable baseline.
+   **Создает/обновляет:** `spec-backbone` с Global Backbone Status и Backbone Area Matrix, чистый `spec-index` только как registry, и SDD backbone specs по необходимости. По умолчанию держит architecture в одном `architecture/system-architecture.md` с секциями source-of-truth/module-boundaries; отдельные `architecture/source-of-truth.md`, `architecture/module-boundaries.md` или boundary-файлы создаются только при явном выборе split/реальной сложности. Детальные API/state/message contracts живут в `contracts/`, `states/`, `domains/`, `tech-specs/`. Потребляет pre-PRD framing из `/spec-init`, не создает обычные feature tasks. Исключение: может создать одну первую foundation task, если до бизнес-фич нужен минимальный executable baseline.
 
-   **Дальше:** выбрать feature и запустить `/spec-improve FT-001`.
+   **Дальше:** выбрать feature и запустить `/prd-to-tasks FT-001`.
 
 7. `/clarify-feature FT-001`
 
@@ -111,33 +110,25 @@ Memory Bank помогает вести разработку как повтор
 
    **Создает/обновляет:** уточнения по feature и ее clarification status.
 
-   **Дальше:** после снятия blocker запустить `/spec-improve FT-001`.
+   **Дальше:** после снятия blocker запустить `/prd-to-tasks FT-001`.
 
-8. `/spec-improve FT-001`
-
-   **Когда:** после `/spec-design` и до `/prd-to-tasks`, для выбранной feature.
-
-   **Создает/обновляет:** только нужные SDD artifacts: feature hub в `tech-specs`, architecture notes, contracts, domains, states, ADR, testing/runbooks. Для простых T0/T1-like features может поставить `spec_design_status: not_required` с кратким rationale.
-
-   **Дальше:** запустить `/prd-to-tasks FT-001`.
-
-9. `/prd-to-tasks FT-001`
+8. `/prd-to-tasks FT-001`
 
    **Когда:** когда feature можно разложить на implementation tasks.
 
-   **Создает/обновляет:** `.protocols/FT-001/plan.md`, `.protocols/FT-001/decision-log.md`, `.memory-bank/tasks/plans/IMPL-FT-001.md`, task records в `.memory-bank/tasks/*.task.json` и индекс `.memory-bank/tasks/index.json`.
+   **Создает/обновляет:** feature-level SDD design status/spec links, `.protocols/FT-001/plan.md`, `.protocols/FT-001/decision-log.md`, `.memory-bank/tasks/plans/IMPL-FT-001.md`, task records в `.memory-bank/tasks/*.task.json`, индекс `.memory-bank/tasks/index.json` и required initial Execution Packets для T2/T3 и явных T0/T1 packet requirements.
 
-   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным JSON task records / artifacts, затем для T2/T3 задач и явных T0/T1 packet requirements выполнить `/mb-packet TASK-*` и перейти к `/execute TASK-*`.
+   **Дальше:** после декомпозиции всех `FT-*` через `/prd-to-tasks` запустить `/verify` по сгенерированным JSON task records / artifacts, затем `/mb-doctor` на feature/task-queue boundary и перейти к `/execute TASK-*`.
 
-10. `/mb-packet TASK-*`
+9. `/mb-doctor`
 
-   **Когда:** для T2/T3 задач всегда; для T0/T1 только если task record явно содержит `runtime_context.packet_required: true`.
+   **Когда:** после того как feature полностью разложена на task records и required packets, перед стартом execution по этой feature.
 
-   **Создает/обновляет:** `.memory-bank/packets/TASK-*.packet.json` как derivative packet из task record и linked specs.
+   **Создает/обновляет:** report readiness findings; не заменяет `/verify` и не исполняет tasks.
 
-   **Дальше:** если packet `ready` или `ready_with_gaps`, перейти к `/execute`; при `blocked` или `stale` сначала устранить причину. Packet не заменяет task/specs и не вводит новый lifecycle status.
+   **Дальше:** исправить findings или перейти к `/execute TASK-*`.
 
-11. `/execute TASK-*`
+10. `/execute TASK-*`
 
    **Когда:** для реализации одной конкретной задачи из task record.
 
@@ -145,7 +136,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** запустить `/verify TASK-*`.
 
-12. `/verify TASK-*`
+11. `/verify TASK-*`
 
    **Когда:** после реализации задачи.
 
@@ -153,7 +144,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** если задача сложная или рискованная, запустить `/red-verify TASK-*`; иначе перейти к `/mb-sync`.
 
-13. `/red-verify TASK-*`
+12. `/red-verify TASK-*`
 
    **Когда:** обязательно для T3 task closure; опционально для T2 task closure; обязательно как `/red-verify --feature FT-*` перед T2 feature completion. Особенно полезно там, где обычные tests могут пройти, но решение может быть неверным по смыслу.
 
@@ -161,7 +152,7 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** при проблемах вернуть задачу в доработку; при успешной проверке перейти к `/mb-sync`.
 
-14. `/mb-sync`
+13. `/mb-sync`
 
    **Когда:** после результата задачи, особенно если менялись требования, task status, changelog, RTM или durable Memory Bank docs.
 
@@ -169,19 +160,20 @@ Memory Bank помогает вести разработку как повтор
 
    **Дальше:** выбрать следующую задачу или feature.
 
-15. Повторять цикл
+14. Повторять цикл
 
     **Когда:** пока features и tasks не доведены до нужного состояния.
 
     **Создает/обновляет:** последовательные изменения в продукте, документах, task records и evidence.
 
-    **Дальше:** продолжать `/prd-to-tasks` для следующих features или `/mb-packet` при необходимости + `/execute` для следующих tasks.
+    **Дальше:** продолжать `/prd-to-tasks` для следующих features или `/execute` для следующих tasks. Использовать `/spec-improve` и `/mb-packet` только для repair/refresh вне happy path.
 
 ## 🛠️ Команды вне основного ручного цикла
 
 - `/cold-start` - выбирает стартовый сценарий для нового или существующего репозитория: greenfield, brownfield, skeleton-only.
 - `/mb-init` - создает skeleton Memory Bank, `.tasks/`, `.protocols/`, `AGENTS.md` и project command proxies.
-- `/mb-packet` - строит или обновляет derivative Execution Packet для task; T2/T3 требуют packet, T0/T1 только при явном runtime requirement.
+- `/spec-improve` - standalone repair/refresh feature-level SDD design, когда нужно обновить design без task decomposition.
+- `/mb-packet` - repair/refresh derivative Execution Packet после task/spec изменений или readiness finding; initial required packets создает `/prd-to-tasks`.
 - `/map-codebase` - описывает существующий код как as-is baseline в Memory Bank.
 - `/review` - запускает fresh-context review Memory Bank и фиксирует найденные gaps.
 - `/mb-garden` - обслуживает Memory Bank: lint, чистка, устранение drift, архивирование.
@@ -213,7 +205,7 @@ proxy skills, runtime scripts и может синхронизировать `AG
 После установки используйте `/cold-start` или начните ручной цикл:
 
 ```text
-/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /spec-improve FT-001 -> /prd-to-tasks FT-001 -> /prd-to-tasks FT-002 -> ... -> /prd-to-tasks FT-N -> /verify generated JSON task records/artifacts -> /mb-packet TASK when required (all T2/T3; explicit T0/T1) -> /execute first indexed TASK -> /verify same TASK -> /mb-sync
+/analysis -> /brief -> /constitution -> /write-prd -> /spec-init -> /prd -> /spec-design -> /prd-to-tasks FT-001 -> /mb-doctor at feature/task-queue boundary -> /execute first indexed TASK -> /verify same TASK -> /mb-sync
 ```
 
 Автоматические режимы стоит включать после того, как PRD, features и task records уже понятны. `/autopilot` работает по готовой JSON task queue, а `/autonomous` берет на себя более длинный unattended flow. Оба режима требуют usable packets для T2/T3 и для T0/T1 только при `runtime_context.packet_required: true`.

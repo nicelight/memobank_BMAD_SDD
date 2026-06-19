@@ -32,8 +32,8 @@ Scheduler mode:
 Manual mode:
 - Expected T0/T1 simple flow: `/execute -> /verify`.
 - Manual closure is allowed only when an explicit closure owner exists.
-- T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence.
-- T2 task closure may rely on `/verify PASS` when full protocol and required packet/spec gates are satisfied; per-task `/red-verify` is optional for T2. T2 feature completion requires `/red-verify --feature FT-<ID>` with `SEMANTIC_VERDICT: semantic-pass` before the feature is treated complete. T3 must not treat `/verify PASS` alone as final `done`; run per-task `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
+- T0/T1 may be marked `done` after functional `VERDICT: PASS` and completed evidence only with explicit closure ownership.
+- T2 task closure may rely on `/verify PASS` when full protocol, required packet/spec gates, and explicit closure ownership are satisfied; per-task `/red-verify` is optional for T2. T2 feature completion requires `/red-verify --feature FT-<ID>` with `SEMANTIC_VERDICT: semantic-pass` before the feature is treated complete. T3 must not treat `/verify PASS` alone as final `done`; run per-task `/red-verify` and require `SEMANTIC_VERDICT: semantic-pass` before final closure/`/mb-sync`.
 - If required T3 per-task `/red-verify` or T2 feature-level `/red-verify --feature FT-<ID>` returns anything other than `semantic-pass`, leave the relevant task or feature closure pending or blocked, not complete. Optional T0/T1/T2 per-task red-verify does not make normal verify-based task closure stricter.
 - `semantic-concern` in manual mode means do not trust the existing `done` state without human review / follow-up.
 - Do not mix scheduler mode and manual mode inside one task run.
@@ -115,7 +115,7 @@ Status ownership:
 - отсутствие richer verification fields не является ошибкой
 - absence of SDD spec links is not a blocker for `T0` / `T1`; in that case the
   verifier should use the classic AC/REQ model
-- for `T2` / `T3`, linked SDD specs are mandatory verification inputs; route back to `/spec-improve` or `/spec-auto` when absent
+- for `T2` / `T3`, linked SDD specs are mandatory verification inputs; route back to `/prd-to-tasks` feature design, standalone `/spec-improve` repair, or `/spec-auto` when absent
 - linked SDD specs are the primary normative basis when present; conflicting task records must be blocked, not locally reinterpreted
 - `evidence_required` и `verification_targets` описывают требования/цели проверки; сами по себе они не являются proof
 - detailed verification report may live in `.protocols/TASK-<ID>/verification.md`, with artifacts in `.tasks/TASK-<ID>/`
