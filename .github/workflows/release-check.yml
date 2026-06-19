@@ -39,6 +39,7 @@ jobs:
           test -f skills/_shared/references/commands/mb-packet.md
           test -f skills/_shared/references/protocols/packet-template.json
           test -f skills/_shared/references/roles/orchestrator.md
+          test -f skills/_shared/references/roles/general.md
           test -f skills/_shared/references/roles/worker.md
           test -f skills/_shared/references/constitution-template.md
           test -f skills/_shared/references/workflows/mb-sync.md
@@ -72,6 +73,7 @@ jobs:
             test -f .agents/skills/cold-start/references/shared-constitution-template.md
             test -f .agents/skills/cold-start/references/shared-protocols-packet-template.json
             test -f .agents/skills/cold-start/references/shared-roles-orchestrator.md
+            test -f .agents/skills/cold-start/references/shared-roles-general.md
             test -f .agents/skills/cold-start/references/shared-roles-worker.md
             test -f .agents/skills/cold-start/references/shared-workflows-mb-sync.md
             test -f .agents/skills/cold-start/references/shared-workflows-tier-policy.md
@@ -93,8 +95,14 @@ jobs:
             TODAY="$(date -u +%F)"
             node ../.agents/skills/mb-init/scripts/shared-init-mb.js
 
+            grep -q 'If no explicit role is given to the top-level agent, act as:' AGENTS.md
+            grep -q 'ROLE: GENERAL' AGENTS.md
+            grep -q 'roles/general.md' AGENTS.md
+            grep -q 'Роль GENERAL' .memory-bank/roles/general.md
+            grep -q 'Роль: Оркестратор' .memory-bank/roles/orchestrator.md
             test -f .memory-bank/commands/analysis.md
             test -f .memory-bank/roles/orchestrator.md
+            test -f .memory-bank/roles/general.md
             test -f .memory-bank/roles/worker.md
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
@@ -130,6 +138,7 @@ jobs:
             test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
             grep -q 'roles/orchestrator.md' .memory-bank/index.md
+            grep -q 'roles/general.md' .memory-bank/index.md
             grep -q 'roles/worker.md' .memory-bank/index.md
             grep -q 'contracts/boundary-map.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md
@@ -209,6 +218,11 @@ jobs:
           test -f "$TARGET/.memory-bank/tasks/index.json"
           test -d "$TARGET/.memory-bank/packets"
           test -f "$TARGET/AGENTS.md"
+          grep -q 'If no explicit role is given to the top-level agent, act as:' "$TARGET/AGENTS.md"
+          grep -q 'ROLE: GENERAL' "$TARGET/AGENTS.md"
+          grep -q 'roles/general.md' "$TARGET/AGENTS.md"
+          grep -q 'Роль GENERAL' "$TARGET/.memory-bank/roles/general.md"
+          grep -q 'Роль: Оркестратор' "$TARGET/.memory-bank/roles/orchestrator.md"
           test -f "$TARGET/.memory-bank/constitution.md"
           grep -q '^description: Project Constitution' "$TARGET/.memory-bank/constitution.md"
           grep -q '^status: active$' "$TARGET/.memory-bank/constitution.md"
@@ -218,6 +232,7 @@ jobs:
           grep -q "^last_updated: $TODAY$" "$TARGET/.memory-bank/constitution.md"
           ! grep -q '{{TODAY}}' "$TARGET/.memory-bank/constitution.md"
           test -f "$TARGET/.memory-bank/roles/orchestrator.md"
+          test -f "$TARGET/.memory-bank/roles/general.md"
           test -f "$TARGET/.memory-bank/roles/worker.md"
           test -f "$TARGET/.memory-bank/commands/cold-start.md"
           test -f "$TARGET/.memory-bank/commands/mb-packet.md"
@@ -269,8 +284,14 @@ jobs:
             node "$GITHUB_WORKSPACE/skills/_shared/scripts/init-mb.js"
             node "$GITHUB_WORKSPACE/skills/_shared/scripts/init-mb.js" --sync
 
+            grep -q 'If no explicit role is given to the top-level agent, act as:' AGENTS.md
+            grep -q 'ROLE: GENERAL' AGENTS.md
+            grep -q 'roles/general.md' AGENTS.md
+            grep -q 'Роль GENERAL' .memory-bank/roles/general.md
+            grep -q 'Роль: Оркестратор' .memory-bank/roles/orchestrator.md
             test -f .memory-bank/commands/analysis.md
             test -f .memory-bank/roles/orchestrator.md
+            test -f .memory-bank/roles/general.md
             test -f .memory-bank/roles/worker.md
             test -f .memory-bank/commands/brainstorm.md
             test -f .memory-bank/commands/brief.md
@@ -305,6 +326,7 @@ jobs:
             test -f scripts/mb-doctor.mjs
             grep -q 'constitution.md' .memory-bank/index.md
             grep -q 'roles/orchestrator.md' .memory-bank/index.md
+            grep -q 'roles/general.md' .memory-bank/index.md
             grep -q 'roles/worker.md' .memory-bank/index.md
             grep -q 'contracts/boundary-map.md' .memory-bank/index.md
             grep -q 'constitution.md' .memory-bank/spec-index.md

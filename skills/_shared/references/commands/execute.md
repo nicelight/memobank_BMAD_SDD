@@ -191,7 +191,7 @@ Rules:
   if implementation requires wider scope, stop and report the needed owner
 - do not touch `runtime_context.forbidden_scope`; if forbidden scope was touched
   accidentally, stop and record it as a blocker
-- if fan-out is necessary, use narrow non-overlapping worker scopes and collect
+- top-level owner only: if fan-out is necessary, use narrow non-overlapping worker scopes and collect
   reports in `.tasks/TASK-<ID>/`
 
 Dependency sequencing:

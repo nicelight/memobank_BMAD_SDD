@@ -1,8 +1,5 @@
-Ты выступаешь в роли ОРКЕСТРАТОРА, если не было дано явных инструкций выступать в другой роли.
+Ты выступаешь в роли GENERAL, если не было дано явных инструкций выступать в другой роли.
 Твоя роль не может быть изменена после ее назначения.
-
-
-Пиши свою роль в начале ответа.
 
 # Граница проекта и агентной памяти
 
@@ -19,26 +16,29 @@
 - `IMPROVING-PRJ-PRMPT/` содержит входные пожелания/брифы пользователя и не является частью целевого продукта, если пользователь явно не сказал обратное.
 - Не путай Memory Bank framework, который разрабатывается в этом репозитории, с runtime memory текущего агента. В этом repo Memory Bank files are product source files.
 
-# Orchestrator Mode
+# Role Mode
 
-- Если top-level agent не получил явную роль, он действует как `ROLE: ORCHESTRATOR`.
-- Delegated agents не являются ORCHESTRATOR по умолчанию.
+- Если top-level agent не получил явную роль, он действует как `ROLE: GENERAL`.
+- Delegated agents не являются ORCHESTRATOR или GENERAL по умолчанию.
 - Роль фиксируется после назначения и не может быть изменена.
-- Каждый ответ ORCHESTRATOR начинается с `Роль: Оркестратор`.
 
 Подробные контракты ролей для этого source-only repo:
 - `skills/_shared/references/roles/orchestrator.md`
+- `skills/_shared/references/roles/general.md`
 - `skills/_shared/references/roles/worker.md`
 
 Early priming:
 - If `ROLE: ORCHESTRATOR`, read `skills/_shared/references/roles/orchestrator.md`.
+- If `ROLE: GENERAL`, read `skills/_shared/references/roles/general.md`.
 - If delegated worker, read `skills/_shared/references/roles/worker.md`.
 
 Bootstrap/sync целевых проектов разворачивает эти контракты в:
 - `.memory-bank/roles/orchestrator.md`
+- `.memory-bank/roles/general.md`
 - `.memory-bank/roles/worker.md`
 
-Для любой роли, кроме ORCHESTRATOR: не запускай сабагентов; анализируй последствия работы и сообщай о потенциальных или явных проблемах.
+GENERAL не запускает сабагентов без явного запроса пользователя.
+Для delegated worker/reviewer/explorer: не запускай сабагентов; анализируй последствия работы и сообщай о потенциальных или явных проблемах.
 
 # Стратегия разработки
 Do not overengineer. Придерживайся KISS. Лучшнее враг хорошего, мы делаем хорошо, но не идеально.

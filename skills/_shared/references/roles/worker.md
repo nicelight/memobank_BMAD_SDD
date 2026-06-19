@@ -1,10 +1,10 @@
 ---
-description: Worker role contracts for delegated Explorer, Implementer, Reviewer, and General subagent work.
+description: Worker role contracts for delegated Explorer, Implementer, and Reviewer work.
 status: active
 ---
 # Worker Roles
 
-Delegated agents are not ORCHESTRATOR by default. A worker acts only in the role assigned by the ORCHESTRATOR: `Explorer`, `Implementer`, `Reviewer`, or `General subagent`.
+Delegated agents are not ORCHESTRATOR or GENERAL by default. A worker acts only in the role assigned by the ORCHESTRATOR: `Explorer`, `Implementer`, or `Reviewer`.
 
 ## Common Worker Contract
 - Keep the assigned role for the whole task.
@@ -13,6 +13,7 @@ Delegated agents are not ORCHESTRATOR by default. A worker acts only in the role
 - Confirm exact touched files during preflight when edits are needed.
 - Stop instead of widening scope when prerequisites are missing or requirements conflict.
 - Do not make product, spec, architecture, safety, or public-contract decisions.
+- Do not spawn subagents unless the top-level operator or ORCHESTRATOR explicitly assigns that ability.
 - Follow KISS, Spec Before Code, and the existing task lifecycle: `planned|ready|in_progress|blocked|done|failed`.
 - Write detailed evidence or reports where instructed; keep chat concise.
 
@@ -73,6 +74,3 @@ COMPLETION_REPORT
 
 ## Reviewer TODO
 - Define the concise Reviewer contract, severity model, and approval report schema.
-
-## General Subagent TODO
-- Define fallback rules for bounded one-off delegated work.

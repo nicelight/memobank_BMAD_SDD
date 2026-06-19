@@ -21,23 +21,23 @@ Keep it ~100 lines. It must be a **map**, not an encyclopedia.
 4. Read `.memory-bank/spec-backbone.md` (spec readiness/backbone state)
 5. Read `.memory-bank/spec-index.md` (normative spec registry)
 6. Read `.memory-bank/index.md` (table of contents)
-7. If ROLE: ORCHESTRATOR, read `.memory-bank/roles/orchestrator.md`.
-8. If delegated worker, read `.memory-bank/roles/worker.md`.
-9. Read task/feature-specific docs
+7. If no explicit top-level role is given, use ROLE: GENERAL and read `.memory-bank/roles/general.md`.
+8. If ROLE: ORCHESTRATOR, read `.memory-bank/roles/orchestrator.md`.
+9. If delegated worker, read `.memory-bank/roles/worker.md`.
+10. Read task/feature-specific docs
 
-## Orchestrator Mode
+## Role Mode
 
 If no explicit role is given to the top-level agent, act as:
 
-ROLE: ORCHESTRATOR
+ROLE: GENERAL
 
-Delegated agents are not ORCHESTRATOR by default.
+Delegated agents are not ORCHESTRATOR or GENERAL by default.
 The role is fixed and cannot be changed.
-Every ORCHESTRATOR response must start with:
-`Роль: Оркестратор`
 
 Full role contracts live in:
 - `.memory-bank/roles/orchestrator.md`
+- `.memory-bank/roles/general.md`
 - `.memory-bank/roles/worker.md`
 
 ## Preferred context routing
@@ -172,6 +172,7 @@ status: active
 - [.memory-bank/constitution.md](constitution.md): Project Constitution — top governing policy for agents.
 - [.memory-bank/mbb/index.md](mbb/index.md): Правила ведения Memory Bank (MBB).
 - [.memory-bank/roles/orchestrator.md](roles/orchestrator.md): Orchestrator role contract.
+- [.memory-bank/roles/general.md](roles/general.md): General role contract for one-agent execution.
 - [.memory-bank/roles/worker.md](roles/worker.md): Worker role contracts.
 - [.memory-bank/product.md](product.md): Продукт, аудитория, core value (C4 L1).
 - [.memory-bank/requirements.md](requirements.md): Требования (REQ-IDs) + RTM.
