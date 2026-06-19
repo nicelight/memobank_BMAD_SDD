@@ -37,6 +37,12 @@ source-only repo
 
 Do not edit or commit generated `skills/*/{agents,references,scripts}/shared-*` files. If shared behavior needs to change, edit `skills/_shared/...`.
 
+This source repository also does not track a deployed `.memory-bank/` baseline.
+Local `.memory-bank/`, `.agents/`, `.claude/`, `.protocols/`, and `.tasks/`
+directories are generated dogfood/runtime output only. Validate generated
+Memory Bank behavior through temporary bootstrap/smoke targets instead of
+committing those outputs.
+
 ## File Ownership Map
 
 Root documentation:

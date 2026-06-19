@@ -2,26 +2,7 @@
 node_modules/
 
 # Generated when testing the skill pack locally
-.memory-bank/*
-!.memory-bank/commands/
-.memory-bank/commands/*
-!.memory-bank/commands/execute.md
-!.memory-bank/commands/verify.md
-!.memory-bank/commands/red-verify.md
-!.memory-bank/commands/autopilot.md
-!.memory-bank/commands/autonomous.md
-!.memory-bank/commands/mb-sync.md
-!.memory-bank/commands/cold-start.md
-!.memory-bank/commands/mb-doctor.md
-!.memory-bank/workflows/
-.memory-bank/workflows/*
-!.memory-bank/workflows/mb-sync.md
-!.memory-bank/workflows/tier-policy.md
-!.memory-bank/workflows/autonomy-policy.md
-!.memory-bank/workflows/execute-loop.md
-!.memory-bank/schemas/
-.memory-bank/schemas/*
-!.memory-bank/schemas/task.schema.json
+.memory-bank/
 .tasks/
 .protocols/
 .claude/

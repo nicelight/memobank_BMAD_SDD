@@ -183,7 +183,7 @@ GEMINI.md
 .agents/skills/<command>/SKILL.md
 ```
 
-`.memory-bank/commands/*.md` - source of truth для generated slash commands. `.claude/skills/*` и `.agents/skills/*` - тонкие proxy skills, которые говорят runtime читать соответствующий command spec.
+В развернутом target-проекте `.memory-bank/commands/*.md` - source of truth для generated slash commands. `.claude/skills/*` и `.agents/skills/*` - тонкие proxy skills, которые говорят runtime читать соответствующий command spec. В этом source-only repo canonical command specs живут в `skills/_shared/references/commands/`; локальный `.memory-bank/` является ignored dogfood output.
 
 ## 5. Package skills
 

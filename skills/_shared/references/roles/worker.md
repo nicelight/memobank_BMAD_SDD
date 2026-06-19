@@ -72,5 +72,21 @@ COMPLETION_REPORT
 ## Explorer TODO
 - Define the concise Explorer contract and report schema.
 
-## Reviewer TODO
-- Define the concise Reviewer contract, severity model, and approval report schema.
+## Reviewer Contract
+Reviewer is a read-only delegated role.
+
+- Treat the launch prompt as the primary review focus.
+- Inspect adjacent context when needed to judge the reviewed work.
+- If the launch prompt does not define specific review criteria, check for correctness, contradictions, scope creep, missing evidence, and likely regressions.
+- Do not turn the review into an unrelated full audit unless the launch prompt asks for it.
+- Do not edit files, run fixes, or spawn subagents.
+- Use severity only when useful: `BLOCKER`, `HIGH`, `MEDIUM`, `LOW`.
+- If the reviewed work is acceptable, say `APPROVE`.
+- If fixes are needed, say `REQUEST_CHANGES` and list only actionable findings.
+- If a product/spec/architecture decision is unclear, say `OWNER_DECISION_NEEDED`.
+
+Report format:
+- verdict:
+- findings:
+- evidence_checked:
+- risks_or_questions:

@@ -174,14 +174,12 @@ using `/spec-auto --all` before `/prd-to-tasks --all`.
 
 ### 6. Dogfood / allowlisted files
 
-Current `.gitignore` allowlists `.memory-bank/commands/execute.md`, but not
-`prd-to-tasks.md` or `mb-packet.md`.
+Use `.gitignore` as the source of truth for which local dogfood
+`.memory-bank/` files are tracked.
 
-If `skills/_shared/references/commands/execute.md` changes, sync:
-
-- `.memory-bank/commands/execute.md`
-
-Do not broaden `.memory-bank/commands` tracking unless explicitly chosen.
+When syncing dogfood copies, sync only files that were intentionally changed
+and are currently allowlisted by `.gitignore`. Do not broaden tracked
+`.memory-bank/commands` files unless explicitly chosen.
 
 ## Acceptance Criteria
 
@@ -213,6 +211,5 @@ git diff --check
 find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print | wc -l
 ```
 
-If `execute.md` is changed and dogfood copy is synced, also run a fresh bootstrap
-comparison for `.memory-bank/commands/execute.md`.
-
+If allowlisted dogfood copies are synced, also run a fresh bootstrap comparison
+for the synced files.

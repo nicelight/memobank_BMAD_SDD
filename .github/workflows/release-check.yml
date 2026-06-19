@@ -29,6 +29,11 @@ jobs:
             find skills -path 'skills/_shared' -prune -o -type f -name 'shared-*' -print
             exit 1
           fi
+          if git ls-files .memory-bank | grep -q .; then
+            echo 'Found tracked generated .memory-bank files in source-only repository'
+            git ls-files .memory-bank
+            exit 1
+          fi
           test -f skills/mb-analysis/SKILL.md
           test -f skills/mb-analysis/assets/analysis-index-template.md
           test -f skills/mb-analysis/assets/brainstorming-template.md
@@ -247,7 +252,7 @@ jobs:
             cold-start \
             mb-doctor
           do
-            cmp "$GITHUB_WORKSPACE/.memory-bank/commands/$command_doc.md" "$TARGET/.memory-bank/commands/$command_doc.md"
+            test -f "$TARGET/.memory-bank/commands/$command_doc.md"
           done
           test -f "$TARGET/.memory-bank/contracts/boundary-map.md"
           test ! -e "$TARGET/.memory-bank/boundaries"
@@ -255,11 +260,7 @@ jobs:
           test -f "$TARGET/.memory-bank/workflows/tier-policy.md"
           test -f "$TARGET/.memory-bank/workflows/autonomy-policy.md"
           test -f "$TARGET/.memory-bank/workflows/execute-loop.md"
-          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/mb-sync.md" "$TARGET/.memory-bank/workflows/mb-sync.md"
-          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/tier-policy.md" "$TARGET/.memory-bank/workflows/tier-policy.md"
-          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/autonomy-policy.md" "$TARGET/.memory-bank/workflows/autonomy-policy.md"
-          cmp "$GITHUB_WORKSPACE/.memory-bank/workflows/execute-loop.md" "$TARGET/.memory-bank/workflows/execute-loop.md"
-          cmp "$GITHUB_WORKSPACE/.memory-bank/schemas/task.schema.json" "$TARGET/.memory-bank/schemas/task.schema.json"
+          test -f "$TARGET/.memory-bank/schemas/task.schema.json"
           test -f "$TARGET/.claude/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.agents/skills/mb-packet/SKILL.md"
           test -f "$TARGET/.claude/skills/spec-design/SKILL.md"
